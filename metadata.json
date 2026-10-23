@@ -1,0 +1,6 @@
+{
+  "name": "KONSÜL AI — Çoklu Model Konsey & Kör Jüri İstasyonu",
+  "description": "Çoklu yapay zeka modellerini aynı masada konuşturan, kör jüride bağımsız karşılaştıran, başhakem sentezi üreten ve en-boy oranlı görsel stüdyosu içeren istasyon.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
