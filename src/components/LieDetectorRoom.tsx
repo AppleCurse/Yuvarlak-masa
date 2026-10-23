@@ -143,6 +143,7 @@ export function LieDetectorRoom({
   const getEffectiveProvider = (): Provider => {
     return (
       providers.find((p) => p.enabled && p.apiKey?.trim()) ||
+      providers.find((p) => p.id === "prov_demo" || p.kind === "demo") ||
       providers.find((p) => p.enabled) ||
       providers[0] || {
         id: "p_sim",
@@ -420,6 +421,9 @@ export function LieDetectorRoom({
               </h2>
               <span className="rounded-full bg-cyan-950/70 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-700/50 uppercase tracking-wider">
                 Adli İletişim Otopsisi
+              </span>
+              <span className="hidden sm:inline-flex rounded-full bg-emerald-950/60 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400 border border-emerald-700/50 uppercase tracking-wider">
+                🟢 Dahili Türkçe Motor Hazır
               </span>
             </div>
             <div className="font-mono text-xs text-[#8b949e]">

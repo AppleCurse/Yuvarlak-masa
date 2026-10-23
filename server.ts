@@ -170,7 +170,7 @@ async function startServer() {
 
     let isClosed = false;
     const send = (event: string, data: any) => {
-      if (isClosed) return;
+      if (isClosed || res.writableEnded) return;
       try {
         res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
       } catch {
@@ -178,8 +178,10 @@ async function startServer() {
       }
     };
 
-    req.on("close", () => {
-      isClosed = true;
+    res.on("close", () => {
+      if (!res.writableEnded) {
+        isClosed = true;
+      }
     });
 
     const started = Date.now();
@@ -249,129 +251,152 @@ async function startServer() {
     }
 
     let streamSucceeded = false;
+    const cleanBase = provider?.baseUrl ? String(provider.baseUrl).trim().replace(/\/+$/, "") : "";
+    const isExplicitDemo = provider?.kind === "demo" || provider?.id === "prov_demo" || cleanBase === "internal://demo";
+    const hasUserApiKey = Boolean(provider?.apiKey && provider.apiKey.trim().length > 0);
+    const isLocalOpenAI = provider?.kind === "openai" && (cleanBase.includes("127.0.0.1") || cleanBase.includes("localhost") || cleanBase.includes("20128") || cleanBase.includes("11434") || cleanBase.includes("1234"));
 
-    // Handle Gemini native server-side integration with strict 5-second timeout
-    if (provider?.kind === "gemini" && process.env.GEMINI_API_KEY) {
-      try {
-        const userPrompt = messages.filter((m: any) => m.role !== "system").map((m: any) => m.content).join("\n\n");
-        const targetGeminiModel = modelName.includes("gemini") ? modelName : "gemini-3.8-flash";
+    // 1. If explicit demo is selected, skip external API calls entirely
+    if (!isExplicitDemo) {
+      // 2. Try Gemini server-side if user provided key or server key exists
+      if (provider?.kind === "gemini" && (hasUserApiKey || process.env.GEMINI_API_KEY)) {
+        try {
+          const userPrompt = messages.filter((m: any) => m.role !== "system").map((m: any) => m.content).join("\n\n");
+          const targetGeminiModel = modelName.includes("gemini") ? modelName : "gemini-3.8-flash";
+          const apiKeyToUse = hasUserApiKey ? provider.apiKey.trim() : process.env.GEMINI_API_KEY;
 
-        // Enforce 5-second timeout for first chunk / generation
-        const streamPromise = ai.models.generateContentStream({
-          model: targetGeminiModel,
-          contents: userPrompt || "Gündemi analiz et ve katkı sun.",
-          config: {
-            systemInstruction: sysPrompt || undefined,
-            temperature: Number(temperature) || 0.7,
-          },
-        });
+          const localAi = new GoogleGenAI({
+            apiKey: apiKeyToUse,
+            httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+          });
 
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Gemini yanıt zaman aşımı (5s)")), 5000)
-        );
+          let firstChunkReceived = false;
+          let totalText = "";
 
-        const responseStream = await Promise.race([streamPromise, timeoutPromise]);
+          const streamPromise = (async () => {
+            const responseStream = await localAi.models.generateContentStream({
+              model: targetGeminiModel,
+              contents: userPrompt || "Gündemi analiz et ve katkı sun.",
+              config: {
+                systemInstruction: sysPrompt || undefined,
+                temperature: Number(temperature) || 0.7,
+              },
+            });
 
-        let totalText = "";
-        for await (const chunk of responseStream) {
-          if (isClosed) break;
-          const text = chunk.text;
-          if (text) {
-            totalText += text;
-            send("token", { t: text });
-          }
-        }
-
-        if (totalText.trim().length > 0) {
-          streamSucceeded = true;
-          const latencyMs = Date.now() - started;
-          const tokens = Math.max(1, Math.round(totalText.length / 4));
-          send("done", { tokens, latencyMs });
-          res.end();
-          return;
-        }
-      } catch (err: any) {
-        console.warn("Gemini stream failed/timed out, switching instantly to simulator:", err?.message);
-      }
-    }
-
-    // Handle Local OpenAI-compatible provider (9Router, Ollama, LM Studio, etc.) with strict 4s timeout
-    if (!streamSucceeded && provider?.kind === "openai" && provider?.baseUrl) {
-      const cleanBase = String(provider.baseUrl).trim().replace(/\/+$/, "");
-      const completionsUrl = cleanBase.endsWith("/chat/completions")
-        ? cleanBase
-        : `${cleanBase}/chat/completions`;
-
-      try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        const apiKey = provider.apiKey?.trim() || (cleanBase.includes("20128") ? "pineal-9router-local-key" : "");
-        if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-
-        const upstreamRes = await fetch(completionsUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            model: modelName,
-            messages,
-            temperature: Number(temperature) || 0.7,
-            stream: true,
-          }),
-          signal: AbortSignal.timeout(4000),
-        });
-
-        if (upstreamRes.ok && upstreamRes.body) {
-          const reader = upstreamRes.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-          let full = "";
-
-          while (true) {
-            if (isClosed) break;
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed || !trimmed.startsWith("data:")) continue;
-              const dataStr = trimmed.slice(5).trim();
-              if (dataStr === "[DONE]") break;
-
-              try {
-                const parsed = JSON.parse(dataStr);
-                const delta =
-                  parsed.choices?.[0]?.delta?.content ||
-                  parsed.choices?.[0]?.message?.content ||
-                  parsed.response ||
-                  "";
-                if (delta) {
-                  full += delta;
-                  send("token", { t: delta });
-                }
-              } catch {
-                // Partial JSON chunk
+            for await (const chunk of responseStream) {
+              if (isClosed) break;
+              const text = chunk.text;
+              if (text) {
+                firstChunkReceived = true;
+                totalText += text;
+                send("token", { t: text });
               }
             }
-          }
+            return totalText;
+          })();
 
-          if (full.trim().length > 0) {
+          // Strict 1.2s timeout: If no first token arrives in 1200ms, abort and fallback to simulator
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => {
+              if (!firstChunkReceived) {
+                reject(new Error("Gemini ilk token zaman aşımı (1.2s) - dahili simülatöre geçiliyor"));
+              }
+            }, 1200)
+          );
+
+          await Promise.race([streamPromise, timeoutPromise]);
+
+          if (totalText.trim().length > 0) {
             streamSucceeded = true;
             const latencyMs = Date.now() - started;
-            const tokens = Math.max(1, Math.round(full.length / 4));
+            const tokens = Math.max(1, Math.round(totalText.length / 4));
             send("done", { tokens, latencyMs });
             res.end();
             return;
           }
+        } catch (err: any) {
+          console.warn("Gemini stream failed/timed out, switching instantly to simulator:", err?.message);
         }
-      } catch (err: any) {
-        console.warn(`Upstream ${providerName} failed/timed out, switching instantly to simulator:`, err?.message);
+      }
+
+      // 3. Try OpenAI-compatible provider (only if local or user provided an API key)
+      if (!streamSucceeded && provider?.kind === "openai" && (isLocalOpenAI || hasUserApiKey)) {
+        const completionsUrl = cleanBase.endsWith("/chat/completions")
+          ? cleanBase
+          : `${cleanBase}/chat/completions`;
+
+        try {
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          const apiKey = provider.apiKey?.trim() || (cleanBase.includes("20128") ? "pineal-9router-local-key" : "");
+          if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
+          const upstreamRes = await fetch(completionsUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              model: modelName,
+              messages,
+              temperature: Number(temperature) || 0.7,
+              stream: true,
+            }),
+            signal: AbortSignal.timeout(1800),
+          });
+
+          if (upstreamRes.ok && upstreamRes.body) {
+            const reader = upstreamRes.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let full = "";
+
+            while (true) {
+              if (isClosed) break;
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith("data:")) continue;
+                const dataStr = trimmed.slice(5).trim();
+                if (dataStr === "[DONE]") break;
+
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  const delta =
+                    parsed.choices?.[0]?.delta?.content ||
+                    parsed.choices?.[0]?.message?.content ||
+                    parsed.response ||
+                    "";
+                  if (delta) {
+                    full += delta;
+                    send("token", { t: delta });
+                  }
+                } catch {
+                  // Partial JSON chunk
+                }
+              }
+            }
+
+            if (full.trim().length > 0) {
+              streamSucceeded = true;
+              const latencyMs = Date.now() - started;
+              const tokens = Math.max(1, Math.round(full.length / 4));
+              send("done", { tokens, latencyMs });
+              res.end();
+              return;
+            }
+          }
+        } catch (err: any) {
+          console.warn(`Upstream ${providerName} failed/timed out, switching instantly to simulator:`, err?.message);
+        }
       }
     }
 
-    // Default Fallback: Instant Smart Turkish Persona Simulator
+    // 4. Default Fallback: Instant Smart Turkish Persona Simulator
+    // Runs when API keys are not entered, remote services are unreachable or time out
     const lastUserMessage = [...(messages || [])].reverse().find((m: any) => m.role === "user")?.content || "";
     const simText = generateSimulatedResponse({
       seat: effectiveSeat,
@@ -380,14 +405,14 @@ async function startServer() {
       round: Math.max(1, Math.floor((messages?.length || 0) / 2)),
     });
 
-    // Stream word-by-word with natural cadence (10-15ms)
+    // Stream word-by-word with natural cadence (8-12ms)
     const words = simText.split(/(\s+)/);
     let fullSim = "";
     for (const w of words) {
       if (isClosed) break;
       fullSim += w;
       send("token", { t: w });
-      await new Promise((r) => setTimeout(r, 12));
+      await new Promise((r) => setTimeout(r, 10));
     }
 
     send("done", {

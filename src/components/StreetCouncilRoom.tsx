@@ -229,7 +229,11 @@ export function StreetCouncilRoom({
     if (!isDebatingRef.current) return null;
 
     setActiveSpeakerId(character.id);
-    const provider = providers.find((p) => p.enabled) || providers[0];
+    const provider =
+      providers.find((p) => p.enabled && p.apiKey?.trim()) ||
+      providers.find((p) => p.id === "prov_demo" || p.kind === "demo") ||
+      providers.find((p) => p.enabled) ||
+      providers[0];
 
     const liveId = `street_msg_${character.id}_${Date.now()}`;
     const liveMsg: Message = {
@@ -488,6 +492,12 @@ export function StreetCouncilRoom({
                 className="hidden font-mono text-[9px] font-bold sm:inline-flex"
               >
                 TEKNİK JARGON YASAK
+              </Chip>
+              <Chip
+                color="#22c55e"
+                className="hidden font-mono text-[9px] font-bold md:inline-flex"
+              >
+                🟢 DAHİLİ TÜRKÇE MOTOR HAZIR (API GEREKMEZ)
               </Chip>
               {running && (
                 <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400">

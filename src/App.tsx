@@ -240,7 +240,12 @@ export default function App() {
     roundNo: number
   ) => {
     if (!seat) return;
-    const provider = providers.find((p) => p.id === seat.providerId) || providers[0];
+    const provider =
+      providers.find((p) => p.id === seat.providerId && p.apiKey?.trim()) ||
+      providers.find((p) => p.apiKey?.trim()) ||
+      providers.find((p) => p.id === "prov_demo" || p.kind === "demo") ||
+      providers.find((p) => p.id === seat.providerId) ||
+      providers[0];
 
     const liveId = `msg_${seat.id}_${Date.now()}`;
     const liveMsg: Message = {
@@ -424,7 +429,12 @@ export default function App() {
     await Promise.all(
       juryColumns.map(async (col, idx) => {
         const seat = seats.find((s) => s.id === col.seatId) || seats[idx] || seats[0];
-        const provider = providers.find((p) => p.id === seat.providerId) || providers[0];
+        const provider =
+          providers.find((p) => p.id === seat.providerId && p.apiKey?.trim()) ||
+          providers.find((p) => p.apiKey?.trim()) ||
+          providers.find((p) => p.id === "prov_demo" || p.kind === "demo") ||
+          providers.find((p) => p.id === seat.providerId) ||
+          providers[0];
 
         const chatMessages = [
           {
@@ -525,7 +535,12 @@ export default function App() {
     setSynthRunning(true);
     setSynthReport("");
 
-    const provider = providers.find((p) => p.id === refereeSeat.providerId) || providers[0];
+    const provider =
+      providers.find((p) => p.id === refereeSeat.providerId && p.apiKey?.trim()) ||
+      providers.find((p) => p.apiKey?.trim()) ||
+      providers.find((p) => p.id === "prov_demo" || p.kind === "demo") ||
+      providers.find((p) => p.id === refereeSeat.providerId) ||
+      providers[0];
     const prompt = [
       "AŞAĞIDAKİ ÇOKLU MODEL TUTANAĞINI ANALİZ ET VE NİHAİ BAŞHAKEM RAPORUNU ÜRET.",
       "=== KAYNAK METİN ===",

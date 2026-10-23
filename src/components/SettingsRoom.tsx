@@ -54,6 +54,19 @@ export function SettingsRoom({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4">
+      {/* ══ INFORMATION BANNER ══ */}
+      <div className="flex items-start gap-3 rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-3.5 text-xs text-emerald-200">
+        <span className="text-xl">⚡</span>
+        <div className="space-y-1">
+          <div className="font-disp font-bold text-white">
+            Dahili Türkçe Karakter Motoru Aktif — API Anahtarı Gerekmez!
+          </div>
+          <div className="leading-relaxed text-emerald-300/90 text-[11.5px]">
+            İstasyondaki 4 yeni çatışma odası (Sokak Meclisi, Şeytanın Avukatı, Yalan Radarı, Zamanın Ötesindekiler) ve tüm jüri sistemleri hiçbir API anahtarı girmeden <strong>Dahili Türkçe Simülatör</strong> ile 1 saniyede doğrudan konuşur. Dilerseniz kendi OpenAI, Gemini veya DeepSeek anahtarınızı girerek gerçek modelleri de devreye alabilirsiniz.
+          </div>
+        </div>
+      </div>
+
       {/* ══ PROVIDERS SECTION ══ */}
       <Panel glowColor="#fb7185">
         <PanelHeader
