@@ -9,7 +9,8 @@ export type RoomId =
   | "street"
   | "devils_advocate"
   | "lie_detector"
-  | "timeless";
+  | "timeless"
+  | "courtroom";
 
 
 export interface StreetCharacter {

@@ -20,11 +20,18 @@ import {
   StopCircle,
   Trash2,
   Users,
+  Volume2,
+  VolumeX,
+  BookOpen,
   Zap,
 } from "lucide-react";
 import { Message, Provider, Seat, StreetCharacter } from "../types";
 import { streamChat } from "../lib/api";
 import { useSpeechRecognition } from "../lib/useSpeechRecognition";
+import { speakCharacterText, stopSpeech, subscribeSpeech } from "../lib/speech";
+import { PersuasionGauge } from "./PersuasionGauge";
+import { CaseLibraryModal } from "./CaseLibraryModal";
+import { CaseScenario } from "../data/caseLibrary";
 import { ArgumentGraph } from "./ArgumentGraph";
 import { Avatar, Button, Chip, Panel, PanelHeader, StatusDot } from "./ui";
 
@@ -112,9 +119,18 @@ export function DevilsAdvocateRoom({
   const [speakingCharId, setSpeakingCharId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"split" | "transcript" | "graph">("split");
   const [selectedCharId, setSelectedCharId] = useState<string>("acimasiz_rakip");
+  const [autoVoice, setAutoVoice] = useState(false);
+  const [currentSpeakingTts, setCurrentSpeakingTts] = useState<string | null>(null);
+  const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    return subscribeSpeech((id) => {
+      setCurrentSpeakingTts(id);
+    });
+  }, []);
 
   const {
     supported: speechSupported,
@@ -145,6 +161,7 @@ export function DevilsAdvocateRoom({
     }
     setRunning(false);
     setSpeakingCharId(null);
+    stopSpeech();
   };
 
   const getEffectiveProvider = (): Provider => {
@@ -257,6 +274,11 @@ export function DevilsAdvocateRoom({
       };
 
       setMessages((prev) => prev.map((m) => (m.id === msgId ? completedMsg : m)));
+
+      if (autoVoice && completedMsg.content) {
+        speakCharacterText(char.id, completedMsg.content);
+      }
+
       return completedMsg;
     } catch (err: any) {
       if (signal.aborted) {
@@ -480,6 +502,32 @@ export function DevilsAdvocateRoom({
             </button>
           </div>
 
+          {/* TTS Audio Mode Toggle */}
+          <button
+            onClick={() => {
+              if (autoVoice) stopSpeech();
+              setAutoVoice(!autoVoice);
+            }}
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+              autoVoice
+                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                : "border border-[#222a35] bg-[#101622] text-[#8b949e] hover:text-white"
+            }`}
+            title="Karakterlerin yanıtlarını canlı Türkçe seslendirmeyle dinleyin"
+          >
+            {autoVoice ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{autoVoice ? "Sesli Mod Açık" : "Sesli Mod"}</span>
+          </button>
+
+          {/* Case Library Button */}
+          <button
+            onClick={() => setIsCaseModalOpen(true)}
+            className="flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-950/40 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-900/50 transition"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Vaka Kütüphanesi</span>
+          </button>
+
           {messages.length > 0 && (
             <Button
               size="sm"
@@ -663,6 +711,9 @@ export function DevilsAdvocateRoom({
 
           {/* Messages Transcript Scroll Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-[#0a0d13]">
+            {/* Dynamic Persuasion & Tension Gauge */}
+            <PersuasionGauge room="devils_advocate" messages={messages} />
+
             {messages.length === 0 ? (
               <div className="grid h-full place-items-center text-center p-6">
                 <div className="max-w-md">
@@ -731,6 +782,29 @@ export function DevilsAdvocateRoom({
                       <div className="flex items-center gap-2 font-mono text-[10px] text-[#8b949e]">
                         {m.latencyMs > 0 && <span>{m.latencyMs}ms</span>}
                         {m.tokens > 0 && <span>{m.tokens} tkn</span>}
+                        {!isHuman && m.content && (
+                          <button
+                            onClick={() => {
+                              if (currentSpeakingTts === m.seatId) {
+                                stopSpeech();
+                              } else {
+                                speakCharacterText(m.seatId || "acimasiz_rakip", m.content);
+                              }
+                            }}
+                            className={`p-1 rounded text-xs transition ${
+                              currentSpeakingTts === m.seatId
+                                ? "text-amber-400 font-bold"
+                                : "text-[#8b949e] hover:text-white"
+                            }`}
+                            title={currentSpeakingTts === m.seatId ? "Seslendirmeyi durdur" : "Bu yanıtı seslendir"}
+                          >
+                            {currentSpeakingTts === m.seatId ? (
+                              <VolumeX className="h-3 w-3" />
+                            ) : (
+                              <Volume2 className="h-3 w-3" />
+                            )}
+                          </button>
+                        )}
                         <button
                           onClick={() => navigator.clipboard.writeText(m.content)}
                           className="text-[#8b949e] hover:text-white"
@@ -797,6 +871,17 @@ export function DevilsAdvocateRoom({
           </div>
         </div>
       </div>
+
+      {/* Case Library Modal */}
+      <CaseLibraryModal
+        isOpen={isCaseModalOpen}
+        onClose={() => setIsCaseModalOpen(false)}
+        currentRoom="devils_advocate"
+        onSelectCase={(scenario: CaseScenario) => {
+          setTopic(scenario.content);
+          handleStartDebate(scenario.content);
+        }}
+      />
     </div>
   );
 }

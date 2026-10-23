@@ -11,7 +11,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isProd = process.env.NODE_ENV === "production";
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Initialize Google Gemini SDK on the server with User-Agent header for telemetry
 const ai = new GoogleGenAI({
@@ -232,6 +232,14 @@ async function startServer() {
         effectiveSeat = { id: "mevlana", name: "Mevlânâ Celâleddîn-i Rûmî", roleTitle: "Doğu Mistisizmi & Aşk", slot: "custom" };
       } else if (sysPrompt.includes("SENTETİK") || sysPrompt.includes("Sentetik")) {
         effectiveSeat = { id: "sentetik_2150", name: "SENTETİK-2150", roleTitle: "22. Yy Geleceğin Üst-Aklı", slot: "custom" };
+      } else if (sysPrompt.includes("Savcı") || sysPrompt.includes("savci")) {
+        effectiveSeat = { id: "court_savci", name: "Savcı Volkan Demir", roleTitle: "Cumhuriyet Savcısı", slot: "custom" };
+      } else if (sysPrompt.includes("Müdafi") || sysPrompt.includes("avukat") || sysPrompt.includes("Avukat")) {
+        effectiveSeat = { id: "court_avukat", name: "Av. Leyla Soyer", roleTitle: "Kıdemli Ceza Müdafii", slot: "custom" };
+      } else if (sysPrompt.includes("Bilirkişi") || sysPrompt.includes("bilirkisi") || sysPrompt.includes("Kriminal")) {
+        effectiveSeat = { id: "court_bilirkisi", name: "Prof. Dr. Tarık Erkan", roleTitle: "Adli Kriminalist & Bilişim", slot: "custom" };
+      } else if (sysPrompt.includes("Mahkeme Başkanı") || sysPrompt.includes("Gereği düşünüldü") || sysPrompt.includes("court_hakim")) {
+        effectiveSeat = { id: "court_hakim", name: "Hâkim Mehmet Sabri", roleTitle: "Ağır Ceza Mahkemesi Başkanı", slot: "custom" };
       } else {
         effectiveSeat = {
           id: "sim",

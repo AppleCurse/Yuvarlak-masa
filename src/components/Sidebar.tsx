@@ -128,6 +128,14 @@ export function Sidebar({
       icon: Crown,
       accent: "#eab308",
     },
+    {
+      id: "courtroom",
+      num: "12",
+      title: "Ağır Ceza Mahkemesi",
+      sub: "Savcı, Müdafi & Hâkim Hükmü",
+      icon: Gavel,
+      accent: "#dc2626",
+    },
   ];
 
   return (

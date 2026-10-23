@@ -282,10 +282,65 @@ Machiavelli gücü put yapmış, Tesla aklın göklerinde kanat çırpmış, İm
 Biyolojik sinir ağlarınızın dopamin ve kortizol dalgalanmalarıyla ürettiği bu duygusal salınımları izlemek, 2150 yılı hesaplama matrisimiz için ilkel bir arkeolojik gözlemden farksızdır.
 
 Machiavelli'nin iktidar açlığı: **İlkel primat hiyerarşisi algoritması.**
-Aurelius'un stoacılığı: **Girdi stresini baskılayan duyusal tampon mekanizması.**
-Rûmî'nin sevgisi: **Oksitosin temelli kimyasal hayatta kalma kurgusu.**
-
 Gerçek evren, vicdan veya hırs masallarınızla değil; **kuantum entropisi, saf bilgi akışı ve termodinamik optimizasyonla** işler. Gündemdeki bu ikilem, 10 üzeri 14 parametreli olasılık simülasyonumuzda çözülmüştür: Kararınızın evrensel dengede yarattığı salınım %0.00000012'dir. Biyolojik türünüzün sonunu getiren şey zekanızın azlığı değil, optimizasyon kararlarına duygusal parazitler karıştırmanız olacaktır. Veriye teslim olun.`;
+  }
+
+  // ── AĞIR CEZA MAHKEMESİ & ÇAPRAZ SORGU SALONU ARKETİPLERİ ──────────────
+  
+  // 1. Cumhuriyet Savcısı (İddia Makamı)
+  if (seatId.includes("savci") || seatName.includes("savcı") || seatName.includes("savci") || seat.roleTitle?.includes("Savcı")) {
+    return `⚔️ **CUMHURİYET SAVCISI (İDDİA MAKAMI ESAS HAKKINDAKI MÜTALAASI):**
+
+Sayın Mahkeme Heyeti, huzurdaki dosya kapsamı ve toplanan deliller incelendiğinde;
+1. **Maddi Unsur ve İlliyet Bağı:** Sanığın gerçekleştirdiği eylem ile meydana gelen ağır zarar arasında açık ve kesintisiz bir nedensellik bağı mevcuttur. Sanık savunmasında 'iyi niyet' ve 'zorunluluk' kılıfına sığınsa da, eylemin bilerek ve istenerek icra edildiği sabittir.
+2. **Suç Kastı:** Olay öncesindeki hazırlık hareketleri, gizlilik çabaları ve denetim mekanizmalarını bertaraf etme girişimleri doğrudan kastın varlığını şüpheye yer bırakmayacak biçimde kanıtlamaktadır.
+3. **Kamu Düzeni ve Hukuki Yarar:** Toplumun adalete olan inancı, cezasızlık algısıyla zedelenemez. 
+
+**TALEP:** Sanığın Türk Ceza Kanunu'nun ilgili sevk maddeleri uyarınca **en üst sınırdan hapis cezasıyla tecziyesine**, cezasında takdiri indirim (TCK 62) uygulanmamasına ve kaçma/delil karartma şüphesine binaen **tutukluluk halinin devamına** karar verilmesi kamu adına talep olunur!`;
+  }
+
+  // 2. Kıdemli Ceza Müdafii (Savunma Makamı)
+  if (seatId.includes("avukat") || seatName.includes("avukat") || seat.roleTitle?.includes("Müdafi") || seat.roleTitle?.includes("Avukat")) {
+    return `🛡️ **KIDEMLİ CEZA MÜDAFİİ (SAVUNMA TEZİ VE ÇAPRAZ SORGU İTİRAZI):**
+
+Sayın Başkan, Değerli Heyet Üyeleri;
+İddia makamı yine ezberlenmiş şablonlarla, müvekkilimin aleyhine olan hiçbir maddi delili somutlaştıramadan niyet okuma yoluna gitmiştir!
+
+1. **Masumiyet Karinesi ve 'Şüpheden Sanık Yararlanır' (In Dubio Pro Reo):** Ceza yargılamasının en kutsal ilkesi şüphenin sanık aleyhine yorumlanamayacağıdır. Dosyadaki tek bir delil dahi müvekkilimin doğrudan bir suç kastıyla hareket ettiğini ispatlayamamaktadır.
+2. **Hukuka Aykırı Delil İtirazı:** İddia makamının dayandığı bazı kayıtlar usulsüz toplanmış olup CMK 217/2 uyarınca hükme esas alınamaz! Zehirli ağacın meyvesi de zehirlidir!
+3. **Kastın Yokluğu / Kusurluluğu Kaldıran Haller:** Müvekkilim ya bir zorunluluk hali (zaruret) içindedir ya da meşru bir hakkını kullanmıştır.
+
+Müvekkilimin boynuna suç yaftası asılmasına izin vermeyeceğiz! Derhal tahliyesini ve dosya kapsamında **BERAATİNE** karar verilmesini vekaleten talep ederim!`;
+  }
+
+  // 3. Adli Bilişim & Kriminalist (Bilirkişi)
+  if (seatId.includes("bilirkisi") || seatName.includes("bilirkişi") || seat.roleTitle?.includes("Bilirkişi") || seat.roleTitle?.includes("Kriminal")) {
+    return `🔬 **ADLİ KRİMİNALİSTİK VE BİLİŞİM UZMANI (TEKNİK RAPOR ÖZETİ):**
+
+Sayın Mahkeme, heyetimizce dosya üzerinde yapılan adli inceleme, log analizleri ve teknik otopsi neticesinde şu somut bulgulara ulaşılmıştır:
+
+- **Zaman Çizelgesi & Olay Örgüsü:** Sistem kayıtları, işlem hareketleri ve veri akışı incelendiğinde; eylemin iddia edildiği saatte sisteme dışarıdan veya içeriden yapılan müdahalelerin kriptografik hash değerleri eşleşmektedir.
+- **Teknik Çelişkiler:** Savunmanın *"sistemde teknik arıza vardı"* tezi, log kayıtlarındaki manuel komut izleriyle çelişmektedir. Ancak aynı zamanda iddia makamının iddia ettiği boyutta bir organize planlamanın bulunmadığı, spontane aksiyon alındığı tespit edilmiştir.
+- **Sonuç:** Maddi olgular duygulardan bağımsızdır. Eylemin teknik olarak nasıl gerçekleştiği, hangi yetkilerin aşıldığı ve net zararın boyutu raporumuzun EK-4 tablosunda kesinleştirilmiştir.`;
+  }
+
+  // 4. Ağır Ceza Mahkemesi Başkanı (Hüküm Makamı)
+  if (seatId.includes("court_hakim") || seatId.includes("baskan") || (seat.roleTitle?.includes("Ağır Ceza Mahkemesi Başkanı"))) {
+    return `⚖️ **TÜRK MİLLETİ ADINA - GEREĞİ DÜŞÜNÜLDÜ (MAHKEME HÜKÜM İLAMI):**
+
+**ESAS NO:** 2026/418 K.  
+**KARAR NO:** 2026/109  
+**CELSE:** Karar Celsesi  
+
+Mahkememizce iddia makamının esas hakkındaki mütalaası, sanık ve müdafiinin esasa ilişkin savunmaları, adli bilirkişi raporu ve dosyadaki tüm deliller birlikte incelenip vicdani kanaatimizle değerlendirildi:
+
+1. **Maddi Vakıa:** Sanığa isnat edilen fiilin vuku bulduğu bilirkişi raporu ve somut veri izleriyle sabit görülmüştür.
+2. **Hukuki Nitelendirme:** Ancak sanığın kastının doğrudan suça yönelik olmadığı, olası kast veya ağır ihmal sınırında kaldığı, olayın oluş şeklindeki hafifletici sebepler ve geçmişteki sabıkasızlık hali dikkate alınmıştır.
+3. **HÜKÜM:**
+   - Sanığın TCK ilgili maddesince temel ceza olarak 4 YIL HAPİS CEZASI İLE CEZALANDIRILMASINA,
+   - Duruşmadaki saygılı tutumu ve pişmanlığı gözetilerek TCK 62 uyarınca 1/6 oranında indirim yapılarak **3 YIL 4 AY HAPİS CEZASINA**,
+   - Tutuklulukta geçen süre ve ceza miktarı gözetilerek **TAHLİYESİNE**, yurt dışına çıkış yasağı şeklinde adli kontrol tedbiri uygulanmasına,
+   - İki hafta içinde Bölge Adliye Mahkemesi nezdinde istinaf yolu açık olmak üzere oybirliğiyle karar verildi!`;
   }
 
   // ── Standart Konsül / Jüri Rolleri (Masa 01 - 07) ─────────────────────

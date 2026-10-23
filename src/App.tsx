@@ -12,6 +12,7 @@ import { StreetCouncilRoom } from "./components/StreetCouncilRoom";
 import { DevilsAdvocateRoom } from "./components/DevilsAdvocateRoom";
 import { LieDetectorRoom } from "./components/LieDetectorRoom";
 import { TimelessGiantsRoom } from "./components/TimelessGiantsRoom";
+import { CourtroomRoom } from "./components/CourtroomRoom";
 import { DEFAULT_PROVIDERS, DEFAULT_SEATS } from "./lib/defaults";
 import {
   createSession,
@@ -887,6 +888,13 @@ export default function App() {
                 setSynthSource(text);
                 setActiveRoom("synthesis");
               }}
+            />
+          )}
+
+          {activeRoom === "courtroom" && (
+            <CourtroomRoom
+              providers={providers}
+              seats={seats}
             />
           )}
         </main>
