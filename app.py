@@ -362,7 +362,8 @@ async def research_verify(payload: dict):
     base = _clean_base(payload.get("base_url", "https://text.pollinations.ai/openai"))
     model = payload.get("model", "openai")
     api_key = payload.get("api_key", "")
-    res = await engine.research_fact_check(claim, base, api_key, model)
+    session_id = payload.get("session_id", "")
+    res = await engine.research_fact_check(claim, base, api_key, model, session_id=session_id)
     return res
 
 # ── İtiraz ve Araya Girme Değerlendirme ─────────────────────────────────

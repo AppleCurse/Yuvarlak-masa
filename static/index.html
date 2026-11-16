@@ -1410,6 +1410,7 @@ async function verifyClaimWithAgent(text, speakerName){
       method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
         claim: text,
+        session_id: state.sessionId,
         base_url: state.seats.A.baseUrl || "https://text.pollinations.ai/openai",
         model: state.seats.A.model || "openai",
         api_key: state.seats.A.apiKey || ""
