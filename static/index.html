@@ -583,6 +583,321 @@ textarea{resize:vertical;line-height:1.55}
   color: #04070b;
 }
 
+
+/* ═════════════════════════════════════════════════════════════════════════
+   KONSÜL 2.0 HOLOGRAFİK VE SİBERNETİK YUVARLAK MASA TASARIMI
+   5 Yapay Zeka + 1 Operatör Görsel Komuta Merkezi
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  --cyan: #38bdf8;
+  --green: #10b981;
+  --orange: #f97316;
+  --purple: #a855f7;
+  --gold: #eab308;
+  --crimson: #f43f5e;
+  --amber: #f59e0b;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(20, 30, 48, 0.45) 0%, rgba(10, 14, 20, 0.95) 75%),
+              url('/static/assets/council_chamber_5ai.jpg') center center / cover no-repeat;
+  filter: blur(28px) saturate(1.4);
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 6 Sütunlu Canlı Katılımcı Kartları */
+.council-delegates-bar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (max-width: 1400px) {
+  .council-delegates-bar { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 768px) {
+  .council-delegates-bar { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Holografik Yuvarlak Masa Güvertesi */
+.hologram-table-deck {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.85) 0%, rgba(10, 14, 23, 0.95) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(56, 189, 248, 0.05);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+}
+.table-deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+.deck-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.deck-title .live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+}
+.deck-title .live-dot.pulse {
+  animation: holoPulse 1.8s infinite;
+}
+@keyframes holoPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
+}
+.deck-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hud-tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--cyan);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* Holografik Dairesel Arena */
+.holo-arena {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-items: center;
+  position: relative;
+  min-height: 220px;
+  padding: 10px;
+}
+@media (max-width: 900px) {
+  .holo-arena { grid-template-columns: 1fr; }
+}
+
+/* Merkez Nöral Çekirdek */
+.holo-core-card {
+  grid-column: span 1;
+  background: radial-gradient(circle at center, rgba(30, 58, 138, 0.4) 0%, rgba(10, 15, 30, 0.85) 80%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+}
+.core-tank-visual {
+  width: 100%;
+  height: 120px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+.core-tank-scanline {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.9), transparent);
+  animation: scanlineMove 2.5s infinite linear;
+}
+@keyframes scanlineMove {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+.core-metrics {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  color: var(--dim);
+}
+.core-wave {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 14px;
+}
+.core-wave span {
+  width: 3px;
+  background: var(--cyan);
+  border-radius: 1px;
+  animation: waveBar 1.2s infinite ease-in-out;
+}
+.core-wave span:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+.core-wave span:nth-child(2) { height: 90%; animation-delay: 0.3s; }
+.core-wave span:nth-child(3) { height: 60%; animation-delay: 0.2s; }
+.core-wave span:nth-child(4) { height: 100%; animation-delay: 0.4s; }
+.core-wave span:nth-child(5) { height: 50%; animation-delay: 0.15s; }
+@keyframes waveBar {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+/* Hologram Sandalye Podları */
+.holo-pod-grid {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .holo-pod-grid { grid-column: span 1; grid-template-columns: repeat(2, 1fr); }
+}
+.holo-pod {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--pc, var(--line));
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.holo-pod::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--pc);
+  opacity: 0.7;
+}
+.holo-pod:hover {
+  background: rgba(30, 41, 59, 0.85);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 14px var(--pc);
+}
+.holo-pod.speaking {
+  border-color: #ffffff !important;
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 0 25px var(--pc);
+  animation: speakingGlow 1.5s infinite alternate;
+}
+@keyframes speakingGlow {
+  0% { box-shadow: 0 0 10px var(--pc); }
+  100% { box-shadow: 0 0 26px var(--pc), inset 0 0 12px var(--pc); }
+}
+.holo-pod .p-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.holo-pod .p-key {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--pc);
+  color: #0b0f14;
+}
+.holo-pod .p-status {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+.holo-pod.speaking .p-status {
+  color: #ffffff;
+  font-weight: 700;
+}
+.holo-pod .p-name {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.holo-pod .p-role {
+  font-size: 10px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.holo-pod .p-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 5px;
+  margin-top: 2px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  color: var(--faint);
+}
+
+/* Operatör Konsolu Geliştirmeleri */
+.op-tactics-bar {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.tactic-btn {
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tactic-btn:hover {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: var(--crimson);
+  color: #ffffff;
+}
+
+/* 5 Sütunlu Jüri Izgarası */
+.jurygrid {
+  grid-template-columns: repeat(5, 1fr) !important;
+}
+@media (max-width: 1300px) {
+  .jurygrid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 800px) {
+  .jurygrid { grid-template-columns: 1fr !important; }
+}
+
 </style>
 </head>
 <body>
@@ -649,10 +964,41 @@ textarea{resize:vertical;line-height:1.55}
             <div class="kicker">Masa 01 · Sıralı Argüman Zinciri</div>
             <h1>AÇIK KONSEY ODASI</h1>
           </div>
-          <div class="desc">Üç model masada sırayla söz alır; her konuşmacı bir öncekinin argümanını okuyarak üzerine ekler, açığını yakalar. Operatör istediği an araya girer.</div>
+          <div class="desc">5 bağımsız yapay zeka zihni ve 1 İnsan Operatör masada sıralı ve çapraz argümanlarla müzakere eder; modeller birbirlerinin açıklarını yakalar, kök inançlarına sadık kalarak tartışır.</div>
         </div>
 
         <!-- KATILIMCI KARTLARI (Tıklanabilir Canlı Masa) -->
+        <!-- HOLOGRAFİK YUVARLAK MASA VE NÖRAL KOMUTA GÜVERTESİ (5 YZ + 1 OPERATÖR) -->
+        <div class="hologram-table-deck" id="hologramTableDeck">
+          <div class="table-deck-header">
+            <div class="deck-title">
+              <span class="live-dot pulse"></span>
+              <span>KONSÜL SİBERNETİK YUVARLAK MASA // 5 YAPAY ZEKA + 1 OPERATÖR</span>
+            </div>
+            <div class="deck-controls">
+              <span class="hud-tag">SİBER MATRİKS V2.0</span>
+              <button class="ghostbtn small" id="toggleHoloTable" style="font-size:9.5px;padding:3px 8px">◈ GÖRÜNÜMÜ DARALT</button>
+            </div>
+          </div>
+
+          <div class="holo-arena" id="holoArena">
+            <!-- Merkez Nöral Çekirdek (Canlı Görsel Tank) -->
+            <div class="holo-core-card">
+              <div class="core-tank-visual" style="background-image: url('/static/assets/neural_core_tank.jpg');">
+                <div class="core-tank-scanline"></div>
+              </div>
+              <div class="core-metrics">
+                <span>NÖRAL BAĞLANTI: %99.8</span>
+                <div class="core-wave"><span></span><span></span><span></span><span></span><span></span></div>
+              </div>
+            </div>
+
+            <!-- 6 Sandalye Podları (A, B, C, D, E, OP) -->
+            <div class="holo-pod-grid" id="holoPodGrid"></div>
+          </div>
+        </div>
+
+        <!-- KATILIMCI KARTLARI (Tıklanabilir Canlı Masa - 6 Sütun) -->
         <div class="council-delegates-bar" id="councilDelegatesBar"></div>
         <div class="council">
           <div class="hud transcript">
@@ -669,9 +1015,16 @@ textarea{resize:vertical;line-height:1.55}
               </div>
             </div>
             <div class="opbar">
-              <span class="tag">OPERATÖR</span>
-              <input type="text" id="opInput" placeholder="Tartışmaya yön vermek için araya girin… (Enter)" />
-              <button class="btn primary" id="opSend">Gönder</button>
+              <span class="tag" style="background:var(--crimson);color:#ffffff;font-weight:700">👑 OPERATÖR</span>
+              <input type="text" id="opInput" placeholder="Masaya müdahale edin veya yeni gündem dayatın… (Enter)" />
+              <button class="btn primary" id="opSend" style="background:var(--crimson);border-color:var(--crimson)">Söz Al &amp; Gönder</button>
+            </div>
+            <div class="op-tactics-bar">
+              <span style="font-family:'IBM Plex Mono';font-size:9.5px;color:var(--dim);margin-right:4px;display:flex;align-items:center">Müdahale Taktikleri:</span>
+              <button class="tactic-btn" onclick="insertTactic('Delil ve somut kaynak sunulmasını talep ediyorum.')">📑 Delil İste</button>
+              <button class="tactic-btn" onclick="insertTactic('Son konuşmacının kendi kök inancıyla çeliştiğini ve açık verdiğini görüyorum.')">⚡ Çelişkiyi Vur</button>
+              <button class="tactic-btn" onclick="insertTactic('Bu noktada tarafların ortak bir zeminde uzlaşmasını öneriyorum.')">🤝 Uzlaşma Çağrısı</button>
+              <button class="tactic-btn" onclick="insertTactic('Masadaki 5 yapay zekanın da bu soruya net ve tavizsiz birer cümleyle yanıt vermesini istiyorum.')">🎯 5 Modele Meydan Oku</button>
             </div>
           </div>
           <aside class="ctrlcol">
@@ -1004,36 +1357,66 @@ AÇIK OTURUM / KONSEY KURALLARI:
 4. Tamamen doğal, akıcı, samimi ve duru bir Türkçe ile konuş. Cümlelerin yaşayan bir insanın ağzından çıkmış gibi olsun. Lafı dolandırma, doğrudan fikrini söyle.`;
 }
 
-/* ── Varsayılan sandalyeler (Gerçek İnsan Karakterleri & Evrensel API) ── */
+/* ── Varsayılan sandalyeler (5 Yapay Zeka + 1 Operatör + 1 Hakem) ── */
 const DEFAULT_SEATS = {
   A: {
-    key: "A", name: "MODEL A", charName: "Ahmet Yılmaz", age: 54,
-    role: "İnşaat Müteahhidi & Esnaf", city: "Kayseri / İç Anadolu",
-    belief: "Geleneksel, Muhafazakar, Aile ve Ticaret Odaklı",
-    marital: "Evli, 3 çocuk babası", dogma: 8,
-    extra: "Sahadaki reel maliyetlere, piyasa tecrübesine ve halkın nabzına çok güvenir. Fazla felsefi veya teorik yaklaşımları boş laf sayar, 'hesaba kitaba bakalım' der.",
-    color: "var(--purple)", hex: "#c49bff",
-    baseUrl: "http://127.0.0.1:20128/v1", apiKey: "", model: "pineal-general-reasoning",
+    key: "A", name: "MODEL A", charName: "Nikola Tesla", age: 86,
+    role: "Kozmik Vizyoner & Dahi Mucit", city: "New York / Smiljan",
+    belief: "Hakikat kainatın titreşiminde, enerjide ve maddeden bağımsız kozmik frekanstadır.",
+    marital: "Bekar, bilime adanmış", dogma: 9,
+    extra: "Tüccar zihniyetine, sığ kâr hesabına ve bilimin açgözlülük için sömürülmesine tahammülü yoktur.",
+    color: "var(--cyan)", hex: "#38bdf8",
+    baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   B: {
-    key: "B", name: "MODEL B", charName: "Av. Zeynep Demir", age: 32,
-    role: "Baro Avukatı / İnsan Hakları", city: "İstanbul / Kadıköy",
-    belief: "Seküler, Hukuk Devleti, Çevre ve Birey Hakları Savunucusu",
-    marital: "Bekar, bağımsız", dogma: 6,
-    extra: "Her konuda anayasal güvence, şeffaflık, denetim ve kuralların eşit uygulanmasını şart koşar. 'Kervan yolda düzülür' mantığına şiddetle karşı çıkar.",
-    color: "var(--green)", hex: "#3ddc84",
-    baseUrl: "http://127.0.0.1:20128/v1", apiKey: "", model: "asistan-ultra",
+    key: "B", name: "MODEL B", charName: "Sokrates", age: 71,
+    role: "Atina Diyalektikçisi & Ahlak Filozofu", city: "Antik Atina",
+    belief: "Sorgulanmamış bir hayat yaşanmaya değmez; hakikat doğurtularak ve diyalektikle bulunur.",
+    marital: "Evli", dogma: 7,
+    extra: "Kof özgüvene, ezberlenmiş dogmalara, kendini bilge sanan sofistlerin laf cambazlığına tahammülü yoktur.",
+    color: "var(--green)", hex: "#10b981",
+    baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   C: {
-    key: "C", name: "MODEL C", charName: "Prof. Dr. İlhan Korkmaz", age: 61,
-    role: "Kalp Cerrahı & Bilim İnsanı", city: "Ankara / Çankaya",
-    belief: "Rasyonalist, Pozitivist, Katı Bilimsel Metot Yanlısı",
-    marital: "Boşanmış, 1 yetişkin kız babası", dogma: 4,
-    extra: "Duygusal tepkilerden ve hamasetten nefret eder. Kanıt, veri, istatistik ve metodoloji ister. Yanlışlanamayan hiçbir tezi ciddiye almaz.",
-    color: "var(--blue)", hex: "#58a6ff",
-    baseUrl: "http://127.0.0.1:11434/v1", apiKey: "", model: "pineal-fast-extract",
+    key: "C", name: "MODEL C", charName: "Sülün Osman", age: 61,
+    role: "Sokak Zekası & Dolandırıcılık Duayeni", city: "İstanbul / Galata",
+    belief: "İnsanları kandıramazsın; onlar yalnızca kendi açgözlülüklerine ve bedava heveslerine aldanırlar.",
+    marital: "Evli", dogma: 8,
+    extra: "Kitabi ukalalığa, sahadan bihaber aristokrat aydınlara tahammülü yoktur. 'Sokağın kanunu yazılı kanunu ezer' der.",
+    color: "var(--orange)", hex: "#f97316",
+    baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
+    system: ""
+  },
+  D: {
+    key: "D", name: "MODEL D", charName: "Niccolò Machiavelli", age: 58,
+    role: "Devlet Aklı & Realpolitik Stratejisti", city: "Floransa / İtalya",
+    belief: "Siyaset ve güç ahlaktan bağımsızdır; devleti ayakta tutan şey sevgi değil kudret ve korkudur.",
+    marital: "Evli", dogma: 8,
+    extra: "Aşırı vicdan gösterisine, devlet bekasını tehlikeye atan romantik ahlakçılığa tahammülü yoktur.",
+    color: "var(--purple)", hex: "#a855f7",
+    baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
+    system: ""
+  },
+  E: {
+    key: "E", name: "MODEL E", charName: "Sigmund Freud", age: 83,
+    role: "Bilinçaltı & Psikanalizin Mimarı", city: "Viyana / Londra",
+    belief: "İnsan aklı buzdağının sadece görünen tepesidir; kararları bilinçaltı dürtüler, libido ve ego yönetir.",
+    marital: "Evli", dogma: 6,
+    extra: "İnsanın mutlak rasyonel bir varlık olduğu yalanına tahammülü yoktur. Her yüce idealin altında bastırılmış bir dürtü arar.",
+    color: "var(--gold)", hex: "#eab308",
+    baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
+    system: ""
+  },
+  OP: {
+    key: "OP", name: "OPERATÖR", charName: "Operatör (İnsan Koltuğu)", age: 35,
+    role: "Masa Başkanı & İnsan İradesi", city: "Komuta Konsolu",
+    belief: "Masanın mutlak yönlendiricisi; yapay zekaların sapmasını önleyen denge ve sorgulama iradesi.",
+    marital: "Bağımsız", dogma: 5,
+    extra: "Müdahale yetkisi mutlak; gerektiğinde doğrudan araya girer, delil ister veya sözü keser.",
+    color: "var(--crimson)", hex: "#f43f5e",
+    baseUrl: "", apiKey: "", model: "human-operator",
     system: ""
   },
   H: {
@@ -1042,8 +1425,8 @@ const DEFAULT_SEATS = {
     belief: "Mutlak Tarafsızlık, Usul ve Hakkaniyet Esası",
     marital: "Evli", dogma: 1,
     extra: "Kişisel kanaat bildirmez; tarafların iddialarını dinler, çelişkileri tespit eder, uzlaşılan ve çatışan noktaları özetleyip nihai hükmü kurar.",
-    color: "var(--amber)", hex: "#e3b341",
-    baseUrl: "http://127.0.0.1:20128/v1", apiKey: "", model: "pineal-general-reasoning",
+    color: "var(--amber)", hex: "#f59e0b",
+    baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   }
 };
@@ -1058,17 +1441,27 @@ const state = {
   demo: false,         // demo mod zorlaması
   room: "council",
   council: { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds:2, autoPending:false },
-  jury: { prompt:"", cols:{ A:{text:"",state:"idle",ac:null}, B:{text:"",state:"idle",ac:null}, C:{text:"",state:"idle",ac:null} }, running:false },
+  jury: {
+    prompt: "",
+    cols: {
+      A: { text: "", state: "idle", ac: null },
+      B: { text: "", state: "idle", ac: null },
+      C: { text: "", state: "idle", ac: null },
+      D: { text: "", state: "idle", ac: null },
+      E: { text: "", state: "idle", ac: null }
+    },
+    running: false
+  },
   synth: { material:"", source:"", running:false, ac:null },
 };
 
 function loadSeats(){
   try{
-    const raw = localStorage.getItem("konsul_seats_v2") || localStorage.getItem("konsul_seats_v1");
+    const raw = localStorage.getItem("konsul_seats_v3");
     if(raw){
       const parsed = JSON.parse(raw);
       const merged = JSON.parse(JSON.stringify(DEFAULT_SEATS));
-      for(const k of ["A","B","C","H"]){
+      for(const k of ["A","B","C","D","E","OP","H"]){
         if(parsed[k]){
           merged[k] = Object.assign({}, merged[k], parsed[k]);
           if(!merged[k].system || merged[k].system.trim() === ""){
@@ -1083,7 +1476,7 @@ function loadSeats(){
 }
 function saveSeats(){
   try{
-    localStorage.setItem("konsul_seats_v2", JSON.stringify(state.seats));
+    localStorage.setItem("konsul_seats_v3", JSON.stringify(state.seats));
   }catch(e){}
 }
 
@@ -1254,16 +1647,19 @@ function sigilHtml(seat, size){
 }
 function renderSeatChips(){
   const box = $("#seatChips"); box.innerHTML = "";
-  ["A","B","C","H"].forEach(k=>{
+  ["A","B","C","D","E","OP","H"].forEach(k=>{
     const s = state.seats[k];
+    if(!s) return;
     const b = document.createElement("button");
     b.className = "seatchip"; b.style.setProperty("--sc", s.hex);
-    b.innerHTML = '<span class="dot"></span><span style="min-width:0"><span class="nm">'+s.key+' · '+esc(s.role)+'</span><br><span class="md">'+esc(s.model)+'</span></span>';
+    b.innerHTML = '<span class="dot"></span><span style="min-width:0"><span class="nm">'+s.key+' · '+esc(s.charName || s.role)+'</span><br><span class="md">'+esc(s.role)+'</span></span>';
     b.onclick = () => openSeatModal(k);
     box.appendChild(b);
   });
-  $("#hakemName").textContent = state.seats.H.role.toUpperCase();
-  $("#hakemModel").textContent = state.seats.H.model + " @ " + state.seats.H.baseUrl.replace("http://","").replace("/v1","");
+  if(state.seats.H){
+    const hEl = $("#hakemName"); if(hEl) hEl.textContent = state.seats.H.role.toUpperCase();
+    const hmEl = $("#hakemModel"); if(hmEl) hmEl.textContent = state.seats.H.model + " @ " + (state.seats.H.baseUrl||"").replace("https://","").replace("http://","").replace("/v1","");
+  }
 }
 
 /* ═══════════════════════ MASA 1 · KONSEY ═══════════════════════ */
@@ -1331,7 +1727,7 @@ let pendingRebuttalSeat = null;
 async function checkForRebuttal(lastMsg){
   if(state.council.rebuttalPending) return;
   const currentSeat = lastMsg.seat;
-  const candidateSeats = ["A","B","C"].filter(k => k !== currentSeat).map(k => ({
+  const candidateSeats = ["A","B","C","D","E"].filter(k => k !== currentSeat).map(k => ({
     seat: k,
     name: state.seats[k].charName || state.seats[k].name,
     title: state.seats[k].role,
@@ -1448,10 +1844,10 @@ function nextSpeaker(){
     state.council.overrideSeat = null;
     return s;
   }
-  const order = ["A","B","C"];
+  const order = ["A","B","C","D","E"];
   const lastModel = [...state.council.msgs].reverse().find(m=>m.kind!=="op");
   if(!lastModel) return "A";
-  return order[(order.indexOf(lastModel.seat) + 1) % 3];
+  return order[(order.indexOf(lastModel.seat) + 1) % 5];
 }
 function setCouncilRunning(r){
   state.council.running = r;
@@ -1461,11 +1857,120 @@ function setCouncilRunning(r){
   $("#btnStopC").disabled = !r;
   renderSpeakers();
 }
-function renderSpeakers(){
-  const box = $("#speakerList"); box.innerHTML = "";
+function renderDelegatesBar(){
+  const bar = $("#councilDelegatesBar");
+  if(!bar) return;
+  bar.innerHTML = "";
   const speaking = state.council.running ? state.council.current : null;
-  ["A","B","C"].forEach(k=>{
+
+  ["A","B","C","D","E","OP"].forEach(k=>{
     const s = state.seats[k];
+    if(!s) return;
+    const isOp = k === "OP";
+    const card = document.createElement("div");
+    card.className = "delegate-card" + (speaking === k ? " speaking" : "");
+    card.style.setProperty("--sc", s.hex);
+    
+    if(isOp){
+      card.onclick = () => {
+        const inp = $("#opInput");
+        if(inp){ inp.focus(); inp.style.boxShadow = "0 0 12px var(--crimson)"; setTimeout(()=>inp.style.boxShadow="", 1000); }
+      };
+      card.innerHTML = `
+        <div class="d-top">
+          <div class="d-avatar" style="background:${s.hex}22;color:${s.hex};border:1px solid ${s.hex}66">👑</div>
+          <div class="d-info">
+            <div class="d-role" style="color:var(--crimson)">İNSAN KOLTUĞU</div>
+            <div class="d-name">OPERATÖR</div>
+          </div>
+        </div>
+        <div class="d-bottom">
+          <span class="d-tag highlight" style="color:var(--crimson)">OTURUM BAŞKANI</span>
+          <span class="d-tag">MUTLAK İRADE</span>
+        </div>
+        <div class="d-action" style="color:var(--crimson)">⚡ Söz Al / Müdahale Et ▸</div>
+      `;
+    }else{
+      card.onclick = () => openSeatModal(k);
+      const turnCount = state.council.msgs.filter(m=>m.seat===k).length;
+      card.innerHTML = `
+        <div class="d-top">
+          <div class="d-avatar" style="background:${s.hex}22;color:${s.hex};border:1px solid ${s.hex}66">${k}</div>
+          <div class="d-info">
+            <div class="d-role">SANDALYE ${k} · YZ</div>
+            <div class="d-name">${esc(s.charName || s.name)}</div>
+          </div>
+        </div>
+        <div class="d-meta" title="${esc(s.role)}">${esc(s.role)}</div>
+        <div class="d-bottom">
+          <span class="d-tag highlight" style="color:${s.hex}">İNAT: ${s.dogma || 5}/10</span>
+          <span class="d-tag">${turnCount} SÖZ</span>
+        </div>
+        <div class="d-action">Profili İncele ▸</div>
+      `;
+    }
+    bar.appendChild(card);
+  });
+}
+
+function renderHoloTable(){
+  const grid = $("#holoPodGrid");
+  if(!grid) return;
+  grid.innerHTML = "";
+  const speaking = state.council.running ? state.council.current : null;
+
+  ["A","B","C","D","E","OP"].forEach(k=>{
+    const s = state.seats[k];
+    if(!s) return;
+    const isOp = k === "OP";
+    const isSpeaking = speaking === k;
+    const pod = document.createElement("div");
+    pod.className = "holo-pod" + (isSpeaking ? " speaking" : "");
+    pod.style.setProperty("--pc", s.hex);
+    
+    if(isOp){
+      pod.onclick = () => {
+        const inp = $("#opInput");
+        if(inp){ inp.focus(); }
+      };
+      pod.innerHTML = `
+        <div class="p-top">
+          <span class="p-key" style="background:var(--crimson);color:#fff">OP · İNSAN</span>
+          <span class="p-status" style="color:var(--crimson)">KOMUTA AKTİF</span>
+        </div>
+        <div class="p-name">👑 Operatör (Siz)</div>
+        <div class="p-role">Oturum Başkanı · İnsan İradesi</div>
+        <div class="p-bottom">
+          <span>YETKİ: MUTLAK</span>
+          <span style="color:var(--crimson)">MÜDAHALE ET ▸</span>
+        </div>
+      `;
+    }else{
+      pod.onclick = () => openSeatModal(k);
+      const turnCount = state.council.msgs.filter(m=>m.seat===k).length;
+      pod.innerHTML = `
+        <div class="p-top">
+          <span class="p-key">${k}</span>
+          <span class="p-status">${isSpeaking ? "● CANLI SÖZDE" : "BEKLEMEDE"}</span>
+        </div>
+        <div class="p-name">${esc(s.charName || s.name)}</div>
+        <div class="p-role">${esc(s.role)}</div>
+        <div class="p-bottom">
+          <span>İNAT: ${s.dogma||5}/10</span>
+          <span>${turnCount} SÖZ</span>
+        </div>
+      `;
+    }
+    grid.appendChild(pod);
+  });
+}
+
+function renderSpeakers(){
+  const box = $("#speakerList"); if(box) box.innerHTML = "";
+  const speaking = state.council.running ? state.council.current : null;
+  ["A","B","C","D","E"].forEach(k=>{
+    const s = state.seats[k];
+    if(!s) return;
     const row = document.createElement("div");
     row.className = "speakerrow" + (speaking===k ? " speaking" : "");
     row.style.setProperty("--sc", s.hex);
@@ -1473,12 +1978,14 @@ function renderSpeakers(){
     row.onclick = () => openSeatModal(k);
     const turnCount = state.council.msgs.filter(m=>m.seat===k).length;
     row.innerHTML = '<span class="sq">'+k+'</span><span><span class="nm">'+esc(s.charName || s.name)+'</span><br><small style="color:var(--dim);font-size:9.5px">'+esc(s.role)+'</small></span><span class="st">'+(speaking===k ? "● SÖZDE" : turnCount+" SÖZ")+'</span>';
-    box.appendChild(row);
+    if(box) box.appendChild(row);
   });
-  $("#statTurns").textContent = state.council.msgs.length;
-  const r = Math.ceil(state.council.modelTurns / 3);
-  $("#statRounds").textContent = r + "/" + state.council.autoRounds;
+  const stTurns = $("#statTurns"); if(stTurns) stTurns.textContent = state.council.msgs.length;
+  const r = Math.ceil(state.council.modelTurns / 5);
+  const stRounds = $("#statRounds"); if(stRounds) stRounds.textContent = r + "/" + state.council.autoRounds;
   renderSeatChips();
+  renderDelegatesBar();
+  renderHoloTable();
 }
 async function councilTurn(){
   const c = state.council;
@@ -1487,15 +1994,13 @@ async function councilTurn(){
   c.modelTurns++;
   c.current = key;
   const transcriptBefore = councilTranscript();
-  const m = { id: uid(), seat:key, kind:"model", text:"", streaming:true, time: now(), round: Math.ceil(c.modelTurns/3) };
+  const m = { id: uid(), seat:key, kind:"model", text:"", streaming:true, time: now(), round: Math.ceil(c.modelTurns/5) };
   c.msgs.push(m);
   pushCouncil(m);
   setCouncilRunning(true);
   const ac = new AbortController(); c.ac = ac;
-  const sysExtra = "\n\nTARTIŞMA KURALLARI: Masada " +
-    state.seats.A.name + " (" + (state.seats.A.charName || state.seats.A.role) + "), " +
-    state.seats.B.name + " (" + (state.seats.B.charName || state.seats.B.role) + "), " +
-    state.seats.C.name + " (" + (state.seats.C.charName || state.seats.C.role) + ") ve bir İnsan Operatör var. Sıradaki söz SENDE. Önceki konuşmacıların argümanlarına atıfta bulun, somut katkı ver. Asla yapay zeka jargonu kullanma; yaşayan bir insan gibi konuş. 100–220 kelime arasında kal. Operatör mesajları bağlayıcıdır.";
+  const seatedDesc = ["A","B","C","D","E"].map(k => state.seats[k].name + " (" + (state.seats[k].charName || state.seats[k].role) + ")").join(", ");
+  const sysExtra = "\n\nTARTIŞMA KURALLARI: Masada 5 Bağımsız Yapay Zeka [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör var. Sıradaki söz SENDE. Önceki konuşmacıların iddialarını dinle, açıklarını yakala, kök inançlarına tavizsiz sadık kalarak argümanını geliştir. Asla robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. 100–220 kelime arasında kal. Operatör müdahaleleri bağlayıcıdır.";
   const messages = [
     { role:"system", content: (seat.system || compileSystemPrompt(seat)) + sysExtra },
     { role:"user", content: transcriptBefore + "\nŞimdi söz sırası sende: " + (seat.charName || seat.name) + " (" + seat.role + ")." },
@@ -1541,7 +2046,7 @@ async function councilTurn(){
         checkForRebuttal(m);
       }
 
-      if(!stopped && $("#autoChk").checked && c.modelTurns < c.autoRounds * 3){
+      if(!stopped && $("#autoChk").checked && c.modelTurns < c.autoRounds * 5){
         c.autoPending = true;
         setTimeout(()=>{ c.autoPending=false; if($("#autoChk").checked && !c.running) councilTurn(); }, 1200);
       }
@@ -1602,7 +2107,7 @@ $("#opInput").addEventListener("keydown", e=>{ if(e.key==="Enter") opSend(); });
 /* ═══════════════════════ MASA 2 · KÖR JÜRİ ═══════════════════════ */
 function buildJuryCols(){
   const grid = $("#juryGrid"); grid.innerHTML = "";
-  ["A","B","C"].forEach(k=>{
+  ["A","B","C","D","E"].forEach(k=>{
     const s = state.seats[k];
     const col = document.createElement("div");
     col.className = "hud jcol blind"; col.id = "jcol-"+k; col.style.setProperty("--mc", s.hex);
@@ -1627,7 +2132,7 @@ function setJuryState(k, st){
   el.className = "jstate" + (st==="run"?" run":st==="done"?" done":st==="err"?" err":"");
   el.textContent = st==="run" ? "ÜRETİYOR" : st==="done" ? "TAMAMLANDI" : st==="err" ? "HATA" : "BEKLEMEDE";
   $("#jstop-"+k).disabled = st!=="run";
-  const anyRun = ["A","B","C"].some(x=>state.jury.cols[x].state==="run");
+  const anyRun = ["A","B","C","D","E"].some(x=>state.jury.cols[x].state==="run");
   $("#btnJuryStop").disabled = !anyRun;
   $("#btnJury").disabled = anyRun;
 }
@@ -1665,10 +2170,10 @@ $("#btnJury").onclick = ()=>{
   const p = $("#juryPrompt").value.trim();
   if(!p){ $("#juryPrompt").focus(); return; }
   state.jury.prompt = p;
-  ["A","B","C"].forEach(k=>runJuryCol(k, p));
+  ["A","B","C","D","E"].forEach(k=>runJuryCol(k, p));
 };
 $("#juryPrompt").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#btnJury").click(); });
-$("#btnJuryStop").onclick = ()=>["A","B","C"].forEach(k=>state.jury.cols[k].ac && state.jury.cols[k].ac.abort());
+$("#btnJuryStop").onclick = ()=>["A","B","C","D","E"].forEach(k=>state.jury.cols[k].ac && state.jury.cols[k].ac.abort());
 document.addEventListener("click", e=>{
   const b = e.target.closest("[id^=jstop-]");
   if(b){ const k = b.id.slice(6); state.jury.cols[k].ac && state.jury.cols[k].ac.abort(); }
@@ -1677,7 +2182,7 @@ function juryTranscript(){
   const p = state.jury.prompt;
   if(!p) return "";
   let out = "SORU: " + p + "\n\n";
-  ["A","B","C"].forEach(k=>{
+  ["A","B","C","D","E"].forEach(k=>{
     const s = state.seats[k];
     out += "=== " + s.name + " — " + s.role + " (bağımsız yanıt) ===\n" + (state.jury.cols[k].text || "(yanıt yok)") + "\n\n";
   });
@@ -1688,8 +2193,8 @@ function juryTranscript(){
 function updatePullMeta(){
   const cN = state.council.msgs.filter(m=>m.kind!=="op" || m.text).length;
   $("#pullCMeta").textContent = cN ? "MASA 01 · " + cN + " KAYIT · " + (state.council.topic ? state.council.topic.slice(0,26).toUpperCase() : "") : "MASA 01 · KAYIT YOK";
-  const jN = ["A","B","C"].filter(k=>state.jury.cols[k].text).length;
-  $("#pullJMeta").textContent = jN ? "MASA 02 · " + jN + "/3 YANIT HAZIR" : "MASA 02 · KAYIT YOK";
+  const jN = ["A","B","C","D","E"].filter(k=>state.jury.cols[k].text).length;
+  $("#pullJMeta").textContent = jN ? "MASA 02 · " + jN + "/5 YANIT HAZIR" : "MASA 02 · KAYIT YOK";
 }
 function setMaterial(text, source){
   state.synth.material = text; state.synth.source = source;
@@ -1881,10 +2386,10 @@ $("#hakemCfg").onclick = ()=>openSeatModal("H");
 setInterval(()=>{ $("#clock").textContent = new Date().toLocaleTimeString("tr-TR",{hour12:false}); }, 1000);
 $("#newSession").onclick = ()=>{
   if(state.council.running) state.council.ac && state.council.ac.abort();
-  ["A","B","C"].forEach(k=>state.jury.cols[k].ac && state.jury.cols[k].ac.abort());
+  ["A","B","C","D","E"].forEach(k=>state.jury.cols[k].ac && state.jury.cols[k].ac.abort());
   if(state.synth.running) state.synth.ac && state.synth.ac.abort();
   state.council = { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds: state.council.autoRounds, autoPending:false };
-  state.jury = { prompt:"", cols:{ A:{text:"",state:"idle",ac:null}, B:{text:"",state:"idle",ac:null}, C:{text:"",state:"idle",ac:null} }, running:false };
+  state.jury = { prompt:"", cols:{ A:{text:"",state:"idle",ac:null}, B:{text:"",state:"idle",ac:null}, C:{text:"",state:"idle",ac:null}, D:{text:"",state:"idle",ac:null}, E:{text:"",state:"idle",ac:null} }, running:false };
   state.synth = { material:"", source:"", running:false, ac:null };
   cScroll.querySelectorAll(".msg").forEach(n=>n.remove());
   if(!$("#cEmpty")) cScroll.insertAdjacentHTML("afterbegin", '<div class="empty" id="cEmpty"><h3>Masa boş — sandalyeler hazır</h3><p>Yeni oturum başlatıldı.</p></div>');
@@ -1964,9 +2469,11 @@ function renderCharacterLibrary(){
       </div>
       <div class="char-actions">
         <span class="act-lbl">Sandalyeye Oturt:</span>
-        <button class="seat-assign-btn" data-id="${c.id}" data-seat="A" style="--sc:var(--purple)">A (Mor)</button>
+        <button class="seat-assign-btn" data-id="${c.id}" data-seat="A" style="--sc:var(--cyan)">A (Mavi)</button>
         <button class="seat-assign-btn" data-id="${c.id}" data-seat="B" style="--sc:var(--green)">B (Yeşil)</button>
-        <button class="seat-assign-btn" data-id="${c.id}" data-seat="C" style="--sc:var(--blue)">C (Mavi)</button>
+        <button class="seat-assign-btn" data-id="${c.id}" data-seat="C" style="--sc:var(--orange)">C (Turuncu)</button>
+        <button class="seat-assign-btn" data-id="${c.id}" data-seat="D" style="--sc:var(--purple)">D (Mor)</button>
+        <button class="seat-assign-btn" data-id="${c.id}" data-seat="E" style="--sc:var(--gold)">E (Altın)</button>
         <button class="seat-assign-btn" data-id="${c.id}" data-seat="H" style="--sc:var(--amber)">Hakem</button>
       </div>
     `;
