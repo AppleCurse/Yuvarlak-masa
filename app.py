@@ -117,7 +117,7 @@ async def chat(payload: dict):
                     status_code=502,
                 )
             data = resp.json()
-            content = data["choices"][0]["message"]["content"]
+            content = engine.filter_persona_text(data["choices"][0]["message"]["content"])
             return {"ok": True, "content": content}
     except KeyError:
         return JSONResponse({"ok": False, "error": "Uç sunucu beklenmeyen biçimde yanıt verdi."}, status_code=502)
@@ -376,6 +376,16 @@ async def evaluate_rebuttal_route(payload: dict):
     api_key = payload.get("api_key", "")
     res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base, api_key, model)
     return res
+
+
+# ── Persona Guard Uç Noktası ───────────────────────────────────────────
+@app.post("/api/persona/clean")
+async def persona_clean_endpoint(payload: dict):
+    raw_text = payload.get("text", "")
+    cleaned = engine.filter_persona_text(raw_text)
+    report = engine.check_persona_violations(raw_text)
+    return {"ok": True, "cleaned": cleaned, "report": report}
+
 
 @app.get("/")
 async def index():

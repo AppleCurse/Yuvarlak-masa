@@ -1503,8 +1503,21 @@ async function councilTurn(){
     signal: ac.signal,
     onDelta: (t)=>{ m.text = t; updateCouncilMsg(m); },
     onError: (e)=>{ m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); },
-    onDone: (stopped)=>{
+    onDone: async (stopped)=>{
       m.streaming = false; if(stopped) m.stopped = true;
+
+      // Persona Guard (Karakter Sızıntı Temizliği)
+      try {
+        const pgResp = await fetch("/api/persona/clean", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ text: m.text })
+        });
+        const pgData = await pgResp.json();
+        if(pgData.ok && pgData.cleaned && pgData.cleaned !== m.text){
+          m.text = pgData.cleaned;
+        }
+      } catch(e) {}
+
       updateCouncilMsg(m); c.ac = null;
       setCouncilRunning(false);
 
@@ -1640,7 +1653,7 @@ function runJuryCol(k, prompt){
       setJuryState(k, "err");
       body.insertAdjacentHTML("beforeend", '<div class="errnote" style="border:1px solid rgba(248,81,73,.25);border-radius:3px;margin-top:8px">⚠ '+esc(e)+'</div>');
     },
-    onDone: (stopped)=>{
+    onDone: async (stopped)=>{
       mountMd(body, state.jury.cols[k].text + (stopped ? "\n\n> ■ *operatör tarafından durduruldu*" : ""), false);
       setJuryState(k, stopped ? "err" : "done");
       updatePullMeta();
@@ -1717,7 +1730,7 @@ $("#btnSynth").onclick = ()=>{
       $("#btnSynth").disabled = false; $("#btnSynthStop").disabled = true;
       state.synth.running = false;
     },
-    onDone: (stopped)=>{
+    onDone: async (stopped)=>{
       mountMd(body, acc + (stopped ? "\n\n> ■ *operatör tarafından durduruldu*" : ""), false);
       $("#reportMeta").textContent = stopped ? "DURDURULDU" : "RAPOR TAMAM · " + now();
       $("#btnSynth").disabled = false; $("#btnSynthStop").disabled = true;

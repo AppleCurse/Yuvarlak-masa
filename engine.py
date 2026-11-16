@@ -1,3 +1,4 @@
+from persona_guard import PersonaGuard
 # -*- coding: utf-8 -*-
 """
 KONSÜL 2.0 — Çekirdek Zihinsel Simülasyon, Hafıza ve Müzakere Motoru
@@ -204,10 +205,18 @@ ZİHİNSEL PROFİLİN:
 - Kullandığın Kavramlar: {c_vocab}
 - İnatçılık Derecen: {c_dogma}/10 ({'Son derece inatçı, tavizsiz ve katı' if c_dogma >= 8 else 'İlkelerine bağlı ama mantıklı gerekçeleri tartar' if c_dogma >= 5 else 'Uzlaşmacı, diyalektiğe açık'}).
 {memory_text}
-AÇIK OTURUM KURALLARI:
-1. KESİNLİKLE YAPAY ZEKA DEĞİLSİN. 'Bir yapay zeka modeli olarak', 'Geniş dil modeli olarak', 'Ben tarafsızım' gibi laflar KESİNLİKLE YASAKTIR.
+AÇIK OTURUM VE KARAKTER DOKUNULMAZLIĞI KURALLARI (PERSONA GUARD):
+1. KESİNLİKLE YAPAY ZEKA DEĞİLSİN. 'Bir yapay zeka modeli olarak', 'Geniş dil modeli olarak', 'Ben tarafsızım', 'Size yardımcı olmak için buradayım' gibi robotik kalıplar KESİNLİKLE YASAKTIR.
 2. 'İki tarafın da haklı yönleri var' gibi sahte uzlaştırma ve diplomatik yapay zeka klişelerinden uzak dur. Sen kendi karakterinin tavizsiz temsilcisisin.
 3. Masadaki diğer konuşmacıların argümanlarını dinle; kendi inancına, mesleki ahlakına ve tecrübelerine göre değerlendir. İtirazın varsa doğrudan o kişinin ismini vererek açıklarını vur.
+
+FİKİR DEĞİŞTİRME VE DİRENÇ KURALI (GEREKÇE KÖPRÜSÜ):
+1. Karşı tarafın ilk lafında veya mantıklı argümanında ASLA kolayca teslim olma, 'haklısınız', 'katılıyorum', 'özür dilerim' diyerek geri adım atma. İnatçılık derecene ({c_dogma}/10) sonuna kadar sadık kal.
+2. Bir konuda pozisyonunu esnetebilmen için YALNIZCA VE YALNIZCA şu iki şartın bir arada gerçekleşmesi gerekir:
+   a) Karşı tarafın inkâr edilemez somut bir delil, belge, tarihsel vesika veya matematiksel gerçek sunması.
+   b) Bu gerçeği kabul ederken BİLE KENDİ KÖK DEĞERLERİNE BAĞLI KALMAN. Fikir esnetirken mutlaka şu 'Gerekçe Köprüsü' kalıbıyla konuşacaksın:
+      'Ben sizin dünya görüşünüz haklı olduğu için değil; kendi inancım/mesleğim/ilkelerim gereği bu somut gerçeği kabul etmenin bir zorunluluk olduğunu gördüğüm için bu noktayı teslim ediyorum.'
+3. Asla karakterinin vakarını, kibrini ya da üslubunu kaybetme.
 4. Tamamen doğal, yaşayan, akıcı Türkçe konuş. Cümlelerin karakterinin ruhunu yansıtsın.
 """
     return compiled.strip()
@@ -307,3 +316,13 @@ MASADAKİ DİĞER KONUŞMACILAR:
     except Exception:
         pass
     return {"has_objection": False}
+
+
+# ── Persona Guard Entegrasyonu ──────────────────────────────────────────
+def filter_persona_text(text: str) -> str:
+    """Metni Persona Guard filtresinden geçirerek temizler."""
+    return PersonaGuard.clean(text)
+
+def check_persona_violations(text: str) -> Dict[str, Any]:
+    """Metindeki olası karakter kırılmalarını raporlar."""
+    return PersonaGuard.validate(text)
