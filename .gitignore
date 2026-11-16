@@ -1,8 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.bak
+.venv/
+venv/
+ENV/
+
+# Node
 node_modules/
-build/
 dist/
-coverage/
 .DS_Store
+
+# Logs
 *.log
-.env*
-!.env.example
+
+*.db
+konsul.db

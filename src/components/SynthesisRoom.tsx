@@ -1,518 +1,208 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  ArrowRight,
-  Check,
-  Copy,
-  Download,
-  Eraser,
-  FileText,
-  Gavel,
-  Image as ImageIcon,
-  Landmark,
-  OctagonX,
-  Printer,
-  Scale,
-  Sparkles,
-  Target,
-  Volume2,
-  VolumeX,
-  Wand2,
-} from "lucide-react";
-import { Provider, Seat, SessionTopic } from "../types";
-import { speakCharacterText, stopSpeech, subscribeSpeech } from "../lib/speech";
-import { Avatar, Button, Chip, Panel, PanelHeader, Select, StatusDot, TextArea } from "./ui";
-import { MarkdownView } from "./MarkdownView";
+import { useRef, useState } from "react";
+import type { ExportedMaterial, Seat, SeatKey } from "../lib/types";
+import { streamChat, type ChatMessage } from "../lib/client";
+import Markdown from "./Markdown";
+import { BTN_DANGER, BTN_PRIMARY, Panel, SectionTitle, Sigil } from "./ui";
 
-interface SectionCard {
-  key: "consensus" | "risk" | "action" | "note" | "other";
-  title: string;
-  color: string;
-  body: string;
-}
-
-export function SynthesisRoom({
-  refereeSeat,
-  providers,
-  sourceText,
-  onUpdateSourceText,
-  operatorNote,
-  onUpdateOperatorNote,
-  reportText,
-  running,
-  onRunSynthesis,
-  onStop,
-  onClear,
-  onPullFromCouncil,
-  onPullFromJury,
-  savedSessions,
-  onLoadSession,
-  onExportToImageStudio,
+export default function SynthesisRoom({
+  seats,
+  forceDemo,
+  getCouncil,
+  getJury,
+  onEditSeat,
 }: {
-  refereeSeat: Seat;
-  providers: Provider[];
-  sourceText: string;
-  onUpdateSourceText: (text: string) => void;
-  operatorNote: string;
-  onUpdateOperatorNote: (note: string) => void;
-  reportText: string;
-  running: boolean;
-  onRunSynthesis: () => Promise<void>;
-  onStop: () => void;
-  onClear: () => void;
-  onPullFromCouncil: () => void;
-  onPullFromJury: () => void;
-  savedSessions: SessionTopic[];
-  onLoadSession: (id: string) => void;
-  onExportToImageStudio: (prompt: string) => void;
+  seats: Record<SeatKey, Seat>;
+  forceDemo: boolean;
+  getCouncil: () => ExportedMaterial | null;
+  getJury: () => ExportedMaterial | null;
+  onEditSeat: (k: SeatKey) => void;
 }) {
-  const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"official" | "cards" | "raw">("official");
-  const [isSpeakingTts, setIsSpeakingTts] = useState(false);
+  const [material, setMaterial] = useState<ExportedMaterial | null>(null);
+  const [report, setReport] = useState("");
+  const [phase, setPhase] = useState<"idle" | "run" | "done" | "err" | "stopped">("idle");
+  const [errText, setErrText] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+  const accRef = useRef("");
 
-  useEffect(() => {
-    return subscribeSpeech((id) => {
-      setIsSpeakingTts(Boolean(id));
-    });
-  }, []);
+  const hakem = seats.H;
 
-  const provider = providers.find((p) => p.id === refereeSeat.providerId);
-
-  // Parse report into structured cards if possible
-  const sections = useMemo<SectionCard[]>(() => {
-    if (!reportText.trim()) return [];
-
-    const lines = reportText.split("\n");
-    const result: SectionCard[] = [];
-    let current: { title: string; lines: string[] } | null = null;
-
-    for (const line of lines) {
-      if (/^#{1,3}\s+/.test(line)) {
-        if (current) {
-          const t = current.title.toLowerCase();
-          const key: SectionCard["key"] = t.includes("konsensüs") || t.includes("ortak")
-            ? "consensus"
-            : t.includes("anlaşmazlık") || t.includes("risk") || t.includes("çelişki")
-            ? "risk"
-            : t.includes("eylem") || t.includes("nihai") || t.includes("karar") || t.includes("plan")
-            ? "action"
-            : t.includes("hakem notu") || t.includes("not") || t.includes("güven")
-            ? "note"
-            : "other";
-
-          const color =
-            key === "consensus"
-              ? "#22c55e"
-              : key === "risk"
-              ? "#fb7185"
-              : key === "action"
-              ? "#fbbf24"
-              : key === "note"
-              ? "#38bdf8"
-              : "#c084fc";
-
-          result.push({
-            key,
-            title: current.title,
-            color,
-            body: current.lines.join("\n").trim(),
-          });
-        }
-        current = {
-          title: line.replace(/^#{1,3}\s+/, "").trim(),
-          lines: [],
-        };
-      } else if (current) {
-        current.lines.push(line);
-      }
-    }
-
-    if (current) {
-      const t = current.title.toLowerCase();
-      const key: SectionCard["key"] = t.includes("konsensüs") || t.includes("ortak")
-        ? "consensus"
-        : t.includes("anlaşmazlık") || t.includes("risk")
-        ? "risk"
-        : t.includes("eylem") || t.includes("nihai") || t.includes("karar")
-        ? "action"
-        : "note";
-
-      const color =
-        key === "consensus"
-          ? "#22c55e"
-          : key === "risk"
-          ? "#fb7185"
-          : key === "action"
-          ? "#fbbf24"
-          : "#38bdf8";
-
-      result.push({
-        key,
-        title: current.title,
-        color,
-        body: current.lines.join("\n").trim(),
-      });
-    }
-
-    return result;
-  }, [reportText]);
-
-  const copyReport = () => {
-    navigator.clipboard.writeText(reportText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const pull = (which: "council" | "jury") => {
+    const m = which === "council" ? getCouncil() : getJury();
+    if (m) setMaterial(m);
   };
 
-  const downloadMarkdown = () => {
-    const blob = new Blob([reportText], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `konsul-hakem-raporu-${new Date().toISOString().slice(0, 10)}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const generate = () => {
+    if (!material) return;
+    accRef.current = "";
+    setReport("");
+    setPhase("run");
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const messages: ChatMessage[] = [
+      { role: "system", content: hakem.system },
+      { role: "user", content: "Aşağıdaki kayıtları analiz et ve nihai raporu üret.\n\n" + material.text },
+    ];
+    streamChat(
+      hakem,
+      messages,
+      ac.signal,
+      {
+        onDelta: (t) => {
+          accRef.current = t;
+          setReport(t);
+        },
+        onError: (e) => {
+          setErrText(e);
+          setPhase("err");
+        },
+        onDone: (stopped) => setPhase(stopped ? "stopped" : "done"),
+      },
+      forceDemo,
+    );
   };
+
+  const meta =
+    phase === "run"
+      ? "HAKEM YAZIYOR…"
+      : phase === "done"
+        ? "RAPOR TAMAM · " + new Date().toLocaleTimeString("tr-TR", { hour12: false })
+        : phase === "stopped"
+          ? "DURDURULDU"
+          : phase === "err"
+            ? "HATA"
+            : material
+              ? "KAYNAK: " + material.meta
+              : "BEKLEMEDE";
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4 lg:flex-row">
-      {/* Left Input & Referee Config Panel */}
-      <div className="flex w-full shrink-0 flex-col gap-3 lg:w-96">
-        <Panel glowColor="#fbbf24">
-          <PanelHeader
-            title="Kaynak Malzeme Aktarımı"
-            accent="#fbbf24"
-            icon={<Wand2 size={15} />}
-          />
-          <div className="space-y-3 p-3">
-            <div className="grid grid-cols-2 gap-2">
-              <Button size="sm" variant="outline" onClick={onPullFromCouncil}>
-                <Landmark size={12} className="text-[#c084fc]" />
-                <span>Konseyden Çek</span>
-              </Button>
-              <Button size="sm" variant="outline" onClick={onPullFromJury}>
-                <Scale size={12} className="text-[#38bdf8]" />
-                <span>Kör Jüriden Çek</span>
-              </Button>
-            </div>
+    <>
+      <div className="flex items-end gap-4 border-b border-edge bg-[linear-gradient(180deg,rgba(22,27,34,.7),transparent)] px-6 pb-3.5 pt-5">
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[.3em] text-neon">Masa 03 · Başhakem Analizi</div>
+          <h1 className="mt-0.5 font-disp text-[26px] font-bold leading-tight tracking-wide">SENTEZ &amp; HAKEM ODASI</h1>
+        </div>
+        <p className="ml-auto max-w-[520px] text-right text-[12.5px] leading-relaxed text-mut">
+          Konsey tutanağını veya jüri yanıtlarını tek tıkla çekin; Hakem modeli konsensüsü, anlaşmazlıkları ve nihai
+          eylem planını raporlasın.
+        </p>
+      </div>
 
-            {savedSessions.length > 0 && (
-              <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-[#8b949e]">
-                  Arşivden Oturum Çek
-                </label>
-                <Select
-                  defaultValue=""
-                  onChange={(e) => {
-                    if (e.target.value) onLoadSession(e.target.value);
-                  }}
-                  className="py-1.5 text-xs"
-                >
-                  <option value="">Kayıtlı bir oturum seçin...</option>
-                  {savedSessions.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.room === "council" ? "Konsey" : "Jüri"}: {s.title}
-                    </option>
-                  ))}
-                </Select>
+      <div className="grid min-h-0 flex-1 grid-cols-[350px_1fr] gap-3.5 p-4 max-xl:grid-cols-1">
+        {/* Sol: kaynak + hakem */}
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pb-1">
+          <button
+            onClick={() => pull("council")}
+            className="flex w-full items-center gap-3 rounded-[4px] border border-edge bg-panel px-3.5 py-3 text-left transition-all duration-150 hover:-translate-y-px hover:border-clau hover:shadow-[0_0_18px_rgba(196,155,255,.2)]"
+          >
+            <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[4px] border border-clau/45 bg-clau/10 text-clau">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <circle cx="12" cy="5" r="2.4" />
+                <circle cx="5.5" cy="17.5" r="2.4" />
+                <circle cx="18.5" cy="17.5" r="2.4" />
+                <path d="M10.8 7.1 7 15.4M13.2 7.1 17 15.4M7.9 17.5h8.2" />
+              </svg>
+            </span>
+            <span>
+              <span className="block font-disp text-[13.5px] font-semibold">Metni Çek — Konsey Tutanağı</span>
+              <span className="mt-0.5 block font-mono text-[9px] tracking-[.1em] text-mut">MASA 01 · {getCouncil() ? getCouncil()!.meta : "KAYIT YOK"}</span>
+            </span>
+          </button>
+
+          <button
+            onClick={() => pull("jury")}
+            className="flex w-full items-center gap-3 rounded-[4px] border border-edge bg-panel px-3.5 py-3 text-left transition-all duration-150 hover:-translate-y-px hover:border-gem hover:shadow-[0_0_18px_rgba(88,166,255,.2)]"
+          >
+            <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[4px] border border-gem/45 bg-gem/10 text-gem">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <rect x="3" y="4.5" width="4.6" height="15" rx="1" />
+                <rect x="9.7" y="4.5" width="4.6" height="15" rx="1" />
+                <rect x="16.4" y="4.5" width="4.6" height="15" rx="1" />
+              </svg>
+            </span>
+            <span>
+              <span className="block font-disp text-[13.5px] font-semibold">Metni Çek — Jüri Yanıtları</span>
+              <span className="mt-0.5 block font-mono text-[9px] tracking-[.1em] text-mut">MASA 02 · {getJury() ? getJury()!.meta : "KAYIT YOK"}</span>
+            </span>
+          </button>
+
+          <Panel className="flex min-h-[140px] flex-1 flex-col">
+            <div className="px-3.5 pt-3">
+              <SectionTitle>Ham Malzeme</SectionTitle>
+            </div>
+            <div className="max-h-[260px] min-h-[90px] flex-1 overflow-y-auto whitespace-pre-wrap px-3.5 pb-3 font-mono text-[10.8px] leading-[1.7] text-mut">
+              {material ? material.text : "Henüz malzeme çekilmedi. Yukarıdaki butonlarla Masa 01 veya Masa 02 kaydını bu odaya aktarın."}
+            </div>
+          </Panel>
+
+          <Panel className="p-3.5">
+            <SectionTitle>Başhakem</SectionTitle>
+            <div className="mb-2.5 flex items-center gap-2.5 rounded-[3px] border border-edge bg-deep/35 px-2.5 py-2">
+              <Sigil label="H" hex={hakem.hex} size={26} />
+              <div className="min-w-0">
+                <div className="font-disp text-[12px] font-semibold uppercase text-hakem">{hakem.role}</div>
+                <div className="truncate font-mono text-[9.5px] text-mut">
+                  {hakem.model} @ {hakem.baseUrl.replace("http://", "").replace("/v1", "")}
+                </div>
+              </div>
+              <button className="ml-auto font-mono text-[9px] tracking-[.14em] text-fnt transition-colors hover:text-hakem" onClick={() => onEditSeat("H")}>
+                AYAR ⚙
+              </button>
+            </div>
+            <button className={BTN_PRIMARY + " w-full"} onClick={generate} disabled={!material || phase === "run"}>
+              ◆ Sentez Raporu Üret
+            </button>
+            <button
+              className={BTN_DANGER + " mt-2 w-full"}
+              onClick={() => abortRef.current?.abort()}
+              disabled={phase !== "run"}
+            >
+              ■ Durdur
+            </button>
+          </Panel>
+        </div>
+
+        {/* Sağ: nihai rapor */}
+        <Panel className="flex min-h-[380px] flex-col overflow-hidden">
+          <div className="flex items-center gap-2.5 border-b border-edge bg-deep/45 px-4 py-3">
+            <span className="text-hakem">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path d="M12 3v18M5 7h14M5 7 2.8 12a3.2 3.2 0 0 0 4.4 0L5 7ZM19 7l-2.2 5a3.2 3.2 0 0 0 4.4 0L19 7ZM8.5 21h7" />
+              </svg>
+            </span>
+            <span className="font-disp text-[14px] font-semibold tracking-wide text-hakem">NİHAİ RAPOR</span>
+            <span className="ml-auto font-mono text-[9px] tracking-[.16em] text-fnt">{meta}</span>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-[14px] leading-[1.7]">
+            {phase === "idle" && !report && (
+              <div className="flex min-h-[340px] flex-col items-center justify-center gap-3.5 text-center text-fnt">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#57606a" strokeWidth="1.3" className="opacity-60">
+                  <path d="M12 3v18M5 7h14M5 7 2.8 12a3.2 3.2 0 0 0 4.4 0L5 7ZM19 7l-2.2 5a3.2 3.2 0 0 0 4.4 0L19 7ZM8.5 21h7" />
+                </svg>
+                <h3 className="font-disp text-[16px] tracking-wide text-mut">Hakem henüz kürsüye çıkmadı</h3>
+                <p className="max-w-[400px] text-[12px] leading-relaxed">
+                  Soldan malzemeyi çekin ve <b className="text-hakem">“Sentez Raporu Üret”</b> deyin. Rapor üç bölümde
+                  gelir: Konsensüs · Anlaşmazlıklar · Eylem Planı.
+                </p>
               </div>
             )}
-
-            <div>
-              <div className="mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[#8b949e]">
-                <span>Ham Malzeme Metni</span>
-                <span>{sourceText.length} karakter</span>
+            {phase === "err" && (
+              <div className="rounded-[3px] border border-alarm/25 bg-alarm/10 px-3.5 py-2.5 font-mono text-[12.5px] text-alarm">
+                ⚠ {errText}
               </div>
-              <TextArea
-                rows={8}
-                value={sourceText}
-                onChange={(e) => onUpdateSourceText(e.target.value)}
-                placeholder="Konsey tutanağı ya da kör jüri yanıtları buraya aktarılır. Dilerseniz elle de yapıştırabilir veya düzenleyebilirsiniz..."
-                className="font-mono text-[11px]"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-[#8b949e]">
-                Operatör Talimatı (Opsiyonel)
-              </label>
-              <TextArea
-                rows={2}
-                value={operatorNote}
-                onChange={(e) => onUpdateOperatorNote(e.target.value)}
-                placeholder="Örn: Bütçe kısıtlarını önceliklendir, 1 aylık teslim hedefine göre karar ver..."
-                className="text-xs"
-              />
-            </div>
-          </div>
-        </Panel>
-
-        {/* Referee Seat Card */}
-        <Panel glowColor="#fbbf24">
-          <PanelHeader
-            title="Başhakem Kürsüsü"
-            accent="#fbbf24"
-            icon={<Gavel size={15} />}
-          />
-          <div className="space-y-3 p-3">
-            <div className="flex items-center gap-2.5 rounded-xl border border-[#fbbf24]/30 bg-[#161b22] p-2.5">
-              <Avatar label={refereeSeat.avatar} color={refereeSeat.color} size={32} ring={running} />
-              <div className="min-w-0 flex-1">
-                <div className="font-disp text-xs font-bold text-white">
-                  {refereeSeat.name} · {refereeSeat.roleTitle}
-                </div>
-                <div className="font-mono text-[10px] text-[#8b949e]">
-                  {provider?.name || "Sağlayıcı"} / {refereeSeat.model}
-                </div>
-              </div>
-              <Chip color={running ? "#38bdf8" : "#fbbf24"}>
-                <StatusDot tone={running ? "#38bdf8" : "#fbbf24"} pulse={running} />
-                <span>{running ? "sentezliyor" : "hazır"}</span>
-              </Chip>
-            </div>
-
-            <Button
-              variant="gold"
-              className="w-full py-2.5 text-xs font-bold"
-              onClick={onRunSynthesis}
-              disabled={running || !sourceText.trim()}
-            >
-              <Target size={14} />
-              <span>Nihai Hakem Raporu Üret</span>
-            </Button>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="danger" size="sm" onClick={onStop} disabled={!running}>
-                <OctagonX size={12} />
-                <span>Durdur</span>
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onClear} disabled={!reportText && !sourceText}>
-                <Eraser size={12} />
-                <span>Temizle</span>
-              </Button>
-            </div>
+            )}
+            {(report || phase === "run") && (
+              <>
+                <Markdown text={report} streaming={phase === "run"} />
+                {phase === "stopped" && (
+                  <div className="mt-3 border-t border-dashed border-hakem/30 pt-2 font-mono text-[11px] tracking-[.1em] text-hakem">
+                    ■ OPERATÖR TARAFINDAN DURDURULDU
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Panel>
       </div>
-
-      {/* Right Synthesis Output Panel */}
-      <Panel className="flex min-w-0 flex-1 flex-col overflow-hidden" glowColor="#fbbf24">
-        <PanelHeader
-          accent="#fbbf24"
-          icon={<Gavel size={15} />}
-          title="MASA 03 · NİHAİ BAŞHAKEM SENTEZİ"
-          right={
-            <div className="flex items-center gap-2">
-              <div className="flex rounded-lg border border-[#303a48] bg-[#0b1016] p-0.5">
-                <button
-                  onClick={() => setActiveTab("official")}
-                  className={`rounded px-2.5 py-1 font-disp text-[11px] font-bold transition-colors flex items-center gap-1.5 ${
-                    activeTab === "official"
-                      ? "bg-amber-500 text-slate-950 shadow-sm"
-                      : "text-[#8b949e] hover:text-white"
-                  }`}
-                >
-                  <FileText size={12} />
-                  <span>Resmi İlam (PDF)</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab("cards")}
-                  className={`rounded px-2 py-1 font-disp text-[11px] font-semibold transition-colors ${
-                    activeTab === "cards" ? "bg-[#1c2330] text-white" : "text-[#8b949e] hover:text-white"
-                  }`}
-                >
-                  Kart Görünümü
-                </button>
-                <button
-                  onClick={() => setActiveTab("raw")}
-                  className={`rounded px-2 py-1 font-disp text-[11px] font-semibold transition-colors ${
-                    activeTab === "raw" ? "bg-[#1c2330] text-white" : "text-[#8b949e] hover:text-white"
-                  }`}
-                >
-                  Düz Metin
-                </button>
-              </div>
-
-              {/* TTS Listen Button */}
-              {reportText && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (isSpeakingTts) {
-                      stopSpeech();
-                    } else {
-                      speakCharacterText("court_hakim", reportText);
-                    }
-                  }}
-                  className={`text-xs ${isSpeakingTts ? "bg-amber-500 text-slate-950 font-bold" : "text-amber-300 border-amber-500/30"}`}
-                  title={isSpeakingTts ? "Seslendirmeyi durdur" : "Kararı Başhakem sesiyle dinle"}
-                >
-                  {isSpeakingTts ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                  <span>{isSpeakingTts ? "Durdur" : "Sesli Dinle"}</span>
-                </Button>
-              )}
-
-              {/* Print / PDF Button */}
-              {reportText && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => window.print()}
-                  className="text-xs border-slate-700 hover:border-slate-500"
-                  title="Resmi mühürlü kararı yazdır veya PDF olarak kaydet"
-                >
-                  <Printer size={12} />
-                  <span>Yazdır / PDF</span>
-                </Button>
-              )}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onExportToImageStudio(reportText.slice(0, 200) || "Hakem Sentezi")}
-                disabled={!reportText}
-                title="Sentez eylem planından konsept görsel üret"
-              >
-                <ImageIcon size={12} className="text-[#ec4899]" />
-                <span className="hidden sm:inline">Görsele Aktar</span>
-              </Button>
-
-              <Button size="sm" variant="outline" onClick={copyReport} disabled={!reportText}>
-                {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                <span>{copied ? "Kopyalandı" : "Kopyala"}</span>
-              </Button>
-
-              <Button size="sm" variant="ghost" onClick={downloadMarkdown} disabled={!reportText}>
-                <Download size={12} />
-                <span className="hidden sm:inline">.md İndir</span>
-              </Button>
-            </div>
-          }
-        />
-
-        <div className="flex-1 overflow-y-auto p-4">
-          {!reportText && !running ? (
-            <div className="flex h-full flex-col items-center justify-center p-8 text-center text-[#8b949e]">
-              <div className="mb-3 grid h-16 w-16 place-items-center rounded-2xl border border-[#222a35] bg-[#111722] text-[#fbbf24] shadow-lg shadow-amber-950/20">
-                <Gavel size={32} />
-              </div>
-              <h3 className="font-disp text-base font-bold text-white">Başhakem Kürsüde</h3>
-              <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[#8b949e]">
-                Soldaki panelden <b>Konseyden Çek</b> veya <b>Kör Jüriden Çek</b> butonuna basarak
-                tutanağı aktarın ve <b>Nihai Hakem Raporu Üret</b> deyin.
-                Hakem masadaki konsensüsü, anlaşmazlık noktalarını ve tek bir somut eylem planını sentezler.
-              </p>
-            </div>
-          ) : activeTab === "official" ? (
-            /* Official Printable Arbitration Decree & Seal */
-            <div className="max-w-4xl mx-auto bg-slate-900 border-2 border-amber-500/30 rounded-2xl p-8 shadow-2xl relative overflow-hidden print:bg-white print:text-slate-900 print:border-slate-900 print:p-6 print:m-0">
-              {/* Official Seal Watermark */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] print:opacity-[0.06] pointer-events-none text-[280px] font-black select-none">
-                ⚖️
-              </div>
-
-              {/* Document Header */}
-              <div className="text-center border-b-2 border-amber-500/40 pb-5 mb-6 print:border-slate-900">
-                <div className="text-[11px] font-mono tracking-[0.25em] uppercase text-amber-400 print:text-slate-700 font-bold mb-1">
-                  T.C. KONSÜL TAHKİM HEYETİ & BAŞHAKEM DİVANI
-                </div>
-                <h1 className="text-lg md:text-xl font-black text-slate-100 print:text-slate-950 tracking-wide uppercase">
-                  GEREKÇELİ TAHKİM HÜKMÜ VE NİHAİ MÜTALAA İLAMI
-                </h1>
-                <div className="flex flex-wrap items-center justify-center gap-4 mt-2 text-xs font-mono text-slate-400 print:text-slate-600">
-                  <span>ESAS NO: 2026/89-T</span>
-                  <span>•</span>
-                  <span>KARAR NO: 2026/14</span>
-                  <span>•</span>
-                  <span>TARİH: {new Date().toLocaleDateString("tr-TR")}</span>
-                  <span>•</span>
-                  <span className="text-emerald-400 print:text-slate-800 font-bold">BAĞLAYICI & NİHAİ</span>
-                </div>
-              </div>
-
-              {/* Source Case Summary */}
-              {sourceText && (
-                <div className="mb-6 bg-slate-950/60 print:bg-slate-100 border border-slate-800 print:border-slate-400 rounded-xl p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 print:text-slate-800 mb-1">
-                    📋 DOSYA / UYUŞMAZLIK ÖZETİ
-                  </div>
-                  <p className="text-xs text-slate-300 print:text-slate-800 line-clamp-4 leading-relaxed font-sans">
-                    {sourceText.slice(0, 450)}...
-                  </p>
-                </div>
-              )}
-
-              {/* Decision Markdown Body */}
-              <div className="text-xs text-slate-200 print:text-slate-950 leading-relaxed font-serif prose prose-invert print:prose-neutral max-w-none mb-8">
-                <MarkdownView content={reportText} streaming={running} />
-              </div>
-
-              {/* Official Signatures & Seal Section */}
-              <div className="border-t-2 border-amber-500/40 print:border-slate-900 pt-6 mt-8">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-slate-200 print:text-slate-900">
-                      Prof. Dr. Tahkim Hakemi
-                    </div>
-                    <div className="text-[10px] text-slate-400 print:text-slate-600">
-                      Heyet Başkanı (Mühür Sahibi)
-                    </div>
-                    <div className="font-mono text-xs text-amber-400 print:text-slate-800 italic pt-3">
-                      [İmza / Mühür]
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-amber-500/60 print:border-slate-900 flex items-center justify-center text-xs font-bold text-amber-400 print:text-slate-900 uppercase">
-                      RESMİ MÜHÜR
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-slate-200 print:text-slate-900">
-                      Kıdemli Raportör
-                    </div>
-                    <div className="text-[10px] text-slate-400 print:text-slate-600">
-                      Tutanak ve İnfaz Kâtibi
-                    </div>
-                    <div className="font-mono text-xs text-amber-400 print:text-slate-800 italic pt-3">
-                      [İmza / Mühür]
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-center text-[10px] font-mono text-slate-500 print:text-slate-600 mt-6">
-                  Bu belge KONSÜL Tahkim Heyeti tarafından dijital olarak tanzim edilmiş olup, 5070 sayılı Elektronik İmza Kanunu uyarınca güvenli imza ile teyit edilmiştir.
-                </div>
-              </div>
-            </div>
-          ) : activeTab === "cards" && sections.length >= 2 ? (
-            <div className="space-y-3">
-              {sections.map((sec, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-xl border p-4 shadow-sm"
-                  style={{
-                    borderColor: `${sec.color}40`,
-                    background: `linear-gradient(180deg, ${sec.color}10, rgba(22, 27, 34, 0.75))`,
-                  }}
-                >
-                  <div
-                    className="mb-2 flex items-center gap-2 border-b pb-2 font-disp text-xs font-bold uppercase tracking-wider"
-                    style={{ color: sec.color, borderColor: `${sec.color}25` }}
-                  >
-                    <span>{sec.title}</span>
-                  </div>
-                  <MarkdownView content={sec.body} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-[#222a35] bg-[#111722] p-4">
-              <MarkdownView content={reportText} streaming={running} />
-            </div>
-          )}
-        </div>
-      </Panel>
-    </div>
+    </>
   );
 }
