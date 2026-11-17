@@ -35,6 +35,8 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 ### 2. Kör Jüri İstasyonu (2.0)
 * Jüri, konseyin **ilk 5 koltuğunu** (2–8 koltuklu masada da üst sınır 5) kullanır; modeller birbirini ne görür ne duyar, aynı soruya **izole kanallardan** paralel, anonim yanıt verir.
 * **Kör Değerlendirme (2.0):** Başhakem, yanıtları adlandırılmış halde (*JÜRİ 1..5*, her çalıştırmada yeniden karılır; isim metinden soyulur) okur ve **yalnız argüman niteliğine** bakarak sıralama + en güçlü/zayıf argümanlar + sentez raporlar. Rapor bitince **Kimlik Açılışı** şeridi hakemin bilmediği eşlemeyi gösterir.
+* **Operatörün Kör Oyu (Faz 5):** Operatör, jüriyi çalıştırmadan önce kendi konumunu (≥30 karakter) panele yazıp **`✉ MÜHÜRLE → JÜRİ N+1`** ile mühürler. Tarayıcıda `SHA-256` parmak izi alınır; metin `localStorage`'da kalır ama jüriye **yalnızca karışım işlemi** onu `JÜRİ 1..N+1` etiketli bir katılımcı olarak sokar — model adı, "operatör/insan" ipuçları metinden soyulur. Hakem, insan oyu olduğunu *bilemez* (kör). Yanıtlar dökülmüşse mühür **GEÇ OY** damgası alır (yine de karışıma girer, dürüstlük etiketiyle); soru değişirse mühür bu çalıştırmaya girmez. Kimlik açılışında insan koltuğu `👑 OPERATÖR — İNSAN KOLTUĞU` çipiyle işaretlenir.
+* **Kazanan/Kaybeden Diff (Faz 5):** Raporun `## SIRALAMA` bölümünden kazanan (1) ve kaybeden (son) çıkarıldıktan sonra (bozuk/eksik sıralamada "ilk/son listede" güvenle geri düşer), Başhakem ikisinin tam metnini okuyup dört bölümlü bir diff dökümler: **EN BÜYÜK FARK / KAZANANIN YAPTIĞI / KAYBEDENİN EKSİĞİ / DÖNÜŞÜM ÖNERİSİ** (kaybedenin metnini kazananın standardına taşıyacak somut düzenlemeler). Operatör kazandıysa `👑 Operatörün kör oyu kazandı!`, kaybettiyse *hangi argümanların geride bıraktığı* vurgulanır.
 * Yanıtlar Sentez Odası'na tek tıkla aktarılır.
 
 ### 3. Başhakem ve Karar Sentez Odası
@@ -70,7 +72,7 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 * Masanın **Küskünlük Defteri (Faz 3b):** Oturum kapatılırken (Masa 01 "Oturumu Kapat") hakem modeli tutanağı tarayıp kimin kiminle sert çeliştiğini JSON olarak çıkarır; her tarafla ilgili girdi *o karakterin* Yaşayan Hafıza'sının **rivalries** defterine damıtılır. Bir sonraki oturumda karakter, kişisel istem bloğundaki "KİŞİSEL HESAPLARIN" bölümünden bu kişileri *hatırlar* (nezaket kurallarıyla birlikte) — masada süreklilik ve dram doğar.
 
 ### İçerik Politikası
-Tarihsel olarak hassas figürler (totaliter liderler, insanlık suçluları) **birinci şahıs bedenlemeyle seed edilmeyiz.** Bu tür briefler için Karakter Mimarı "analitik mesafe" arketipi üretir: tezi savunan, ancak şiddet/ırkçılık/nefret söylemi üretmeyen, kişilere hakaret etmeyen soyut bir zihniyet dosyası. (Denetim raporu §3.6)
+Tarihsel olarak hassas figürler (totaliter liderler, insanlık suçluları) **birinci şahıs bedenlemeyle seed edilmeyiz.** Bu tür briefler için Karakter Mimarı "analitik mesafe" arketipi üretir: tezi savunan, ancak şiddet/ırkçılık/nefret söylemi üretmeyen, kişilere hakaret etmeyen soyut bir zihniyet dosyası. Tam metin: [`CONTENT_POLICY.md`](CONTENT_POLICY.md) (Denetim raporu §3.6).
 
 ---
 
@@ -128,6 +130,10 @@ python app.py
 Windows için `baslat.bat` mevcut. Farklı host/port:
 ```bash
 KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
+```
+**CORS (Faz 5):** Varsayılan olarak CORS tamamen kapalıdır (aynı-origin). Tarayıcıdan farklı bir origin'in API'yi kullanması gerekiyorsa beyaz listeyi env ile ver:
+```bash
+KONSUL_CORS_ORIGINS="http://localhost:3000,https://apam-domaini.example" python app.py
 ```
 
 ### API Uç Noktaları (Görünür Yüzey)

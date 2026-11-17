@@ -89,12 +89,17 @@ app = FastAPI(
     docs_url=None, redoc_url=None, lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Faz 5 (denetim S-borca): CORS artık '*' değil. Arayüz aynı kökten (FastAPI
+# statik) servis edildiği için varsayılan same-origin yeterli. Gerekirse
+# KONSUL_CORS_ORIGINS="https://a.example,https://b.example" ile beyan edilir.
+_cors_origins = [o.strip() for o in os.getenv("KONSUL_CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 # ── Yardımcılar ─────────────────────────────────────────────────────────
