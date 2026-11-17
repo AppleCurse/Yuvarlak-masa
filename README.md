@@ -27,6 +27,8 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 * **Zaman Makinesi (Faz 3b):** Konsolun altındaki sinematik şerit, tutanağın her sözünü bir kareye çizer (renk = sandalye; yükseklik = söz uzunluğu; tur ayracı her 5 sözde). Kareye tıklamak konsolu o ana *geri sarar*: "SÖZ i/n · konuşmacı · saat · tur" çubuğuyla kare kare (◀ ▶) gezinilir, `ŞİMDİYE DÖN` ile anında bugün. Geçmişte gezinirken yeni söz gelirse masa otomatik olarak şimdiki zamana sarılır.
 * **Başkan Kontrolleri (Faz 3b):** Operatör artık masanın gerçek başkanına dönüyor — her konuşmacı satırında `🔇 SESSİZE AL` (sıradaki söz hakkı atlanır, tek tıkla geri açılır), sandalye modalında `⛔ OTURUMDAN İHRAÇ ET` (aktif oturumda; modal açık kalır ki karakter kütüphanesinden yenisini oturtsun, `↻ GERİ OTURT` ile affedilir) ve konsoldaki `⚡ SÖZÜ KES` (streaming söz yarıda kesilir, operatör müdahalesi tutanağa damgalanır).
 * **Güvenirlilik Rozeti (Faz 3b):** Her sözün iç ses geçişinde model, söylenenle hissedilenin uyumunu 0-100 puanlar; sandalye satırındaki `GÜV` rozeti bu son puanı taşır (kırmızı < 40 ikiyüzlülük alarmı, amber < 70, yeşil dürüst).
+* **Söz Süresi Kısıtı — K6 (Faz 6):** Gündem panelindeki **SÖZ SÜRESİ (SN)** seçicisiyle (KAPALI/30/60/90/120) başkan, her model sözünün azami süresini koyar; seçim kalıcıdır (localStorage). Süresi dolan söz `⏱ [SİSTEM: söz N sn süre kısıtında kesildi]` damgasıyla tutanağa düşer — operatör müdahalesi değildir, masa kuralıdır: **otomatik paslaşma süre kesmesinden sonra devam eder** (operatörün ⚡ SÖZÜ KES / ■ Durdur'u zinciri durdurmaya devam eder).
+* **Bağlam Bütçesi (Faz 6):** Model her turda *sınırsız* tutanak almıyordu — artık her söz için **kayan pencere** (son 14 dolu kayıt + konu; kırpma varsa tutanağa `[SİSTEM NOTU: İlk N söz pencere dışında]` işlenir). Sentez ve karar raporu için tek atımlık malzemede **karakter bütçesi** (baş + kuyruk korunur, ortası marker'la işaretlenir). UI (konsol, zaman makinesi, film şeridi, arşiv) tam tutanağı kullanmaya devam eder.
 * **Dinamik Masa — 2–8 Koltuk (Faz 4):** Masa artık sabit 5 değil: sağ paneldeki **MASA KOLTUKLARI** seçicisiyle 2–8 yapay zeka koltuğu (A–H) kurulur; seçim kalıcıdır (localStorage). Yeni koltuklarda hazır karakterler: **F = Frank Abagnale Jr.** (Efsane Sahtekâr), **G = Prof. Dr. İlber Ortaylı** (Tarihçi), **H = Nelson Mandela** (Uzlaşma Mimarı); hakem koltuğu artık **K** anahtarında. Koltuk sayısına uyan her şey: söz sırası (tur = N söz), holografik masa ve delege kartları (sütun sayısı dahil), zorunlu oylama, mühürlü zarf (N zarf), kör jüri (ilk 5 koltuk, üst sınır 5), karar raporu mührleri, sesli tanıtım, zaman makinesi tur ayraçları ve yakınsama radarı. Karakter kütüphanesindeki "sandalyeye oturt" butonları da aktif koltuklara göre üretilir.
 * **Müdahale Taktikleri:** Operatör çubuğundan hazır operatör sözleri (delil iste, çelişkiyi vur, uzlaşma çağrısı, 5 modele meydan oku).
 * Otomatik paslaşma: 1/2/3/5 tur; tek tek söz verme modu.
@@ -44,7 +46,7 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
   * **KONSENSÜS** — ortaklaşılan konular
   * **ANLAŞMAZLIKLAR VE RİSKLER** — çelişkiler ve kanıt boşlukları
   * **EYLEM PLANI VE NİHAİ KARAR** — bağlayıcı hüküm
-* Sentez, canlı web araştırma ajanıyla doğrulanmış iddialara bağlanabilir (Faz 2: İddia Defteri).
+* **Sentez Kanıta Bağlanır (Faz 6, K5 tamamlama):** Konseyden çekilen sentezde İddia Defteri'nde kayıt varsa hakeme **KANIT DEFTERİ** bloğu enjekte edilir: doğrulanmış iddialara numaralarıyla atıf zorunlu (`[1], [2]…`), "KISMEN DOĞRULANDI/ÇÜRÜTÜLDÜ" iddialar güven seviyesiyle işlenir, defterde karşılığı olmayan kritik iddia **"kanıt boşluğu"** olarak işaretlenir.
 
 ### 4. Karakter Kütüphanesi & Mimar Ajanı
 * 10 derin karakter dosyası hazır: Sülün Osman, Frank Abagnale Jr., Nikola Tesla, Baba Vanga, Nelson Mandela, Güç Radikali (Arketip), Prof. Dr. İlber Ortaylı, Niccolò Machiavelli, Sigmund Freud, Sokrates.
@@ -135,14 +137,18 @@ KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
 ```bash
 KONSUL_CORS_ORIGINS="http://localhost:3000,https://apam-domaini.example" python app.py
 ```
+**API Anahtarları — Sunucu Kâsası (Faz 6, S2):** Anahtarlar artık tarayıcının `localStorage`'ında düz metin olarak **kalmaz.** Sandalye modalında girilen anahtar `POST /api/credentials` ile **sunucu tarafı kasaya** (`api_credentials` tablosu) yazılır; tarayıcı yalnızca koltuk anahtarını (`seat`) taşır ve her model çağrısında anahtarı kâsadan çözülür. UI yalnız maskeli ipucunu (`…son4`) gösterir; `GET /api/credentials` ham anahtarı asla döndürmez. Eski sürümden kalan `localStorage` anahtarları açılışta otomatik olarak kasaya göçürülüp tarayıcıdan silinir. Geliştirme için gövdeye açık anahtar göndermek hâlâ çalışır (geri uyum).
 
 ### API Uç Noktaları (Görünür Yüzey)
 | Yöntem | Yol | Görev |
 |---|---|---|
 | GET | `/api/health` | Sağlık + sürüm |
 | GET | `/api/ping?url=...` | Uç doğrulama + model listesi |
-| POST | `/api/chat` | Tek atış üretim (persona-filtreli) |
-| POST | `/api/chat/stream` | SSE streaming üretim |
+| POST | `/api/chat` | Tek atış üretim (persona-filtreli); anahtar `seat` ile kâsadan çözülür |
+| POST | `/api/chat/stream` | SSE streaming üretim; anahtar `seat` ile kâsadan çözülür |
+| POST | `/api/credentials` | API anahtarını koltuk için **sunucu kâsasına** yazar (S2) |
+| GET | `/api/credentials` | Kâsa durumu — yalnız maskeli ipucu (`…son4`), ham anahtar asla |
+| DELETE | `/api/credentials/{seat}` | Koltuğun kâsadaki anahtarını siler |
 | GET | `/api/characters` | Karakter kütüphanesi |
 | GET | `/api/character/{id}` | Karakter + son hafıza girdileri |
 | POST | `/api/characters/save` | Karakter kaydet |

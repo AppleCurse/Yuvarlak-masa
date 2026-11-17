@@ -122,6 +122,17 @@ def init_database():
         )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_decision_reports_session ON decision_reports(session_id)")
+        # Faz 6 (S2): API anahtarları artık SUNUCU tarafında — tarayıcı localStorage'da
+        # düz metin anahtar tutmaz; proxy çağrılar koltuk anahtarıyla (seat) çözülür.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS api_credentials (
+            seat TEXT PRIMARY KEY,
+            base_url TEXT NOT NULL DEFAULT '',
+            api_key TEXT NOT NULL DEFAULT '',
+            model TEXT NOT NULL DEFAULT '',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
         conn.commit()
 
         # İndeksler (arşiv sorguları)
@@ -288,6 +299,58 @@ def list_decision_reports(limit: int = 100) -> List[Dict[str, Any]]:
             (limit,),
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+# ── Faz 6 (S2): API kimlik bilgileri — sunucu tarafı kasası ─────────────
+VALID_CRED_SEATS = ("A", "B", "C", "D", "E", "F", "G", "H", "K")
+
+
+def save_api_credential(seat: str, base_url: str, api_key: str, model: str) -> bool:
+    """Koltuğun model kimlik bilgisini kasaya yazar (upsert)."""
+    if seat not in VALID_CRED_SEATS:
+        return False
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO api_credentials (seat, base_url, api_key, model, updated_at)
+               VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+               ON CONFLICT(seat) DO UPDATE SET
+                 base_url=excluded.base_url, api_key=excluded.api_key,
+                 model=excluded.model, updated_at=CURRENT_TIMESTAMP""",
+            (seat, base_url.strip(), api_key.strip(), model.strip()),
+        )
+        conn.commit()
+    return True
+
+
+def get_api_credential(seat: str) -> Optional[Dict[str, Any]]:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM api_credentials WHERE seat = ?", (seat,)
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def list_api_credentials() -> Dict[str, Dict[str, Any]]:
+    """Düzlük: {seat: {base_url, model, key_hint, has_key}} — asla ham anahtar döndürmez."""
+    out: Dict[str, Dict[str, Any]] = {}
+    with get_db() as conn:
+        for r in conn.execute("SELECT * FROM api_credentials").fetchall():
+            d = dict(r)
+            key = d.get("api_key") or ""
+            d["key_hint"] = ("…" + key[-4:]) if key else ""
+            d["has_key"] = bool(key)
+            d.pop("api_key", None)
+            out[d["seat"]] = d
+    return out
+
+
+def delete_api_credential(seat: str) -> bool:
+    if seat not in VALID_CRED_SEATS:
+        return False
+    with get_db() as conn:
+        cur = conn.execute("DELETE FROM api_credentials WHERE seat = ?", (seat,))
+        conn.commit()
+        return cur.rowcount > 0
 
 def record_fact_check(claim: str, verdict: str, source_data: str, session_id: Optional[str] = None) -> str:
     fc_id = str(uuid.uuid4())[:8]

@@ -11,13 +11,17 @@
       python app.py            (tarayıcıyı kendisi açar)
       KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
 
-  Güvenlik (v1.1):
+  Güvenlik (v1.2):
       • /api/chat, /api/ping vb. uç noktaları yalnızca http(s) kabul eder.
       • Yerel (loopback/özel ağ) hedefler KONSUL_LOCAL_PORTS listesindeki
         portlarla sınırlıdır (varsayılan: 11434,1234,20128). Böylece proxy
         iç servisleri ya da bulut metadata uçlarını hedefleyemez (SSRF kilidi).
       • Genişletme:  KONSUL_LOCAL_PORTS="11434,1234,20128,8080"
       • Acil durum:  KONSUL_ALLOW_ALL_LOCAL=1  (yalnızca tam güvenilir ağlar)
+      • S2 (Faz 6): API anahtarları tarayıcıda localStorage'da KALMAZ —
+        koltuk anahtarları sunucu tarafı kâsada (api_credentials tablosu);
+        istekler koltuk anahtarıyla (seat) çözülür. GET /api/credentials
+        yalnızca maskelenmiş ipucu (…son4) döndürür.
 
   Uyumlu uçlar (Evrensel OpenAI standardı):
       • 9Router   → http://127.0.0.1:20128/v1
@@ -85,7 +89,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="KONSÜL AI", version="1.1.0",
+    title="KONSÜL AI", version="1.2.0",
     docs_url=None, redoc_url=None, lifespan=lifespan,
 )
 
@@ -167,11 +171,33 @@ def _validate_base_url(url: str) -> str | None:
     return None
 
 
+# ── Faz 6 (S2): koltuk bazlı kimlik çözümleme ──────────────────────────
+# Tarayıcı anahtarı localStorage'da tutmaz; çağrı yalnızca koltuk anahtarını
+# (seat) gönderir, anahtar + base_url sunucu tarafı kâsadan (api_credentials)
+# çözülür. Gövdede açık anahtar da geçerse (geliştirme) öncelik gövdededir.
+def _resolve_endpoint(base_url: str, api_key: str, model: str, seat: str):
+    """(base_url, api_key, model, error) döndürür."""
+    b = (base_url or "").strip()
+    k = (api_key or "").strip()
+    m = (model or "").strip()
+    s = (seat or "").strip().upper()
+    if s in engine.VALID_CRED_SEATS:
+        cred = engine.get_api_credential(s)
+        if cred:
+            b = b or (cred.get("base_url") or "")
+            k = k or (cred.get("api_key") or "")
+            m = m or (cred.get("model") or "")
+    if not b:
+        return None, None, None, "base_url eksik — koltuk yapılandırmasından (veya sunucu kâsasından) çözülemedi."
+    return b, k, m, None
+
+
 # ── Paylaşımlı istem şeması (Pydantic) ─────────────────────────────────
 class ChatPayload(BaseModel):
     base_url: str = ""
     api_key: str = ""
     model: str = ""
+    seat: str = ""
     messages: list[dict] = Field(default_factory=list)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
@@ -179,7 +205,7 @@ class ChatPayload(BaseModel):
 # ── Sağlık / teşhis rotaları ────────────────────────────────────────────
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "KONSÜL AI", "mode": "canlı", "version": "1.1.0"}
+    return {"ok": True, "service": "KONSÜL AI", "mode": "canlı", "version": "1.2.0"}
 
 
 @app.get("/api/ping")
@@ -201,23 +227,70 @@ async def ping(url: str):
 
 
 # ── Ana proxy: tek atış (non-stream) ────────────────────────────────────
+# ── Faz 6 (S2): API kimlik kâsası uçları ───────────────────────────────
+@app.post("/api/credentials")
+async def credentials_save(payload: dict):
+    """Koltuğun (base_url, api_key, model) üçlüsünü sunucu tarafında saklar."""
+    seat = (payload.get("seat") or "").strip().upper()
+    if seat not in engine.VALID_CRED_SEATS:
+        return JSONResponse({"ok": False, "error": f"Geçersiz koltuk: {seat!r}"}, status_code=400)
+    api_key = (payload.get("api_key") or "").strip()
+    base_url = (payload.get("base_url") or "").strip()
+    model = (payload.get("model") or "").strip()
+    if not api_key and not base_url:
+        return JSONResponse({"ok": False, "error": "Saklanacak anahtar veya uç adresi yok."}, status_code=400)
+    if base_url:
+        verr = _validate_base_url(base_url)
+        if verr:
+            return JSONResponse({"ok": False, "error": verr}, status_code=400)
+    ok = engine.save_api_credential(seat, base_url, api_key, model)
+    if not ok:
+        return JSONResponse({"ok": False, "error": "Kasa yazımı başarısız."}, status_code=500)
+    cred = engine.get_api_credential(seat)
+    key = cred.get("api_key", "") if cred else ""
+    return {
+        "ok": True,
+        "seat": seat,
+        "key_hint": ("…" + key[-4:]) if key else "",
+    }
+
+
+@app.get("/api/credentials")
+async def credentials_list():
+    """Her koltuğun kâsa durumu (ham anahtar ASLA dönmez)."""
+    return {"ok": True, "credentials": engine.list_api_credentials()}
+
+
+@app.delete("/api/credentials/{seat}")
+async def credentials_delete(seat: str):
+    seat = seat.strip().upper()
+    if seat not in engine.VALID_CRED_SEATS:
+        return JSONResponse({"ok": False, "error": f"Geçersiz koltuk: {seat!r}"}, status_code=400)
+    ok = engine.delete_api_credential(seat)
+    return {"ok": ok, "seat": seat, "deleted": ok}
+
+
 @app.post("/api/chat")
 async def chat(payload: ChatPayload):
-    err = _validate_base_url(payload.base_url)
+    base, api_key, model, rerr = _resolve_endpoint(
+        payload.base_url, payload.api_key, payload.model, payload.seat
+    )
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
     body = {
-        "model": payload.model,
+        "model": model,
         "messages": payload.messages,
         "temperature": payload.temperature,
         "stream": False,
     }
-    base = _clean_base(payload.base_url)
     try:
         resp = await _get_http().post(
-            base + "/chat/completions",
+            _clean_base(base) + "/chat/completions",
             json=body,
-            headers=_auth_headers(payload.api_key),
+            headers=_auth_headers(api_key),
         )
         if resp.status_code != 200:
             detail = resp.text[:300].replace("\n", " ")
@@ -237,18 +310,23 @@ async def chat(payload: ChatPayload):
 # ── Ana proxy: SSE streaming motoru ─────────────────────────────────────
 @app.post("/api/chat/stream")
 async def chat_stream(payload: ChatPayload, request: Request):
-    err = _validate_base_url(payload.base_url)
+    base, api_key, model, rerr = _resolve_endpoint(
+        payload.base_url, payload.api_key, payload.model, payload.seat
+    )
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
 
     body = {
-        "model": payload.model,
+        "model": model,
         "messages": payload.messages,
         "temperature": payload.temperature,
         "stream": True,
     }
-    base = _clean_base(payload.base_url)
-    headers = _auth_headers(payload.api_key)
+    base = _clean_base(base)
+    headers = _auth_headers(api_key)
 
     async def event_generator():
         try:
@@ -348,12 +426,17 @@ async def character_architect(payload: dict):
         return JSONResponse({"ok": False, "error": "Karakter tanımı boş olamaz."}, status_code=400)
 
     base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
-    err = _validate_base_url(base_url)
+    model = payload.get("model", "")
+    api_key = payload.get("api_key", "")
+    base, api_key, model, rerr = _resolve_endpoint(base_url, api_key, model, payload.get("seat", ""))
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    base = _clean_base(base_url)
-    model = payload.get("model", "openai")
-    api_key = payload.get("api_key", "")
+    base = _clean_base(base)
+    if not model:
+        model = "openai"
 
     architect_sys = (
         "Sen uzman bir Zihinsel Karakter ve Psikoloji Mimarısın. "
@@ -563,14 +646,19 @@ async def delta_compute(payload: dict):
     if not sid:
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
     base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
-    err = _validate_base_url(base_url)
+    base, api_key, model, rerr = _resolve_endpoint(
+        base_url, payload.get("api_key", ""), payload.get("model", ""), payload.get("seat", "")
+    )
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
     res = await engine.compute_persuasion_delta(
         sid,
-        base_url,
-        payload.get("api_key", ""),
-        payload.get("model", "openai"),
+        base,
+        api_key,
+        model or "openai",
         (payload.get("transcript") or "").strip(),
         payload.get("final_positions", {}) or {},
     )
@@ -610,12 +698,15 @@ async def convergence_route(payload: dict):
     if not positions:
         return JSONResponse({"ok": False, "error": "positions boş olamaz."}, status_code=400)
     base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
-    err = _validate_base_url(base_url)
+    base, api_key, model, rerr = _resolve_endpoint(
+        base_url, payload.get("api_key", ""), payload.get("model", ""), payload.get("seat", "")
+    )
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    model = payload.get("model", "openai")
-    api_key = payload.get("api_key", "")
-    res = await engine.compute_convergence(positions, base_url, api_key, model)
+    res = await engine.compute_convergence(positions, base, api_key, model or "openai")
     return res
 
 
@@ -625,13 +716,16 @@ async def research_verify(payload: dict):
     if not claim:
         return JSONResponse({"ok": False, "error": "İncelenecek iddia boş olamaz."}, status_code=400)
     base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
-    err = _validate_base_url(base_url)
+    base, api_key, model, rerr = _resolve_endpoint(
+        base_url, payload.get("api_key", ""), payload.get("model", ""), payload.get("seat", "")
+    )
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    model = payload.get("model", "openai")
-    api_key = payload.get("api_key", "")
     session_id = payload.get("session_id", "")
-    res = await engine.research_fact_check(claim, base_url, api_key, model, session_id=session_id)
+    res = await engine.research_fact_check(claim, base, api_key, model or "openai", session_id=session_id)
     return res
 
 
@@ -642,12 +736,15 @@ async def evaluate_rebuttal_route(payload: dict):
     last_text = payload.get("last_message_text", "")
     candidates = payload.get("candidates", [])
     base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
-    err = _validate_base_url(base_url)
+    base, api_key, model, rerr = _resolve_endpoint(
+        base_url, payload.get("api_key", ""), payload.get("model", ""), payload.get("seat", "")
+    )
+    if rerr:
+        return JSONResponse({"ok": False, "error": rerr}, status_code=400)
+    err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    model = payload.get("model", "openai")
-    api_key = payload.get("api_key", "")
-    res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base_url, api_key, model)
+    res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base, api_key, model or "openai")
     return res
 
 

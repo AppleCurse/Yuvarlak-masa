@@ -195,7 +195,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > | 6 | README ↔ gerçeklik | README yeniden yazıldı: 4 oda, gerçek uç tablosu, görünür API yüzeyi, SSRF kilidi, Faz 2/3 yol haritası. React ağacı `legacy-react/` altına izole edildi |
 > | + | Ek düzeltmeler | `overrideNextSpeaker` sessiz yutma (B5), modal otomatik-istem ezme (B7), `esc` tırnak (B8), karakter→sandalye DNA transferi + toast (B6), `verifyClaimWithAgent` sessionId (B3), gerçek telemetri (fake %99.8), paylaşımlı httpx istemcisi + lifespan, SQLite WAL + indeksler + `list_sessions` rotaları, research 8sn→60sn, rebuttal 15sn→45sn, verdict sütunu düzeltmesi, **f-string backslash (Py 3.10/3.11 crash — yeni bulgu),** `KONSUL_HOST/PORT` env |
 >
-> **Kalan (Faz 2/3):** K6'nin geniş kontrol seti (Sözü Kes ✅ Faz 3b, Sessize Al ✅ Faz 3b, İhraç & Yeniden Oturttur ✅ Faz 3b, Süre Kısıtı — hâlâ borç), K1'in iç/dış çelişki "GÜVENİRLİK" skoru ✅ Faz 3b, K5'in sentez-raporu-bağlama adımı (borç), K7'nin operatör kör oyu + kazanan/kaybeden diff'i ✅ Faz 5, K8'in `rivalries` küskünlük döngüsü ✅ Faz 3b + görünür zaman çizelgesi ✅ Faz 3b (Zaman Makinesi); Faz 3'te 1v1 Arena ✅ Faz 3b, Zaman Makinesi ✅ Faz 3b, film şeridi dışa aktarma ✅ Faz 3b, 2-8 sandalye esnekliği ✅ Faz 4.
+> **Kalan (Faz 2/3):** K6'nin geniş kontrol seti (Sözü Kes ✅ Faz 3b, Sessize Al ✅ Faz 3b, İhraç & Yeniden Oturttur ✅ Faz 3b, Süre Kısıtı ✅ Faz 6), K1'in iç/dış çelişki "GÜVENİRLİK" skoru ✅ Faz 3b, K5'in sentez-raporu-bağlama adımı ✅ Faz 6, K7'nin operatör kör oyu + kazanan/kaybeden diff'i ✅ Faz 5, K8'in `rivalries` küskünlük döngüsü ✅ Faz 3b + görünür zaman çizelgesi ✅ Faz 3b (Zaman Makinesi); Faz 3'te 1v1 Arena ✅ Faz 3b, Zaman Makinesi ✅ Faz 3b, film şeridi dışa aktarma ✅ Faz 3b, 2-8 sandalye esnekliği ✅ Faz 4.
 >
 > ### ✅ FAZ 2a YÜRÜTME NOTU (17.11.2026 — taç tamamlandı)
 >
@@ -253,7 +253,18 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > * **Kazanan/Kaybeden Diff (K7):** Jüri raporu dökülünce `parseBlindRanking` `## SIRALAMA` bölümünden sıra dizisini ayıklar (bozuk/eksik sıralamada `null` → "ilk/son listede" güvenle geri düşer, diff hep dökülür). Başhakem iki tarafın TAM metnini okuyup dört bölümlü **KAZANAN/KAYBEDEN DIFF** dökümler: EN BÜYÜK FARK / KAZANANIN YAPTIĞI / KAYBEDENİN EKSİĞİ / DÖNÜŞÜM ÖNERİSİ. Operatör kazandıysa `👑 Operatörün kör oyu kazandı`, kaybettiyse *hangi argümanların geride bıraktığı* toast ile vurgulanır; bölüm "Yapay Zeka Jürisi (Kör)" kartının altında `KAZANAN / KAYBEDEN — KARŞILAŞTIRMALI FARK ANALİZİ` bandıyla açılır.
 > * **Kısa borç süpürmesi:** (1) **mountMd O(n²) sönümleyici:** streaming sırasında uzun gövdede (>800 karakter) 140 ms'den kısa aralıklı delta'lar yeniden render'ı atlar — son delta `onDone`'da tam render'la daima yakalanır; (2) **CORS:** `allow_origins=["*"]` kaldırıldı — artık yalnızca `KONSUL_CORS_ORIGINS` (virgülle ayrılmış env) verilirse o origin'lerle CORSMiddleware kurulur; env yoksa CORS tamamen kapalı (aynı-origin varsayılan); (3) **`CONTENT_POLICY.md`** kuruldu (§3.6'nın ürün içi hali: birinci şahıs bedenleme yasağı, analitik mesafe arketipi, operatör sorumluluğu, muafiyetler, şeffaflık; persona guard v2 ve mimar istem kurallarıyla tutarlı).
 >
-> **Kalan borç:** K5→sentez bağlama adımı (borç); K6 süre kısıtı (borç); sınırsız bağlam (borç); API anahtarları localStorage'da açık metin (borç — S2).
+> **Kalan borç:** K5→sentez bağlama adımı ✅ Faz 6; K6 süre kısıtı ✅ Faz 6; sınırsız bağlam ✅ Faz 6 (kayan pencere + karakter bütçesi); API anahtarları localStorage'da açık metin ✅ Faz 6 (sunucu kâsası — S2).
+>
+> ### ✅ FAZ 6 YÜRÜTME NOTU (17.11.2026 — dört borç dalgası: S2 + K6 + K5 + bağlam)
+>
+> Faz 5'in bıraktığı dört borç tek dalgada kapatıldı; ayrıca Faz 4'ten kalma bir koltuk-taşıma bug'u (hakem ayarı H→K) düzeltildi. Doğrulama: `py_compile` + `node --check` temiz, **35/35 jsdom runtime testi** + **17/17 canlı e2e** (mock OpenAI upstream; kâsa çözümünde upstream'in `Bearer` başlığını görmesi dahil) yeşil. Sürüm `1.1.0 → 1.2.0`.
+> * **S2 · API Anahtarları Sunucu Kâsasına:** `api_credentials` tablosu (seat PK, base_url, api_key, model). `POST/GET/DELETE /api/credentials` — `GET` yalnız `…son4` ipucunu döndürür, ham anahtar hiçbir yanıtta yok. `ChatPayload.seat` + `_resolve_endpoint()` ile tüm model uçları (`chat`, `chat/stream`, `architect`, `delta`, `convergence`, `research/verify`, `rebuttal`) anahtarı kâsadan çözer; gövdede açık anahtar hâlâ çalışır (geri uyum). Frontend: 6 çağrı noktası `api_key:""` + `seat:"<k>"` gönderir; `saveSeats()`/`loadSeats()` anahtarı localStorage'da tutmaz; sandalye modalı anahtarı asla ekrana dökmez (kâsa durumu + `🗑 sil`); eski localStorage anahtarları açılışta `migrateLegacyCreds()` ile kasaya taşınıp tarayıcıdan silinir. Kâsa yazımına da SSRF kilidi uygulanır (metadata IP reddi).
+> * **K6 · Söz Süresi Kısıtı (Başkan Yetkisi):** Gündem panelinde **SÖZ SÜRESİ (SN)** seçicisi (KAPALI/30/60/90/120, localStorage `konsul_speechlimit`). `councilTurn` her söz için zamanlayıcı kurar; süre dolan söz `⏱ [SİSTEM: söz N sn süre kısıtında kesildi]` damgasıyla tutanağa düşer. Süre kesmesi bir **kural olayıdır** — otomatik paslaşma devam eder; operatörün ⚡ SÖZÜ KES / ■ Durdur'u zinciri durdurmaya devam eder.
+> * **K5 · Sentez Kanıta Bağlanır:** Konseyden çekilen sentezde İddia Defteri doluysa hakeme `buildSynthUserPrompt()` üzerinden **KANIT DEFTERİ** bloğu + bağlama kuralı enjekte edilir (doğrulanana numarayla atıf, KISMEN/ÇÜRÜTÜLDÜ'ye güven seviyesi, boşluğa "kanıt boşluğu").
+> * **Bağlam Bütçesi (sınırsız bağlam):** `councilModelContext()` her söz için **son 14 dolu kayıt** + konuyu verir (kırpma varsa `[SİSTEM NOTU: İlk N söz pencere dışında]`); sentez + karar raporu `budgetForModel()` ile baş+kuyruk koruyan **karakter bütçesi**ne düşer. UI tam tutanağı kullanmaya devam eder.
+> * **Bug düzeltmesi:** `#hakemCfg` (Sentez Odası AYAR) hâlâ `openSeatModal("H")` çağırıyordu; Faz 4 hakemi H→K taşıdığı için artık **K** sandalyesini açıyor.
+>
+> **Kalan (artık yalnız P2'ler):** S2'nin son halkası — kâsadaki anahtarın `konsul.db` içinde düz metin olması (yerel tek-kullanıcı aracı için kabul edilebilir; istenirse env/OS-gizli katmanı veya şifreleme eklenebilir).
 
 
 ### Faz 1 — "Önce Kanı Durdur" (P0, ~1 gün)
@@ -268,7 +279,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 - İkna Deltası + Mühürlü Zarf (taç) → İç Ses (K1) → İddia Defteri (K5) → Arşiv Odası (K4) → Gerilim Metresi (K2) → Başkan kontrolleri (K6) → Jüri 2.0 (K7) → Hafıza döngüsü (K8) → Yakınsama Radarı (K3)
 
 ### Faz 3 — "Efsane" (P2, ürün sonrası)
-- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği ✅ Faz 4 → Operatör kör oyu + kazanan/kaybeden diff (K7 tamamlama) ✅ Faz 5
+- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği ✅ Faz 4 → Operatör kör oyu + kazanan/kaybeden diff (K7 tamamlama) ✅ Faz 5 → Dört borç: süre kısıtı (K6) + sentez-kanıt bağı (K5) + bağlam bütçesi + API anahtar kasası (S2) ✅ Faz 6
 
 ---
 
