@@ -137,7 +137,7 @@ KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
 ```bash
 KONSUL_CORS_ORIGINS="http://localhost:3000,https://apam-domaini.example" python app.py
 ```
-**API Anahtarları — Sunucu Kâsası (Faz 6, S2):** Anahtarlar artık tarayıcının `localStorage`'ında düz metin olarak **kalmaz.** Sandalye modalında girilen anahtar `POST /api/credentials` ile **sunucu tarafı kasaya** (`api_credentials` tablosu) yazılır; tarayıcı yalnızca koltuk anahtarını (`seat`) taşır ve her model çağrısında anahtarı kâsadan çözülür. UI yalnız maskeli ipucunu (`…son4`) gösterir; `GET /api/credentials` ham anahtarı asla döndürmez. Eski sürümden kalan `localStorage` anahtarları açılışta otomatik olarak kasaya göçürülüp tarayıcıdan silinir. Geliştirme için gövdeye açık anahtar göndermek hâlâ çalışır (geri uyum).
+**API Anahtarları — Sunucu Kâsası (Faz 6, S2):** Anahtarlar artık tarayıcının `localStorage`'ında düz metin olarak **kalmaz.** Sandalye modalında girilen anahtar `POST /api/credentials` ile **sunucu tarafı kasaya** (`api_credentials` tablosu) yazılır; tarayıcı yalnızca koltuk anahtarını (`seat`) taşır ve her model çağrısında anahtarı kâsadan çözülür. UI yalnız maskeli ipucunu (`…son4`) gösterir; `GET /api/credentials` ham anahtarı asla döndürmez. Eski sürümden kalan `localStorage` anahtarları açılışta otomatik olarak kasaya göçürülüp tarayıcıdan silinir. Geliştirme için gövdeye açık anahtar göndermek hâlâ çalışır (geri uyum). Koltuk çiplerinde sunucu kâsasında anahtarı olan koltuklar **🔐** rozeti taşır (rozetin ipucunda `…son4` görünür; anahtar yönetimi sandalye modalındadır).
 
 ### API Uç Noktaları (Görünür Yüzey)
 | Yöntem | Yol | Görev |

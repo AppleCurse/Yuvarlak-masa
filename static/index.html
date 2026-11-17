@@ -99,6 +99,7 @@ input,textarea,select{font-family:inherit;color:var(--text)}
 .seatchip .dot{width:8px;height:8px;border-radius:50%;background:var(--sc);box-shadow:0 0 7px var(--sc);flex:0 0 8px}
 .seatchip .nm{font-family:"Space Grotesk";font-size:12px;font-weight:600}
 .seatchip .md{font-family:"IBM Plex Mono";font-size:9.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seatchip .vault{font-size:10px;line-height:1;opacity:.85;filter:drop-shadow(0 0 4px rgba(139,92,246,.5))}
 .rail .foot{margin-top:auto;font-family:"IBM Plex Mono";font-size:9px;color:var(--faint);letter-spacing:.12em;line-height:1.7;padding:0 8px}
 
 /* ── Ana sahne ── */
@@ -2291,7 +2292,9 @@ function renderSeatChips(){
     if(!s) return;
     const b = document.createElement("button");
     b.className = "seatchip"; b.style.setProperty("--sc", s.hex);
-    b.innerHTML = '<span class="dot"></span><span style="min-width:0"><span class="nm">'+s.key+' · '+esc(s.charName || s.role)+'</span><br><span class="md">'+esc(s.role)+'</span></span>';
+    // Faz 7: kâsa görünürlüğü — sunucu tarafında anahtarı olan koltuk 🔐 taşır (UI'da asla ham anahtar yok)
+    const vault = s.keyHint ? '<span class="vault" title="API anahtarı sunucu kâsasında ('+esc(s.keyHint)+') — sandalye modalından yönetilir">🔐</span>' : "";
+    b.innerHTML = '<span class="dot"></span><span style="min-width:0"><span class="nm">'+s.key+' · '+esc(s.charName || s.role)+'</span>'+vault+'<br><span class="md">'+esc(s.role)+'</span></span>';
     b.onclick = () => openSeatModal(k);
     box.appendChild(b);
   });
@@ -4730,6 +4733,7 @@ $("#mKeyDel").onclick = async ()=>{
       s.keyHint = ""; saveSeats();
       $("#mKeyDel").style.display = "none";
       $("#keyVaultNote").textContent = "Anahtar tarayıcıda saklanmaz — doldurulursa sunucu kâsasına yazılır ve koltuk anahtarıyla çözülür.";
+      renderSeatChips();
       toast("Kâsadaki anahtar silindi (Sandalye " + editingSeat + ")");
     } else {
       toast("Silme başarısız: " + (d.error || "kâsada bu koltuğun anahtarı yok"));

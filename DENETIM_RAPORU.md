@@ -265,6 +265,14 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > * **Bug düzeltmesi:** `#hakemCfg` (Sentez Odası AYAR) hâlâ `openSeatModal("H")` çağırıyordu; Faz 4 hakemi H→K taşıdığı için artık **K** sandalyesini açıyor.
 >
 > **Kalan (artık yalnız P2'ler):** S2'nin son halkası — kâsadaki anahtarın `konsul.db` içinde düz metin olması (yerel tek-kullanıcı aracı için kabul edilebilir; istenirse env/OS-gizli katmanı veya şifreleme eklenebilir).
+>
+> ### ✅ FAZ 7 YÜRÜTME NOTU (17.11.2026 — kapanış: kâsa görünürlüğü + güvenlik süpürmesi)
+>
+> Denetim kapsamının tamamı kapandıktan sonra, bilinçli P2 (at-rest anahtar şifrelemesi — yerel tek-kullanıcı aracı için over-engineering + yeni hata modu; operatörün `KONSUL_KEY_SECRET` gibi bir sırrı yönetme yükü getirir) dokunulmadan **kapanış dalgası** çalışıldı. Doğrulama: `py_compile` + `node --check` temiz; **35/35 Faz 6 + 8/8 Faz 7 jsdom + 17/17 canlı e2e** yeşil.
+> * **Kâsa görünürlüğü:** Koltuk çiplerinde sunucu kâsasında anahtarı olan koltuklar **🔐** rozeti taşır (title'da `…son4` ipucu + "sandalye modalından yönetilir" notu). Anahtar kaydedilince (`mSave`) ve silinince (`mKeyDel`) çipler yeniden çizilir; anahtarsız koltukta rozet yok. Rozet **yalnız maskeli ipucunu** gösterir — ham anahtar hiçbir UI alanında dökülmez (testle sabit).
+> * **Güvenlik süpürmesi (uçtan uca "düz metin sır kalmadı"):** tüm `apiKey` referansları tarandı — DEFAULT_SEATS'te yalnız boş `apiKey:""`, dışa aktarma yollarında (film şeridi, arşiv .md, oturum dökümleri) anahtar YOK, `saveSeats/loadSeats` soygunu aktif, kâsa `GET` maskeli. `requirements.txt` doğrulandı (fastapi/uvicorn/httpx).
+>
+> **Proje durumu:** Denetim raporundaki tüm P0/P1 kalemleri + Faz 1–6 yol haritası tamam. Bilinçli bırakılan tek P2: kâsadaki anahtarın at-rest şifrelemesi.
 
 
 ### Faz 1 — "Önce Kanı Durdur" (P0, ~1 gün)
