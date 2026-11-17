@@ -581,6 +581,23 @@ async def character_memory(char_id: str):
     return {"ok": True, "character_id": char_id, "count": len(rows), "memories": rows, "text": text}
 
 
+@app.post("/api/memory/add")
+async def character_memory_add(payload: dict):
+    """Faz 3b — rivalries: küskünlük/hesap girdileri episodik hafızaya damıtılır."""
+    cid = payload.get("character_id", "")
+    entry = payload.get("entry", "")
+    if not cid or not entry:
+        return JSONResponse({"ok": False, "error": "character_id ve entry gerekli."}, status_code=400)
+    engine.add_character_memory(
+        cid,
+        payload.get("session_id", ""),
+        entry,
+        payload.get("stance", ""),
+        payload.get("rivalries", ""),
+    )
+    return {"ok": True}
+
+
 # ── Yakınsama Radarı (Faz 2 — K3): tur başı pozisyon yakınlığı ────────────
 @app.post("/api/convergence")
 async def convergence_route(payload: dict):

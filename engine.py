@@ -188,19 +188,25 @@ def get_character_memory(char_id: str, limit: int = 4) -> List[Dict[str, Any]]:
         return [dict(r) for r in rows]
 
 def get_character_memory_text(char_id: str, limit: int = 4) -> str:
-    """Karakterin geçmiş hafızasını sistem istemine dokunacak metin bloğu olarak döndürür (Faz 2 — yaşayan hafıza)."""
+    """Karakterin geçmiş hafızasını sistem istemine dokunacak metin bloğu olarak döndürür (Faz 2 — yaşayan hafıza;
+    Faz 3b — rivalries: karakterler birbirine küskün kalır)."""
     memories = get_character_memory(char_id, limit)
     if not memories:
         return ""
-    lines = "\n".join(
-        f"- {m.get('entry') or ''} (tutum: {m.get('stance') or 'belirtilmemiş'})"
-        for m in memories
-    )
-    return (
+    lines = []
+    grudges = []
+    for m in memories:
+        lines.append(f"- {m.get('entry') or ''} (tutum: {m.get('stance') or 'belirtilmemiş'})")
+        if m.get("rivalries"):
+            grudges.append(f"- {m['rivalries']}")
+    text = (
         "GEÇMİŞ MÜZAKERELERDEN KALAN KİŞİSEL HAFIZAN:\n"
-        + lines
+        + "\n".join(lines)
         + "\nBu hafızayı doğal biçimde kullan; gerekli yerlerde 'geçen oturumda…' diye atıfta bulun."
     )
+    if grudges:
+        text += "\n\nKİŞİSEL HESAPLARIN (masada bu kişiler varsa hislerini hisset, ama nezaketi bozma):\n" + "\n".join(grudges)
+    return text
 
 
 def add_character_memory(char_id: str, session_id: str, entry: str, stance: str = "", rivalries: str = ""):

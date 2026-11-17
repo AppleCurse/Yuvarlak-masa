@@ -195,7 +195,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > | 6 | README ↔ gerçeklik | README yeniden yazıldı: 4 oda, gerçek uç tablosu, görünür API yüzeyi, SSRF kilidi, Faz 2/3 yol haritası. React ağacı `legacy-react/` altına izole edildi |
 > | + | Ek düzeltmeler | `overrideNextSpeaker` sessiz yutma (B5), modal otomatik-istem ezme (B7), `esc` tırnak (B8), karakter→sandalye DNA transferi + toast (B6), `verifyClaimWithAgent` sessionId (B3), gerçek telemetri (fake %99.8), paylaşımlı httpx istemcisi + lifespan, SQLite WAL + indeksler + `list_sessions` rotaları, research 8sn→60sn, rebuttal 15sn→45sn, verdict sütunu düzeltmesi, **f-string backslash (Py 3.10/3.11 crash — yeni bulgu),** `KONSUL_HOST/PORT` env |
 >
-> **Kalan (Faz 2/3):** K6'nin geniş kontrol seti (Sözü Kes, Sessize Al, İhraç & Yeniden Oturttur, Süre Kısıtı), K1'in iç/dış çelişki "GÜVENİRLİK" skoru, K5'in sentez-raporu-bağlama adımı, K7'nin operatör kör oyu + kazanan/kaybeden diff'i, K8'in `rivalries` küskünlük döngüsü + görünür zaman çizelgesi; Faz 3'te 1v1 Arena, Zaman Makinesi, film şeridi dışa aktarma, 2-8 sandalye esnekliği.
+> **Kalan (Faz 2/3):** K6'nin geniş kontrol seti (Sözü Kes ✅ Faz 3b, Sessize Al ✅ Faz 3b, İhraç & Yeniden Oturttur ✅ Faz 3b, Süre Kısıtı — hâlâ borç), K1'in iç/dış çelişki "GÜVENİRLİK" skoru ✅ Faz 3b, K5'in sentez-raporu-bağlama adımı (borç), K7'nin operatör kör oyu + kazanan/kaybeden diff'i (borç), K8'in `rivalries` küskünlük döngüsü ✅ Faz 3b + görünür zaman çizelgesi ✅ Faz 3b (Zaman Makinesi); Faz 3'te 1v1 Arena ✅ Faz 3b, Zaman Makinesi ✅ Faz 3b, film şeridi dışa aktarma ✅ Faz 3b, 2-8 sandalye esnekliği (borç).
 >
 > ### ✅ FAZ 2a YÜRÜTME NOTU (17.11.2026 — taç tamamlandı)
 >
@@ -223,6 +223,18 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > * **L1 Sesli Masa:** Ses TAMAMEN tarayıcıda üretilir (Web Speech API; harici TTS servisi yok, sunucuya ses gitmez, gecikme yok). Mesaj üstü `🔊` tek söz okuma; konsol **CANLI SES** ile sözler karakterin sesiyle otomatik akar; sandalye modalında kalıcı ses ataması + `🎭 SESLİ TANITIM`; operatör barında `🎙` tr-TR dikte. Dogma değeri tonu (pitch) etkiler; hakem daha düşük/başka bir tonda konuşur.
 >
 > **Düzeltme:** Veritabanı dosyası `konsul.db` (k ile) — önceki dalgaların `consul.db` adıyla yaptığı temizlikler no-op'tu; arşivden test kalıntıları doğru adla temizlendi.
+>
+> ### ✅ FAZ 3b YÜRÜTME NOTU (17.11.2026 — arena + zaman + kalem)
+>
+> Faz 2'nin kalan K-madde borçlarının büyük kısmı + Faz 3 vizyonunun ilk üç kalemi tek dalgada kuruldu; 15 uçtan uca canlı test geçti (arena marker'ları, hafıza/rivalries döngüsü, arena oturum yaşam döngüsü, 400 doğrulaması, regresyon).
+> * **Arena 1v1 (Masa 07 "Sıfır Sığınak"):** A sandalyesi "iddia GEÇERSİZ", B sandalyesi "iddia GEÇERLİDİR" savunur; salvo sayısı 1/2/3/5; her salvo rakibin *önceki sözünü adıyla ve içeriğiyle* çürütmek zorunda (anti-tekrar istem kuralı, son 1200 karakter beslenir); 60-120 kelime, birinci şahıs, tam persona. Salvolar A→B gerçek zamanlı akar; `■ KES` her iki kanaldaki AbortController'ı vurur. Bitişte Başhakem (H) tutanağı okuyup KAZANAN (A/B) / EN GÜÇLÜ DARBE / EN ZAYIF AN / NİHAİ HÜKMÜ döküyor; kazanan altın çerçeveye, kaybeden soluklaşır. Düello `arena_…` dosya numarasıyla arşive yazılır.
+> * **Zaman Makinesi (Masa 01):** Konsol altındaki sinematik şerit, her sözü bir kareye çizer (renk = sandalye/operatör, yükseklik ∝ uzunluk, tur ayracı her 5 model sözünde). Kareye tık → konsol o indekse geri sarar ("SÖZ i/n · konuşmacı · saat · tur" çubuğu, ◀ ▶ kare-kare, `ŞİMDİYE DÖN`). `tmRendering` guard'ı timeline yeniden çizim döngüsünü keser; geçmişteyken yeni model sözü gelirse masa otomatik şimdiki zamana sarılır.
+> * **K6 geniş başkan kontrolleri:** Satır başı `🔇/🎤` (Sessize Al — `nextSpeaker` sessiz/ihraç edilmiş koltukları atlar, tümü kapalıysa null döner ve oturum nazikçe durur), sandalye modalında `⛔ OTURUMDAN İHRAÇ ET` / `↻ GERİ OTURT` (yalnız aktif oturumda görünür; modal açık kalır ki yenisini oturtasın), konsolda `⚡ SÖZÜ KES` (çalışma sırasında etkin; akışı keser + operatör damgası). İHRAÇ/SESSİZ etiketleri satırlarda görünür. Operatör sözü artık `record_message` ile tutanağa da yazılır (arşiv tam sürük).
+> * **GÜVENİRLİK (K1 borcu kapandı):** İç ses protokolü modele "GUVENILIRLIK: 0-100" satırı yazdırıyor (0 = söylenenle hissedilen tamamen çelişiyor); frontend bu satırı ayıklayıp iç sesten temizliyor, `GÜV` rozetini sandalye satırına işliyor (<40 kırmızı ikiyüzlülük, <70 amber, ≥70 yeşil).
+> * **Küskünlük Haritası (K8 `rivalries` döngüsü):** Oturum kapatılırken Başhakem tutanağı JSON olarak tarar (30 sn zaman aşımı, hata toleranslı): `{grudges:[{a,b,why,intensity}]}`. Her çiftin iki tarafına da *kendi karakterinin* defterine `POST /api/memory/add` ile girdi damıtılır. `get_character_memory_text` (engine.py) rivalries satırlarını "KİŞİSEL HESAPLARIN" bloğu olarak kişisel hafıza metnine ekliyor — karakter bir sonraki oturumda bu kişileri nezaket kurallarıyla birlikte hatırlıyor.
+> * **Film Şeridi (Arşiv):** `🎬 FİLM ŞERİDİ (.html)` — seçili oturumun (arşiv) mesajları + iç ses + karar raporu, tek dosyalık bağımsız `.html` filme dökülür: açılış kartı, söz başına tam ekran sayfa (dev sandalye harfi, konuşmacı şeridi, iç ses bloğu), resmî belge sayfası (SHA-256 bandı), jenerik. Sayfa içi `mdToHtml` yeniden kullanılıyor; ölü kopya butonları statik belgeden soğruluyor.
+>
+> **Kalan borç (Faz 4'a):** 2-8 sandalye esnekliği; K5→sentez bağlama adımı; K7 operatör kör oyu + kazanan/kaybeden diff; K6 süre kısıtı; O(n²) markdown yeniden çizim; sınırsız bağlam; API anahtarları localStorage'da açık metin; CORS `*`; CONTENT_POLICY.md yok.
 
 
 ### Faz 1 — "Önce Kanı Durdur" (P0, ~1 gün)
@@ -237,7 +249,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 - İkna Deltası + Mühürlü Zarf (taç) → İç Ses (K1) → İddia Defteri (K5) → Arşiv Odası (K4) → Gerilim Metresi (K2) → Başkan kontrolleri (K6) → Jüri 2.0 (K7) → Hafıza döngüsü (K8) → Yakınsama Radarı (K3)
 
 ### Faz 3 — "Efsane" (P2, ürün sonrası)
-- Sesli masa (edge-tts + STT) → Hukuki Karar Protokolü + muhalefet şerhi → Arena → Zaman Makinesi → film şeridi dışa aktarma → 2-8 sandalye esnekliği
+- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği (Faz 4)
 
 ---
 
