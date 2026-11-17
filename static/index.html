@@ -1315,6 +1315,16 @@ body.inner-off .inner-note{display:none}
                   <option value="8">8</option>
                 </select>
               </div>
+              <div class="autorow" style="margin-top:8px">
+                <span class="minilabel" title="Başkan yetkisi (Faz 6 · K6): her model sözünün azami süresi. Süre dolan söz sistem damgasıyla kesilir; otomatik paslaşma bu durumda devam eder.">SÖZ SÜRESİ (SN)</span>
+                <select id="speechLimitSel" style="background:#0a0f18;border:1px solid var(--line);color:var(--text);font-family:'IBM Plex Mono';font-size:11px;padding:3px 8px;border-radius:3px;cursor:pointer" title="Söz başı süre kısıtı (KAPALI veya saniye)">
+                  <option value="0">KAPALI</option>
+                  <option value="30">30</option>
+                  <option value="60">60</option>
+                  <option value="90">90</option>
+                  <option value="120">120</option>
+                </select>
+              </div>
               <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
                 <button class="btn primary wide" id="btnStart">▸ Tartışmayı Başlat</button>
                 <button class="btn wide" id="btnNext" disabled>◈ Sonraki Sözü Ver</button>
@@ -1764,8 +1774,12 @@ body.inner-off .inner-note{display:none}
             <input type="text" id="fUrl" placeholder="http://127.0.0.1:20128/v1" />
           </div>
           <div>
-            <label>API Key (Yerelde boş kalabilir)</label>
-            <input type="password" id="fKey" placeholder="sk-…" />
+            <label>API Key</label>
+            <input type="password" id="fKey" placeholder="sk-… (boş bırakılabilir)" />
+            <div id="keyVaultNote" style="margin-top:4px;font-family:'IBM Plex Mono';font-size:9px;color:var(--faint);letter-spacing:.03em;line-height:1.5">
+              Anahtar tarayıcıda saklanmaz — doldurulursa <b style="color:var(--text)">sunucu kâsasına</b> yazılır ve koltuk anahtarıyla çözülür.
+            </div>
+            <button class="ghostbtn" id="mKeyDel" style="display:none;margin-top:5px;font-size:9.5px;padding:3px 8px;border-color:rgba(248,81,73,.4);color:var(--red)">🗑 Sunucu kâsasından sil</button>
           </div>
         </div>
 
@@ -1976,7 +1990,7 @@ const state = {
   demo: false,         // demo mod zorlaması
   room: "council",
   seatCount: loadSeatCount(),
-  council: { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds:2, autoPending:false,
+  council: { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds:2, autoPending:false, speechLimit:0, speechTimer:null,
     claims:[], tension:null, convHistory:[], votes:null, voting:false, verdict:"",
     tmIndex:null, muted:{A:false,B:false,C:false,D:false,E:false,F:false,G:false,H:false}, expelled:[], trust:{} },
   jury: {
@@ -2015,7 +2029,7 @@ function loadSeats(){
       const parsed = JSON.parse(raw4);
       const merged = JSON.parse(JSON.stringify(DEFAULT_SEATS));
       mergeInto(parsed, merged);
-      return merged;
+      return stripLegacyKeys(merged);
     }
     // v3'ten göç: eski H (hakem) → K; H artık normal koltuk (Mandela)
     const raw3 = localStorage.getItem("konsul_seats_v3");
@@ -2029,6 +2043,8 @@ function loadSeats(){
       }
       const merged = JSON.parse(JSON.stringify(DEFAULT_SEATS));
       mergeInto(migrated, merged);
+      // Faz 6 (S2): göç sırasında anahtarlar kâsaya taşınmak üzere soyulur, v4'e ham halde yazılmaz
+      stripLegacyKeys(merged);
       try{ localStorage.setItem("konsul_seats_v4", JSON.stringify(merged)); }catch(e){}
       return merged;
     }
@@ -2037,8 +2053,45 @@ function loadSeats(){
 }
 function saveSeats(){
   try{
-    localStorage.setItem("konsul_seats_v4", JSON.stringify(state.seats));
+    // Faz 6 (S2): apiKey asla kalıcı olarak YAZILMAZ — anahtar sunucu kâsasındadır
+    const clean = JSON.parse(JSON.stringify(state.seats));
+    Object.values(clean).forEach(s=>{ delete s.apiKey; });
+    localStorage.setItem("konsul_seats_v4", JSON.stringify(clean));
   }catch(e){}
+}
+// Faz 6 (S2) göç: eski localStorage'da düz metin anahtar varsa açılışta kâsaya taşınır
+window._legacyCreds = {};
+function stripLegacyKeys(merged){
+  Object.keys(merged).forEach(k=>{
+    if(merged[k] && merged[k].apiKey){
+      window._legacyCreds[k] = merged[k].apiKey;
+      delete merged[k].apiKey;
+    }
+  });
+  return merged;
+}
+async function migrateLegacyCreds(){
+  if(!state.backend) return; // backend henüz doğrulanmadı — sonraki denemeye bırak (legacy dokunulmaz kalır)
+  const legacy = window._legacyCreds || {};
+  const seats = Object.keys(legacy);
+  if(!seats.length) return;
+  window._legacyCreds = {};
+  let n = 0;
+  for(const k of seats){
+    try{
+      const s = state.seats[k] || {};
+      const r = await fetch("/api/credentials", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ seat:k, base_url: s.baseUrl || "", api_key: legacy[k], model: s.model || "" })
+      });
+      const d = await r.json();
+      if(d.ok){ state.seats[k].keyHint = d.key_hint || ""; n++; }
+    }catch(e){}
+  }
+  if(n){
+    saveSeats();
+    toast(n + " API anahtarı sunucu kâsasına taşındı — tarayıcıdaki eski düz metin kopyası silindi");
+  }
 }
 function loadSeatCount(){
   try{
@@ -2196,7 +2249,8 @@ async function streamChat(seat, messages, hooks){
   try{
     const resp = await fetch("/api/chat/stream", {
       method:"POST", headers:{"Content-Type":"application/json"}, signal,
-      body: JSON.stringify({ base_url: seat.baseUrl, api_key: seat.apiKey, model: seat.model, messages, temperature: 0.7 }),
+      // Faz 6 (S2): gövdeye anahtar gitmez — koltuk anahtarı (seat) gider, anahtarı sunucu kâsası çözer
+      body: JSON.stringify({ base_url: seat.baseUrl, api_key: "", model: seat.model, seat: seat.key || "", messages, temperature: 0.7 }),
     });
     if(!resp.ok || !resp.body){ hooks.onError("Proxy HTTP "+resp.status+" döndürdü."); return; }
     const reader = resp.body.getReader();
@@ -2323,6 +2377,36 @@ function councilTranscript(){
   return lines.join("\n");
 }
 
+/* Faz 6 (bağlam bütçesi): modele giden tutanak KAYAN PENCERELEDİR —
+   sınırsız bağlam her turda token/latency balonu şişiriyordu. UI (konsol,
+   zaman makinesi, film şeridi, arşiv) tam tutanağı kullanmaya devam eder. */
+const COUNCIL_CONTEXT_WINDOW = 14; // son 14 dolu kayıt modele gider
+function councilModelContext(){
+  const c = state.council;
+  const all = c.msgs.filter(m=> (m.kind==="op" && m.text) || (m.kind==="model" && m.text));
+  const recent = all.slice(-COUNCIL_CONTEXT_WINDOW);
+  const lines = ["KONU: " + c.topic, ""];
+  if(all.length > recent.length){
+    lines.push("[SİSTEM NOTU: İlk " + (all.length - recent.length) + " söz, bağlam penceresi dışında bırakıldı — argümanını güncel sözlerle geliştir.]", "");
+  }
+  recent.forEach(m=>{
+    if(m.kind==="op") lines.push("[OPERATÖR] İnsan müdahalesi:\n" + m.text, "");
+    else{
+      const s = state.seats[m.seat];
+      lines.push("[" + s.name + " — " + s.role + "]:\n" + m.text, "");
+    }
+  });
+  return lines.join("\n");
+}
+// Faz 6: tek atımlık büyük malzemeler (sentez) için karakter bütçesi — baş + kuyruk korunur
+function budgetForModel(text, maxChars){
+  maxChars = maxChars || 16000;
+  if(!text || text.length <= maxChars) return text || "";
+  const head = 2000, markerLen = 90;
+  const tail = maxChars - head - markerLen;
+  return text.slice(0, head) + "\n\n[... ortadaki " + (text.length - head - tail) + " karakter bağlam bütçesi dışında tutuldu ...]\n\n" + text.slice(text.length - tail);
+}
+
 /* ═══════════════════════ FAZ 2 MOTORLARI ═══════════════════════ */
 
 /* ── K2 · Gerilim Metresi (hakemin itiraz değerlendirirken ölçtüğü masa ısısı) ── */
@@ -2386,7 +2470,8 @@ async function computeConvergence(){
       body: JSON.stringify({
         positions,
         base_url: (H && H.baseUrl) || "https://text.pollinations.ai/openai",
-        api_key: (H && H.apiKey) || "",
+        api_key: "",
+        seat: "K",
         model: (H && H.model) || "openai"
       })
     });
@@ -3317,7 +3402,8 @@ async function generateDecisionReport(){
 "İSKELETİN BAŞLIKLARINI AYNI SIRAYLA VE AYNI İSİMLE KULLAN. Robotik kalıplar yasak.\n\n" +
 "DOSYA NO: " + c.sessionId + "\nGÜNDEM: " + c.topic + "\nTARİH: " + today + "\n\n" +
 "İDİA DEFTERİ (canlı web ajanıyla doğrulanmış kayıtlar):\n" + claimsBlock + "\n\n" +
-"TUTANAK (son 9000 karakter):\n" + councilTranscript().slice(-9000) + "\n\n" +
+// Faz 6 (bağlam bütçesi): ham slice değil, baş+kuyruk koruyan karakter bütçesi
+"TUTANAK (bağlam bütçesi hâli):\n" + budgetForModel(councilTranscript(), 16000) + "\n\n" +
 "İSKELET:\n" +
 "# KONSÜL KARAR RAPORU\n" +
 "Dosya No: " + c.sessionId + " · Gündem: " + c.topic + " · Tarih: " + today + "\n" +
@@ -3776,7 +3862,8 @@ async function checkForRebuttal(lastMsg){
         candidates: candidateSeats,
         base_url: state.seats[currentSeat].baseUrl || "https://text.pollinations.ai/openai",
         model: state.seats[currentSeat].model || "openai",
-        api_key: state.seats[currentSeat].apiKey || ""
+        api_key: "",
+        seat: currentSeat
       })
     });
     const d = await r.json();
@@ -3844,7 +3931,8 @@ async function runVerifyClaim(m, btn){
         claim: (m.text || "").slice(0, 4000),
         session_id: state.council.sessionId || "",
         base_url: (H && H.baseUrl) || "https://text.pollinations.ai/openai",
-        api_key: (H && H.apiKey) || "",
+        api_key: "",
+        seat: "K",
         model: (H && H.model) || "openai"
       })
     });
@@ -4091,12 +4179,24 @@ async function councilTurn(){
   const seat = state.seats[key];
   c.modelTurns++;
   c.current = key;
-  const transcriptBefore = councilTranscript();
+  // Faz 6 (bağlam bütçesi): modele tam tutanak değil, kayan pencere gider (UI hâlâ her şeyi görür)
+  const transcriptBefore = councilModelContext();
   const m = { id: uid(), seat:key, kind:"model", text:"", streaming:true, time: now(), round: Math.ceil(c.modelTurns/activeSeats().length) };
   c.msgs.push(m);
   pushCouncil(m);
   setCouncilRunning(true);
   const ac = new AbortController(); c.ac = ac;
+  // Faz 6 (K6): söz başı süre kısıtı (başkan yetkisi) — süre dolan söz sistem damgasıyla kesilir
+  const speechLim = c.speechLimit || 0;
+  if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer = null; }
+  if(speechLim > 0){
+    c.speechTimer = setTimeout(()=>{
+      if(c.ac === ac && m.streaming){
+        m.timecut = true; m.timeLimitSec = speechLim;
+        try{ ac.abort(); }catch(e){}
+      }
+    }, speechLim * 1000);
+  }
   const seatedDesc = activeSeats().map(k => state.seats[k].name + " (" + (state.seats[k].charName || state.seats[k].role) + ")").join(", ");
   const sysExtra = "\n\nTARTIŞMA KURALLARI: Masada " + activeSeats().length + " Bağımsız Yapay Zeka [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör var. Sıradaki söz SENDE. Önceki konuşmacıların iddialarını dinle, açıklarını yakala, kök inançlarına tavizsiz sadık kalarak argümanını geliştir. Asla robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. 100–220 kelime arasında kal. Operatör müdahaleleri bağlayıcıdır." +
     (seat.memoryText ? "\n\n" + seat.memoryText : "");
@@ -4107,9 +4207,15 @@ async function councilTurn(){
   await streamChat(seat, messages, {
     signal: ac.signal,
     onDelta: (t)=>{ m.text = t; updateCouncilMsg(m); },
-    onError: (e)=>{ m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); },
+    onError: (e)=>{ if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; } m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); },
     onDone: async (stopped)=>{
       m.streaming = false; if(stopped) m.stopped = true;
+      if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; }
+
+      // Faz 6 (K6): süre kısıtında kesilen söze sistem damgası düşer (tutanağa da yazılır)
+      if(m.timecut){
+        m.text = (m.text ? m.text + "\n\n" : "") + "⏱ *[SİSTEM: söz " + m.timeLimitSec + " sn süre kısıtında kesildi — operatör müdahalesi değil, masa kuralı.]*";
+      }
 
       // Persona Guard (Karakter Sızıntı Temizliği)
       try {
@@ -4144,7 +4250,9 @@ async function councilTurn(){
         setTimeout(()=>computeConvergence(), 800);
       }
 
-      if(!stopped && $("#autoChk").checked && c.modelTurns < c.autoRounds * activeSeats().length){
+      // Faz 6 (K6): süre kısıtı bir "kural" olayıdır — otomatik paslaşma süre kesmesinde DEVAM eder;
+      // operatörün SÖZÜ KES / Durdur'u ise (stopped, timecut değil) zinciri durdurur.
+      if((!stopped || m.timecut) && $("#autoChk").checked && c.modelTurns < c.autoRounds * activeSeats().length){
         c.autoPending = true;
         setTimeout(()=>{ c.autoPending=false; if($("#autoChk").checked && !c.running) councilTurn(); }, 1200);
       }
@@ -4211,6 +4319,22 @@ $("#autoChk").onchange = syncAutoNote;
 $$("#roundSel button").forEach(b=>{
   b.onclick = ()=>{ $$("#roundSel button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); state.council.autoRounds = +b.dataset.r; syncAutoNote(); renderSpeakers(); };
 });
+
+/* ── Faz 6 · K6: söz başı süre kısıtı (başkan yetkisi) ── */
+const SPEECH_LIMITS = [0, 30, 60, 90, 120];
+function loadSpeechLimit(){
+  let v = 0;
+  try{ v = parseInt(localStorage.getItem("konsul_speechlimit"), 10) || 0; }catch(e){}
+  state.council.speechLimit = SPEECH_LIMITS.includes(v) ? v : 0;
+  const sel = $("#speechLimitSel");
+  if(sel) sel.value = String(state.council.speechLimit);
+}
+$("#speechLimitSel").onchange = (e)=>{
+  const v = parseInt(e.target.value, 10) || 0;
+  state.council.speechLimit = v;
+  try{ localStorage.setItem("konsul_speechlimit", String(v)); }catch(err){}
+  toast(v ? "⏱ Söz süresi kısıtı: " + v + " sn — sonraki sözden itibaren bağlar" : "Söz süresi kısıtı kapatıldı");
+};
 
 /* ── Faz 4 · Dinamik Masa: koltuk sayısı (2-8) ── */
 function applySeatCount(v, fromUi){
@@ -4382,6 +4506,20 @@ $("#pullJury").onclick = ()=>{
   setMaterial(t, "MASA 02 · JÜRİ");
   switchRoom("synth");
 };
+// Faz 6 (K5→sentez bağlama): sentez raporu artık İddia Defteri'ne bağlanır —
+// doğrulanmış kanıt rapora akar, doğrulanmamış iddia "kanıt boşluğu" olarak işaretlenir.
+function buildSynthUserPrompt(){
+  const mat = budgetForModel(state.synth.material || "", 16000);
+  let p = "Aşağıdaki kayıtları analiz et ve nihai raporu üret.\n\n" + mat;
+  const claims = state.council.claims || [];
+  const fromCouncil = (state.synth.source || "").includes("KONSEY");
+  if(fromCouncil && claims.length){
+    const block = claims.map((x,i)=> (i+1) + ". [" + x.verdict + "] (" + x.speaker + " iddiası): " + (x.report||"").slice(0,300).replace(/\n+/g," ")).join("\n");
+    p += "\n\nKANIT DEFTERİ (canlı web ajanıyla doğrulanmış kayıtlar):\n" + block +
+      "\nKURAL — SENTEZ KANITA BAĞLANIR: Raporundaki her önemli iddiayı bu deftere dayandır. 'DOĞRULANDI' kayıtlarına doğrudan dayanabilirsin; 'KISMEN DOĞRULANDI'/'ÇÜRÜTÜLDÜ' durumundaki iddiaları GÜVEN SEVİYESİNİ açıkça belirterek işle; defterde karşılığı olmayan kritik iddiayı 'kanıt boşluğu' olarak özellikle işaretle. Kayıtlara numaralarıyla atıfta bulun ([1], [2]…).";
+  }
+  return p;
+}
 $("#btnSynth").onclick = ()=>{
   const seat = state.seats.K;
   const body = $("#reportBody");
@@ -4393,7 +4531,7 @@ $("#btnSynth").onclick = ()=>{
   const ac = new AbortController(); state.synth.ac = ac;
   const messages = [
     { role:"system", content: seat.system },
-    { role:"user", content: "Aşağıdaki kayıtları analiz et ve nihai raporu üret.\n\n" + state.synth.material },
+    { role:"user", content: buildSynthUserPrompt() },
   ];
   streamChat(seat, messages, {
     signal: ac.signal,
@@ -4455,7 +4593,8 @@ function readCurrentModalFields(){
     extra: $("#fExtra").value.trim() || "",
     voiceURI: ($("#fVoice") ? $("#fVoice").value : "") || currentSeat.voiceURI,
     baseUrl: $("#fUrl").value.trim() || currentSeat.baseUrl,
-    apiKey: $("#fKey").value.trim(),
+    // Faz 6 (S2): anahtar state'te KALMAZ — sunucu kâsasında durur; UI yalnız keyHint taşır
+    apiKey: "",
     model: $("#fModel").value.trim() || currentSeat.model,
     color: currentSeat.color,
     hex: currentSeat.hex,
@@ -4487,10 +4626,18 @@ function openSeatModal(k){
   updateDogmaLabel(s.dogma || 5);
   $("#fExtra").value = s.extra || "";
   
-  // Model & API Alanları
+  // Model & API Alanları (Faz 6 · S2: anahtar asla ekrana dökülmez — yalnız kâsa durumu)
   $("#fUrl").value = s.baseUrl || "";
-  $("#fKey").value = s.apiKey || "";
+  $("#fKey").value = "";
   $("#fModel").value = s.model || "";
+  const knote = $("#keyVaultNote"), kdel = $("#mKeyDel");
+  if(s.keyHint){
+    knote.innerHTML = "🔐 Sunucu kâsasındaki anahtar kullanımda (<b style=\"color:var(--text)\">" + esc(s.keyHint) + "</b>). Boş bırakılırsa o kullanılır; yenilemek için yeni anahtarı gir.";
+    kdel.style.display = "";
+  } else {
+    knote.textContent = "Anahtar tarayıcıda saklanmaz — doldurulursa sunucu kâsasına yazılır ve koltuk anahtarıyla çözülür.";
+    kdel.style.display = "none";
+  }
 
   // Faz 3 (L1): Sesli Masa — tarayıcı TTS ses seçimi
   populateVoiceSelect(s.voiceURI || "");
@@ -4535,17 +4682,59 @@ $("#fPreset").onchange = ()=>{
 $("#mClose").onclick = $("#mCancel").onclick = ()=>$("#seatModal").classList.remove("on");
 $("#seatModal").addEventListener("click", e=>{ if(e.target.id==="seatModal") $("#seatModal").classList.remove("on"); });
 
-$("#mSave").onclick = ()=>{
+$("#mSave").onclick = async ()=>{
   if(!editingSeat) return;
   const s = state.seats[editingSeat];
+  const newKey = $("#fKey").value.trim();
   const fields = readCurrentModalFields();
+  if(newKey){
+    // Faz 6 (S2): yeni anahtar → sunucu kâsasına; tarayıcıda iz kalmaz
+    $("#mSave").disabled = true;
+    try{
+      const r = await fetch("/api/credentials", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          seat: editingSeat,
+          base_url: $("#fUrl").value.trim() || s.baseUrl || "",
+          api_key: newKey,
+          model: $("#fModel").value.trim() || s.model || ""
+        })
+      });
+      const d = await r.json();
+      if(!d.ok){ toast("Kasa yazımı başarısız: " + (d.error || "bilinmeyen hata")); $("#mSave").disabled = false; return; }
+      s.keyHint = d.key_hint || "";
+    }catch(e){
+      toast("Kasa servisine ulaşılamadı: " + e.message);
+      $("#mSave").disabled = false;
+      return;
+    }
+    $("#mSave").disabled = false;
+  }
   Object.assign(s, fields);
   s.system = $("#fSystem").value.trim() || compileSystemPrompt(s);
   saveSeats();
   renderSeatChips();
   renderSpeakers();
   buildJuryCols();
+  $("#fKey").value = "";
+  toast("Sandalye " + editingSeat + " kaydedildi" + (newKey ? " · anahtar sunucu kâsasına taşındı, tarayıcıdan silindi" : ""));
   $("#seatModal").classList.remove("on");
+};
+$("#mKeyDel").onclick = async ()=>{
+  if(!editingSeat) return;
+  const s = state.seats[editingSeat];
+  try{
+    const r = await fetch("/api/credentials/" + encodeURIComponent(editingSeat), { method:"DELETE" });
+    const d = await r.json();
+    if(d.ok && d.deleted){
+      s.keyHint = ""; saveSeats();
+      $("#mKeyDel").style.display = "none";
+      $("#keyVaultNote").textContent = "Anahtar tarayıcıda saklanmaz — doldurulursa sunucu kâsasına yazılır ve koltuk anahtarıyla çözülür.";
+      toast("Kâsadaki anahtar silindi (Sandalye " + editingSeat + ")");
+    } else {
+      toast("Silme başarısız: " + (d.error || "kâsada bu koltuğun anahtarı yok"));
+    }
+  }catch(e){ toast("Kasa servisine ulaşılamadı: " + e.message); }
 };
 $("#mTest").onclick = async ()=>{
   $("#mTestTxt").textContent = "Test ediliyor…"; $("#mLed").className = "led demo";
@@ -4557,7 +4746,8 @@ $("#mTest").onclick = async ()=>{
     else { $("#mLed").className="led err"; $("#mTestTxt").textContent = j.error; }
   }catch(e){ $("#mLed").className="led err"; $("#mTestTxt").textContent = "Proxy’ye ulaşılamadı (app.py çalışıyor mu?)"; }
 };
-$("#hakemCfg").onclick = ()=>openSeatModal("H");
+// Faz 4'ten kalma taşınma düzeltmesi: hakem koltuğu H değil K anahtarındadır
+$("#hakemCfg").onclick = ()=>openSeatModal("K");
 
 /* ═══════════════════════ ÜST ŞERİT ═══════════════════════ */
 setInterval(()=>{ $("#clock").textContent = new Date().toLocaleTimeString("tr-TR",{hour12:false}); }, 1000);
@@ -4567,6 +4757,7 @@ $("#newSession").onclick = ()=>{
   if(state.synth.running) state.synth.ac && state.synth.ac.abort();
   Object.values(state.arena.acs||{}).forEach(ac=>ac && ac.abort());
   state.council = { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds: state.council.autoRounds, autoPending:false,
+    speechLimit: state.council.speechLimit || 0, speechTimer: null,
     claims:[], tension:null, convHistory:[], votes:null, voting:false, verdict:"",
     tmIndex:null, muted:{A:false,B:false,C:false,D:false,E:false,F:false,G:false,H:false}, expelled:[], trust:{} };
   state.jury = { prompt:"", cols:{ A:{text:"",state:"idle",ac:null}, B:{text:"",state:"idle",ac:null}, C:{text:"",state:"idle",ac:null}, D:{text:"",state:"idle",ac:null}, E:{text:"",state:"idle",ac:null} }, running:false };
@@ -4761,7 +4952,8 @@ if(btnRunArch){
         body: JSON.stringify({
           prompt: p,
           base_url: state.seats.A.baseUrl || "https://text.pollinations.ai/openai",
-          api_key: state.seats.A.apiKey || "",
+          api_key: "",
+          seat: "A",
           model: state.seats.A.model || "openai"
         })
       });
@@ -5058,7 +5250,8 @@ $("#btnEnvDelta").onclick = async ()=>{
       body: JSON.stringify({
         session_id: state.envelope.sessionId,
         base_url: H.baseUrl || "https://text.pollinations.ai/openai",
-        api_key: H.apiKey || "",
+        api_key: "",
+        seat: "K",
         model: H.model || "openai",
         transcript: councilTranscript(),
         final_positions: finalPos,
@@ -5091,8 +5284,12 @@ buildEnvCards();
 updateEnvStatus();
 syncAutoNote();
 updatePullMeta();
+loadSpeechLimit();
 checkBackend();
 loadCharacters();
+// Faz 6 (S2): eski localStorage anahtarlarının kâsaya göçü — health kontrolünün (≤2.5 sn) ardından iki deneme
+setTimeout(migrateLegacyCreds, 800);
+setTimeout(migrateLegacyCreds, 3500);
 </script>
 </body>
 </html>
