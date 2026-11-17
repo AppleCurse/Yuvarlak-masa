@@ -17,3 +17,7 @@ dist/
 
 *.db
 konsul.db
+
+# SQLite yan ürünleri
+*.db-wal
+*.db-shm

@@ -8,7 +8,16 @@
       pip install fastapi uvicorn httpx
 
   Çalıştırma:
-      python app.py
+      python app.py            (tarayıcıyı kendisi açar)
+      KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
+
+  Güvenlik (v1.1):
+      • /api/chat, /api/ping vb. uç noktaları yalnızca http(s) kabul eder.
+      • Yerel (loopback/özel ağ) hedefler KONSUL_LOCAL_PORTS listesindeki
+        portlarla sınırlıdır (varsayılan: 11434,1234,20128). Böylece proxy
+        iç servisleri ya da bulut metadata uçlarını hedefleyemez (SSRF kilidi).
+      • Genişletme:  KONSUL_LOCAL_PORTS="11434,1234,20128,8080"
+      • Acil durum:  KONSUL_ALLOW_ALL_LOCAL=1  (yalnızca tam güvenilir ağlar)
 
   Uyumlu uçlar (Evrensel OpenAI standardı):
       • 9Router   → http://127.0.0.1:20128/v1
@@ -18,10 +27,14 @@
 ════════════════════════════════════════════════════════════════════════
 """
 
+import ipaddress
 import json
+import os
 import threading
 import webbrowser
+from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 import uvicorn
@@ -29,15 +42,52 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+# Yerel motor: karakter kütüphanesi, hafıza, araştırma, itiraz hakemi
+import engine
 
 # ── Sabitler ────────────────────────────────────────────────────────────
-HOST = "127.0.0.1"
-PORT = 8888
+HOST = os.environ.get("KONSUL_HOST", "127.0.0.1")
+PORT = int(os.environ.get("KONSUL_PORT", "8888"))
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 CLIENT_TIMEOUT = httpx.Timeout(300.0, connect=8.0)
 
-app = FastAPI(title="KONSÜL AI", version="1.0.0", docs_url=None, redoc_url=None)
+# SSRF kilidi: yerel hedeflere yalnızca bu portlarda izin (OpenAI-uyumlu yerel uçlar)
+_LOCAL_PORTS = {
+    int(p)
+    for p in os.environ.get("KONSUL_LOCAL_PORTS", "11434,1234,20128").split(",")
+    if p.strip().lstrip("-").isdigit()
+}
+_ALLOW_ALL_LOCAL = os.environ.get("KONSUL_ALLOW_ALL_LOCAL", "0") == "1"
+
+
+# ── Paylaşımlı HTTP istemcisi (bağlantı havuzu — her istekte yeniden kurulum yok) ──
+_HTTP: httpx.AsyncClient | None = None
+
+
+def _get_http() -> httpx.AsyncClient:
+    global _HTTP
+    if _HTTP is None:
+        _HTTP = httpx.AsyncClient(timeout=CLIENT_TIMEOUT)
+    return _HTTP
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _get_http()
+    yield
+    global _HTTP
+    if _HTTP is not None:
+        await _HTTP.aclose()
+        _HTTP = None
+
+
+app = FastAPI(
+    title="KONSÜL AI", version="1.1.0",
+    docs_url=None, redoc_url=None, lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,56 +119,110 @@ def _friendly_error(exc: Exception) -> str:
     return f"Bağlantı hatası: {exc.__class__.__name__}"
 
 
+def _validate_base_url(url: str) -> str | None:
+    """Base URL'yi SSRF kilidinden geçirir; sorun varsa hata metni, yoksa None döner."""
+    base = _clean_base(url)
+    if not base:
+        return "Base URL boş."
+    p = urlparse(base)
+    if p.scheme not in ("http", "https"):
+        return "Yalnızca http/https uçları desteklenir."
+    if not p.hostname:
+        return "Base URL geçersiz (host eksik)."
+    try:
+        port = p.port or (443 if p.scheme == "https" else 80)
+    except ValueError:
+        return "Base URL geçersiz (port hatalı)."
+
+    host = p.hostname.lower().strip(".")
+    if host in ("localhost", "localhost.localdomain"):
+        host = "127.0.0.1"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None  # adlı host (bulut uçları) — doğrudan IP engeli uygulanmaz
+
+    if ip is not None:
+        if ip.is_loopback:
+            reason = "loopback"
+        elif ip.is_private:
+            reason = "özel ağ (RFC1918)"
+        elif ip.is_link_local:
+            reason = "link-local (metadata/yerel servis)"
+        elif ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+            reason = "özel kullanım aralığı"
+        else:
+            reason = None  # herkese açık IP
+        if reason and not _ALLOW_ALL_LOCAL and port not in _LOCAL_PORTS:
+            return (
+                f"Yerel hedef ({reason}:{port}) izin listesinde yok. "
+                f"İzinli yerel portlar: {', '.join(str(x) for x in sorted(_LOCAL_PORTS))}. "
+                "Genişletmek için KONSUL_LOCAL_PORTS ortam değişkenini kullanın."
+            )
+    return None
+
+
+# ── Paylaşımlı istem şeması (Pydantic) ─────────────────────────────────
+class ChatPayload(BaseModel):
+    base_url: str = ""
+    api_key: str = ""
+    model: str = ""
+    messages: list[dict] = Field(default_factory=list)
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+
+
 # ── Sağlık / teşhis rotaları ────────────────────────────────────────────
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "KONSÜL AI", "mode": "canlı"}
+    return {"ok": True, "service": "KONSÜL AI", "mode": "canlı", "version": "1.1.0"}
 
 
 @app.get("/api/ping")
 async def ping(url: str):
     """Verilen OpenAI-uyumlu Base URL'yi test eder, model listesini döndürür."""
+    err = _validate_base_url(url)
+    if err:
+        return {"ok": False, "error": err}
     target = _clean_base(url) + "/models"
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(target)
-            if resp.status_code != 200:
-                return {"ok": False, "error": f"HTTP {resp.status_code}"}
-            data = resp.json()
-            models = [m.get("id", "?") for m in data.get("data", [])][:60]
-            return {"ok": True, "models": models}
+        resp = await _get_http().get(target, timeout=5.0)
+        if resp.status_code != 200:
+            return {"ok": False, "error": f"HTTP {resp.status_code}"}
+        data = resp.json()
+        models = [m.get("id", "?") for m in data.get("data", [])][:60]
+        return {"ok": True, "models": models}
     except Exception as exc:  # noqa: BLE001 — kullanıcıya temiz metin dön
         return {"ok": False, "error": _friendly_error(exc)}
 
 
 # ── Ana proxy: tek atış (non-stream) ────────────────────────────────────
 @app.post("/api/chat")
-async def chat(payload: dict):
-    base = _clean_base(payload.get("base_url", ""))
-    if not base:
-        return JSONResponse({"ok": False, "error": "Base URL boş."}, status_code=400)
+async def chat(payload: ChatPayload):
+    err = _validate_base_url(payload.base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
     body = {
-        "model": payload.get("model", ""),
-        "messages": payload.get("messages", []),
-        "temperature": float(payload.get("temperature", 0.7)),
+        "model": payload.model,
+        "messages": payload.messages,
+        "temperature": payload.temperature,
         "stream": False,
     }
+    base = _clean_base(payload.base_url)
     try:
-        async with httpx.AsyncClient(timeout=CLIENT_TIMEOUT) as client:
-            resp = await client.post(
-                base + "/chat/completions",
-                json=body,
-                headers=_auth_headers(payload.get("api_key", "")),
+        resp = await _get_http().post(
+            base + "/chat/completions",
+            json=body,
+            headers=_auth_headers(payload.api_key),
+        )
+        if resp.status_code != 200:
+            detail = resp.text[:300].replace("\n", " ")
+            return JSONResponse(
+                {"ok": False, "error": f"Uç sunucu HTTP {resp.status_code} döndürdü: {detail}"},
+                status_code=502,
             )
-            if resp.status_code != 200:
-                detail = resp.text[:300].replace("\n", " ")
-                return JSONResponse(
-                    {"ok": False, "error": f"Uç sunucu HTTP {resp.status_code} döndürdü: {detail}"},
-                    status_code=502,
-                )
-            data = resp.json()
-            content = engine.filter_persona_text(data["choices"][0]["message"]["content"])
-            return {"ok": True, "content": content}
+        data = resp.json()
+        content = engine.filter_persona_text(data["choices"][0]["message"]["content"])
+        return {"ok": True, "content": content}
     except KeyError:
         return JSONResponse({"ok": False, "error": "Uç sunucu beklenmeyen biçimde yanıt verdi."}, status_code=502)
     except Exception as exc:  # noqa: BLE001
@@ -127,72 +231,72 @@ async def chat(payload: dict):
 
 # ── Ana proxy: SSE streaming motoru ─────────────────────────────────────
 @app.post("/api/chat/stream")
-async def chat_stream(payload: dict, request: Request):
-    base = _clean_base(payload.get("base_url", ""))
-    if not base:
-        return JSONResponse({"ok": False, "error": "Base URL boş."}, status_code=400)
+async def chat_stream(payload: ChatPayload, request: Request):
+    err = _validate_base_url(payload.base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
 
     body = {
-        "model": payload.get("model", ""),
-        "messages": payload.get("messages", []),
-        "temperature": float(payload.get("temperature", 0.7)),
+        "model": payload.model,
+        "messages": payload.messages,
+        "temperature": payload.temperature,
         "stream": True,
     }
-    headers = _auth_headers(payload.get("api_key", ""))
+    base = _clean_base(payload.base_url)
+    headers = _auth_headers(payload.api_key)
 
     async def event_generator():
         try:
-            async with httpx.AsyncClient(timeout=CLIENT_TIMEOUT) as client:
-                async with client.stream(
-                    "POST", base + "/chat/completions", json=body, headers=headers
-                ) as resp:
-                    if resp.status_code != 200:
-                        detail = (await resp.aread()).decode("utf-8", "ignore")[:300]
-                        err = f"Uç sunucu HTTP {resp.status_code}: {detail}"
-                        yield "data: " + json.dumps({"error": err}, ensure_ascii=False) + "\n\n"
-                        return
+            async with _get_http().stream(
+                "POST", base + "/chat/completions", json=body, headers=headers
+            ) as resp:
+                if resp.status_code != 200:
+                    detail = (await resp.aread()).decode("utf-8", "ignore")[:300]
+                    err = f"Uç sunucu HTTP {resp.status_code}: {detail}"
+                    yield "data: " + json.dumps({"error": err}, ensure_ascii=False) + "\n\n"
+                    return
 
-                    ctype = resp.headers.get("content-type", "")
+                ctype = resp.headers.get("content-type", "")
 
-                    # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
-                    if "application/json" in ctype:
-                        raw = (await resp.aread()).decode("utf-8", "ignore")
+                # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
+                if "application/json" in ctype:
+                    raw = (await resp.aread()).decode("utf-8", "ignore")
+                    try:
+                        content = json.loads(raw)["choices"][0]["message"]["content"]
+                        yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
+                    except Exception:  # noqa: BLE001
+                        yield "data: " + json.dumps({"error": "Uç sunucu geçersiz JSON döndürdü."}, ensure_ascii=False) + "\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+
+                buffer = ""
+                async for chunk in resp.aiter_text():
+                    if await request.is_disconnected():
+                        return  # Operatör "Durdur"a bastı → upstream de kesilir
+                    buffer += chunk
+                    while "\n" in buffer:
+                        line, buffer = buffer.split("\n", 1)
+                        line = line.strip()
+                        if not line.startswith("data:"):
+                            continue
+                        data = line[5:].strip()
+                        if data == "[DONE]":
+                            yield "data: [DONE]\n\n"
+                            return
                         try:
-                            content = json.loads(raw)["choices"][0]["message"]["content"]
-                            yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
-                        except Exception:  # noqa: BLE001
-                            yield "data: " + json.dumps({"error": "Uç sunucu geçersiz JSON döndürdü."}, ensure_ascii=False) + "\n\n"
-                        yield "data: [DONE]\n\n"
-                        return
-
-                    buffer = ""
-                    async for chunk in resp.aiter_text():
-                        if await request.is_disconnected():
-                            return  # Operatör "Durdur"a bastı → upstream de kesilir
-                        buffer += chunk
-                        while "\n" in buffer:
-                            line, buffer = buffer.split("\n", 1)
-                            line = line.strip()
-                            if not line.startswith("data:"):
-                                continue
-                            data = line[5:].strip()
-                            if data == "[DONE]":
-                                yield "data: [DONE]\n\n"
-                                return
-                            try:
-                                obj = json.loads(data)
-                            except json.JSONDecodeError:
-                                continue
-                            if obj.get("error"):
-                                msg = obj["error"].get("message", str(obj["error"]))
-                                yield "data: " + json.dumps({"error": msg}, ensure_ascii=False) + "\n\n"
-                                return
-                            try:
-                                delta = obj["choices"][0]["delta"].get("content")
-                            except (KeyError, IndexError, AttributeError):
-                                delta = None
-                            if delta:
-                                yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
+                            obj = json.loads(data)
+                        except json.JSONDecodeError:
+                            continue
+                        if obj.get("error"):
+                            msg = obj["error"].get("message", str(obj["error"]))
+                            yield "data: " + json.dumps({"error": msg}, ensure_ascii=False) + "\n\n"
+                            return
+                        try:
+                            delta = obj["choices"][0]["delta"].get("content")
+                        except (KeyError, IndexError, AttributeError):
+                            delta = None
+                        if delta:
+                            yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
             yield "data: [DONE]\n\n"
         except Exception as exc:  # noqa: BLE001 — terminal çöpü asla UI'a sızmasın
             yield "data: " + json.dumps({"error": _friendly_error(exc)}, ensure_ascii=False) + "\n\n"
@@ -208,16 +312,14 @@ async def chat_stream(payload: dict, request: Request):
     )
 
 
-# ── Statik arayüz servisi ───────────────────────────────────────────────
-
-# ── Karakter Kütüphanesi & Karakter Mimarı & Hafıza & Araştırma Motoru ──
-import engine
-
+# ── Karakter Kütüphanesi & Karakter Mimarı & Araştırma Motoru ───────────
 engine.init_database()
+
 
 @app.get("/api/characters")
 async def get_characters():
     return {"ok": True, "characters": engine.get_all_characters()}
+
 
 @app.get("/api/character/{char_id}")
 async def get_character_detail(char_id: str):
@@ -227,18 +329,24 @@ async def get_character_detail(char_id: str):
     memories = engine.get_character_memory(char_id, limit=5)
     return {"ok": True, "character": c, "memories": memories}
 
+
 @app.post("/api/characters/save")
 async def save_character_endpoint(payload: dict):
     saved = engine.save_character(payload)
     return {"ok": True, "character": saved}
 
+
 @app.post("/api/character/architect")
 async def character_architect(payload: dict):
-    prompt = payload.get("prompt", "").strip()
+    prompt = (payload.get("prompt") or "").strip()
     if not prompt:
         return JSONResponse({"ok": False, "error": "Karakter tanımı boş olamaz."}, status_code=400)
 
-    base = _clean_base(payload.get("base_url", "https://text.pollinations.ai/openai"))
+    base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
+    err = _validate_base_url(base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
+    base = _clean_base(base_url)
     model = payload.get("model", "openai")
     api_key = payload.get("api_key", "")
 
@@ -248,6 +356,10 @@ async def character_architect(payload: dict):
         "derin, tavizsiz ve tutarlı bir karakter profili inşa etmektir. "
         "Karakterin dünya görüşünü, neleri kutsal saydığını, neye öfkelendiğini, tartışma üslubunu "
         "ve karakterine %100 sadık kalmasını sağlayan sistem istemini hazırla. "
+        "TARİHÎ OLARAK HASSAS ŞAHİSLER (totaliter liderler, katil, insanlık suçlusu figürler) "
+        "İÇİN BİRİNCİ ŞAHIS BEDENLEME YAPMA: yerlerine tezi soyut bir arketip üzerinden savunan, "
+        "şiddet/ırkçılık/ nefret söylemi üretmeyen, kişilere hakaret etmeyen 'analitik mesafe' "
+        "karakteri inşa et. "
         "YANITIN SADECE VE SADECE GEÇERLİ BİR JSON NESNESİ OLMALIDIR. Başka hiçbir açıklama yazma."
     )
 
@@ -275,40 +387,41 @@ async def character_architect(payload: dict):
         "model": model,
         "messages": [
             {"role": "system", "content": architect_sys},
-            {"role": "user", "content": user_msg}
+            {"role": "user", "content": user_msg},
         ],
         "temperature": 0.6,
-        "stream": False
+        "stream": False,
     }
 
+    raw_text = ""
     try:
-        async with httpx.AsyncClient(timeout=CLIENT_TIMEOUT) as client:
-            resp = await client.post(
-                base + "/chat/completions",
-                json=body,
-                headers=_auth_headers(api_key),
+        resp = await _get_http().post(
+            base + "/chat/completions",
+            json=body,
+            headers=_auth_headers(api_key),
+        )
+        if resp.status_code != 200:
+            return JSONResponse(
+                {"ok": False, "error": f"Model sunucusu HTTP {resp.status_code} döndürdü: {resp.text[:200]}"},
+                status_code=502,
             )
-            if resp.status_code != 200:
-                return JSONResponse(
-                    {"ok": False, "error": f"Model sunucusu HTTP {resp.status_code} döndürdü: {resp.text[:200]}"},
-                    status_code=502
-                )
-            data = resp.json()
-            raw_text = data["choices"][0]["message"]["content"].strip()
-            clean_json = raw_text
-            if "```" in clean_json:
-                import re
-                m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean_json)
-                if m:
-                    clean_json = m.group(1).strip()
-            
-            char_obj = json.loads(clean_json)
-            saved = engine.save_character(char_obj)
-            return {"ok": True, "character": saved}
+        data = resp.json()
+        raw_text = data["choices"][0]["message"]["content"].strip()
+        clean_json = raw_text
+        if "```" in clean_json:
+            import re
+            m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean_json)
+            if m:
+                clean_json = m.group(1).strip()
+
+        char_obj = json.loads(clean_json)
+        saved = engine.save_character(char_obj)
+        return {"ok": True, "character": saved}
     except json.JSONDecodeError:
-        return JSONResponse({"ok": False, "error": "Model geçerli JSON üretemedi.", "raw": raw_text}, status_code=502)
-    except Exception as exc:
+        return JSONResponse({"ok": False, "error": "Model geçerli JSON üretemedi.", "raw": raw_text[:2000]}, status_code=502)
+    except Exception as exc:  # noqa: BLE001
         return JSONResponse({"ok": False, "error": _friendly_error(exc)}, status_code=502)
+
 
 # ── Oturum & Mesaj Kayıt Rotaları ───────────────────────────────────────
 @app.post("/api/session/start")
@@ -319,6 +432,7 @@ async def session_start(payload: dict):
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
     engine.create_session(sid, topic)
     return {"ok": True, "session_id": sid}
+
 
 @app.post("/api/session/record_message")
 async def session_record_message(payload: dict):
@@ -334,6 +448,7 @@ async def session_record_message(payload: dict):
         return {"ok": True}
     return JSONResponse({"ok": False, "error": "Geçersiz mesaj"}, status_code=400)
 
+
 @app.post("/api/session/conclude")
 async def session_conclude(payload: dict):
     sid = payload.get("session_id", "")
@@ -346,25 +461,157 @@ async def session_conclude(payload: dict):
         # Her katılımcı için damıtılmış kişisel hafıza girdisi üret ve kaydet
         for sc in seated_characters:
             cid = sc.get("character_id")
-            cname = sc.get("name")
             if cid:
                 mem_entry = f"'{topic}' konulu müzakereye katıldı. Nihai karar: {verdict[:100]}..."
                 engine.add_character_memory(cid, sid, mem_entry, stance="Tutumunu savundu", rivalries="")
         return {"ok": True}
     return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
 
-# ── Canlı Araştırma ve Doğrulama Ajanı (Fact-Checker) ────────────────────
+
+# ── Arşiv & Tutanak Rotaları (okuma tarafı — denetim raporu §3.4) ───────
+@app.get("/api/sessions")
+async def list_sessions(limit: int = 50):
+    return {"ok": True, "sessions": engine.list_sessions(limit=limit)}
+
+
+@app.get("/api/session/{sid}/messages")
+async def session_messages(sid: str):
+    msgs = engine.get_session_messages(sid)
+    if not msgs:
+        return JSONResponse({"ok": False, "error": "Oturum veya kaydı bulunamadı."}, status_code=404)
+    return {"ok": True, "session_id": sid, "messages": msgs}
+
+
+# ── Hukuki Karar Protokolü (Faz 3): resmî rapor arşivi ────────────────────
+@app.post("/api/session/report")
+async def session_report_save(payload: dict):
+    sid = payload.get("session_id", "")
+    report_md = payload.get("report_md", "")
+    if not sid or not report_md:
+        return JSONResponse({"ok": False, "error": "session_id ve report_md gerekli."}, status_code=400)
+    rid = engine.save_decision_report(
+        sid,
+        payload.get("topic", ""),
+        report_md,
+        payload.get("fingerprint", ""),
+        payload.get("dissent_seats", ""),
+    )
+    return {"ok": True, "report_id": rid}
+
+
+@app.get("/api/session/{sid}/report")
+async def session_report_get(sid: str):
+    rep = engine.get_session_report(sid)
+    if not rep:
+        return JSONResponse({"ok": False, "error": "Bu oturum için karar raporu yok."}, status_code=404)
+    return {"ok": True, "report": rep}
+
+
+@app.get("/api/reports")
+async def list_decision_reports(limit: int = 100):
+    return {"ok": True, "reports": engine.list_decision_reports(limit=limit)}
+
+
+# ── Mühürlü Zarf & İkna Deltası (Faz 2 — taç) ───────────────────────────
+@app.post("/api/envelope/seal")
+async def envelope_seal(payload: dict):
+    sid = payload.get("session_id", "")
+    seat = payload.get("seat", "")
+    position = (payload.get("position") or "").strip()
+    if not sid or not seat or not position:
+        return JSONResponse({"ok": False, "error": "session_id, seat ve position zorunludur."}, status_code=400)
+    env = engine.seal_envelope(
+        sid, seat,
+        payload.get("character_id", ""),
+        (payload.get("word") or "").strip(),
+        position,
+    )
+    return {"ok": True, "envelope": env}
+
+
+@app.get("/api/envelope/{sid}")
+async def envelope_status(sid: str):
+    envelopes = engine.get_envelopes(sid)
+    return {
+        "ok": True,
+        "session_id": sid,
+        "envelopes": envelopes,
+        "sealed_count": len(envelopes),
+        "opened": bool(envelopes) and all(e["opened_at"] for e in envelopes),
+    }
+
+
+@app.post("/api/envelope/open")
+async def envelope_open(payload: dict):
+    sid = payload.get("session_id", "")
+    if not sid:
+        return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
+    envelopes = engine.open_envelopes(sid)
+    if not envelopes:
+        return JSONResponse({"ok": False, "error": "Bu oturumda mühürlü zarf yok."}, status_code=404)
+    return {"ok": True, "envelopes": envelopes}
+
+
+@app.post("/api/delta/compute")
+async def delta_compute(payload: dict):
+    sid = payload.get("session_id", "")
+    if not sid:
+        return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
+    base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
+    err = _validate_base_url(base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
+    res = await engine.compute_persuasion_delta(
+        sid,
+        base_url,
+        payload.get("api_key", ""),
+        payload.get("model", "openai"),
+        (payload.get("transcript") or "").strip(),
+        payload.get("final_positions", {}) or {},
+    )
+    return res
+
+
+# ── Canlı Araştırma ve Doğrulama Ajanı (Fact-Checker) ───────────────────
+# ── Yaşayan Hafıza (Faz 2 — K8): karakterin önceki oturumlardan kalıntısı ──
+@app.get("/api/memory/{char_id}")
+async def character_memory(char_id: str):
+    rows = engine.get_character_memory(char_id, limit=12)
+    text = engine.get_character_memory_text(char_id, limit=4)
+    return {"ok": True, "character_id": char_id, "count": len(rows), "memories": rows, "text": text}
+
+
+# ── Yakınsama Radarı (Faz 2 — K3): tur başı pozisyon yakınlığı ────────────
+@app.post("/api/convergence")
+async def convergence_route(payload: dict):
+    positions = payload.get("positions") or {}
+    if not positions:
+        return JSONResponse({"ok": False, "error": "positions boş olamaz."}, status_code=400)
+    base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
+    err = _validate_base_url(base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
+    model = payload.get("model", "openai")
+    api_key = payload.get("api_key", "")
+    res = await engine.compute_convergence(positions, base_url, api_key, model)
+    return res
+
+
 @app.post("/api/research/verify")
 async def research_verify(payload: dict):
-    claim = payload.get("claim", "").strip()
+    claim = (payload.get("claim") or "").strip()
     if not claim:
         return JSONResponse({"ok": False, "error": "İncelenecek iddia boş olamaz."}, status_code=400)
-    base = _clean_base(payload.get("base_url", "https://text.pollinations.ai/openai"))
+    base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
+    err = _validate_base_url(base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
     model = payload.get("model", "openai")
     api_key = payload.get("api_key", "")
     session_id = payload.get("session_id", "")
-    res = await engine.research_fact_check(claim, base, api_key, model, session_id=session_id)
+    res = await engine.research_fact_check(claim, base_url, api_key, model, session_id=session_id)
     return res
+
 
 # ── İtiraz ve Araya Girme Değerlendirme ─────────────────────────────────
 @app.post("/api/debate/evaluate_rebuttal")
@@ -372,10 +619,13 @@ async def evaluate_rebuttal_route(payload: dict):
     last_speaker = payload.get("last_speaker_name", "")
     last_text = payload.get("last_message_text", "")
     candidates = payload.get("candidates", [])
-    base = _clean_base(payload.get("base_url", "https://text.pollinations.ai/openai"))
+    base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
+    err = _validate_base_url(base_url)
+    if err:
+        return JSONResponse({"ok": False, "error": err}, status_code=400)
     model = payload.get("model", "openai")
     api_key = payload.get("api_key", "")
-    res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base, api_key, model)
+    res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base_url, api_key, model)
     return res
 
 
@@ -404,7 +654,7 @@ def _open_browser():
 if __name__ == "__main__":
     print("┌──────────────────────────────────────────────────────────┐")
     print("│  KONSÜL AI — Çoklu Model Konsey & Kör Jüri İstasyonu     │")
-    print(f"│  Adres: http://{HOST}:{PORT}                              │")
+    print(f"│  Adres: http://{HOST}:{PORT}")
     print("│  Kapatmak için: Ctrl+C                                   │")
     print("└──────────────────────────────────────────────────────────┘")
     threading.Timer(1.1, _open_browser).start()

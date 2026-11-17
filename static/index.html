@@ -898,6 +898,204 @@ body::before {
   .jurygrid { grid-template-columns: 1fr !important; }
 }
 
+/* ═════════════════════════════════════════════════════════════════════
+   MASA 05 — MÜHÜRLÜ ZARF & İKNA DELTASI (Faz 2 taç)
+   ═════════════════════════════════════════════════════════════════════ */
+.envbar{display:flex;gap:10px;padding:14px 18px;align-items:center;flex-wrap:wrap}
+.envbar input{flex:1;min-width:240px}
+.envstatus{
+  padding:0 18px 10px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;
+  color:var(--faint);text-transform:uppercase;display:flex;align-items:center;gap:8px;
+}
+.envstatus .ok{color:var(--green)}
+.envstatus .warn{color:var(--amber)}
+.envgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:0 18px 14px;min-height:240px;align-items:stretch}
+@media (max-width:1200px){.envgrid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:768px){.envgrid{grid-template-columns:1fr 1fr}}
+.envcard{
+  position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;min-height:230px;
+  background:rgba(22,27,34,.82);border:1px solid var(--line);border-radius:4px;overflow:hidden;transition:.25s;
+}
+.envcard .env-top{display:flex;align-items:center;gap:10px}
+.envcard .env-sealmark{
+  width:38px;height:38px;flex:0 0 38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:"Space Grotesk";font-weight:700;font-size:15px;
+  background:radial-gradient(circle at 35% 30%, rgba(227,179,65,.28), rgba(227,179,65,.08) 70%);
+  border:1px solid rgba(227,179,65,.55);color:var(--amber);
+  box-shadow:0 0 14px rgba(227,179,65,.18);
+}
+.envcard .env-name{font-family:"Space Grotesk";font-weight:600;font-size:12.5px;line-height:1.25}
+.envcard .env-seatlbl{font-family:"IBM Plex Mono";font-size:8.5px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-top:2px}
+.envcard .env-state{
+  margin-left:auto;font-family:"IBM Plex Mono";font-size:8.5px;letter-spacing:.14em;
+  padding:3px 8px;border-radius:2px;border:1px solid var(--line2);color:var(--faint);white-space:nowrap;
+}
+.envcard.sealing .env-state{color:var(--blue);border-color:rgba(88,166,255,.45);animation:breathe 1.2s infinite}
+.envcard.sealed .env-state{color:var(--amber);border-color:rgba(227,179,65,.55)}
+.envcard.opened{border-color:rgba(57,197,207,.5);box-shadow:0 0 16px rgba(57,197,207,.12)}
+.envcard.opened .env-state{color:var(--cyan);border-color:rgba(57,197,207,.5)}
+.envcard .env-body{flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center}
+.envcard .env-word{
+  font-family:"Space Grotesk";font-weight:700;font-size:19px;letter-spacing:.12em;color:var(--amber);
+  text-align:center;padding:6px 0;
+}
+.envcard.opened .env-word{color:var(--cyan)}
+.envcard .env-pos{
+  font-size:11.5px;line-height:1.6;color:var(--dim);overflow-y:auto;max-height:150px;
+  border:1px dashed var(--line2);border-radius:3px;padding:9px 10px;white-space:pre-wrap;
+}
+.envcard .env-pos.md *{font-size:11.5px}
+.envcard .env-sealline{font-family:"IBM Plex Mono";font-size:8.5px;color:var(--faint);letter-spacing:.08em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.envcard .env-sealline b{color:var(--amber);font-weight:500}
+.envcard .env-locked-look::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(45deg, rgba(227,179,65,.03) 0 10px, transparent 10px 20px);
+}
+.envcard .env-live{
+  flex:1;font-size:11px;color:var(--faint);overflow-y:auto;max-height:150px;
+  font-family:"IBM Plex Mono";line-height:1.6;white-space:pre-wrap;
+}
+
+/* İKNA DELTASI PANELİ */
+.delta-panel{margin:0 18px 18px;padding:18px 20px}
+.delta-panel .d-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.delta-panel .d-head .t{font-family:"Space Grotesk";font-weight:700;font-size:15px;color:var(--amber)}
+.delta-panel .d-head .src{margin-left:auto;font-family:"IBM Plex Mono";font-size:9px;letter-spacing:.16em;color:var(--faint);border:1px solid var(--line2);padding:3px 8px;border-radius:2px}
+.delta-summary{
+  font-size:13px;line-height:1.65;color:var(--text);border-left:3px solid var(--amber);
+  background:linear-gradient(90deg,rgba(227,179,65,.08),transparent);padding:10px 14px;border-radius:0 3px 3px 0;margin-bottom:14px;
+}
+.delta-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media (max-width:1100px){.delta-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:700px){.delta-grid{grid-template-columns:1fr}}
+.delta-card{border:1px solid var(--line);border-radius:4px;padding:12px;background:rgba(10,14,20,.4);display:flex;flex-direction:column;gap:7px}
+.delta-card .dc-top{display:flex;align-items:center;gap:8px}
+.delta-card .dc-key{font-family:"IBM Plex Mono";font-weight:700;font-size:11px;color:#04070b;background:var(--dc,#39c5cf);padding:2px 7px;border-radius:3px}
+.delta-card .dc-name{font-family:"Space Grotesk";font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.delta-card .dc-score{font-family:"Space Grotesk";font-weight:700;font-size:30px;line-height:1;color:var(--dc,#39c5cf)}
+.delta-card .dc-score small{font-size:11px;color:var(--faint);font-weight:400;letter-spacing:.1em}
+.delta-card .dc-bar{height:4px;border-radius:2px;background:#1c2330;overflow:hidden}
+.delta-card .dc-bar i{display:block;height:100%;background:var(--dc,#39c5cf);box-shadow:0 0 8px var(--dc,#39c5cf);transition:width .8s ease}
+.delta-card .dc-tag{font-family:"IBM Plex Mono";font-size:8.5px;letter-spacing:.16em;color:var(--dc,#39c5cf);text-transform:uppercase}
+.delta-card .dc-note{font-size:10.5px;color:var(--dim);line-height:1.5}
+.delta-card .dc-trig{font-size:10.5px;color:var(--blue);line-height:1.5;border-top:1px dashed var(--line);padding-top:6px}
+.pmap{display:flex;flex-direction:column;gap:6px}
+.pmap-row{display:flex;align-items:center;gap:10px;font-family:"IBM Plex Mono";font-size:10.5px;border:1px solid var(--line);border-radius:3px;padding:8px 12px;background:rgba(10,14,20,.3)}
+.pmap-row .arrow{color:var(--cyan);font-weight:700}
+.pmap-row .bar{flex:0 0 120px;height:4px;background:#1c2330;border-radius:2px;overflow:hidden}
+.pmap-row .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--cyan))}
+.pmap-row .ev{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.delta-busy{font-family:"IBM Plex Mono";font-size:11px;color:var(--cyan);display:flex;align-items:center;gap:8px;padding:6px 0}
+.delta-busy i{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:breathe 1s infinite}
+
+/* ═════════════════════════════════════════════════════════════════════
+   FAZ 2 — İÇ SES · GERİLİM · İDİA DEFTERİ · OYLAMA · YAKINSAMA · ARŞİV
+   ═════════════════════════════════════════════════════════════════════ */
+/* İki katmanlı zihin: gizli iç ses bloğu */
+.inner-note{
+  margin-top:9px;padding:8px 12px;border:1px dashed rgba(244,63,94,.4);border-radius:3px;
+  background:linear-gradient(90deg,rgba(244,63,94,.06),transparent);
+  font-size:12px;font-style:italic;color:#fda4af;line-height:1.55;
+}
+body.inner-off .inner-note{display:none}
+.inner-note .ilbl{
+  display:block;font-style:normal;font-family:"IBM Plex Mono";font-size:8.5px;letter-spacing:.2em;
+  color:var(--crimson);margin-bottom:4px;text-transform:uppercase;
+}
+.msg .claimrow{display:flex;gap:8px;padding:0 13px 9px;align-items:center}
+.claimbtn{
+  background:rgba(57,197,207,.07);border:1px solid rgba(57,197,207,.35);color:var(--cyan);
+  font-family:"IBM Plex Mono";font-size:9px;letter-spacing:.1em;padding:3px 9px;border-radius:3px;transition:.15s;
+}
+.claimbtn:hover:not(:disabled){background:rgba(57,197,207,.16);box-shadow:0 0 10px rgba(57,197,207,.2)}
+.claimbtn:disabled{opacity:.45;cursor:wait}
+.claimbtn.busy{animation:breathe 1s infinite}
+
+/* Gerilim & Yakınsama */
+.meter{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.meter .mv{font-family:"Space Grotesk";font-weight:700;font-size:22px;min-width:56px;text-align:right}
+.meter .mbar{flex:1;height:5px;background:#1c2330;border-radius:3px;overflow:hidden}
+.meter .mbar i{display:block;height:100%;transition:width .6s ease}
+.meter .mk{font-family:"IBM Plex Mono";font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase}
+.meter.alert .mv{color:var(--red);text-shadow:0 0 12px rgba(248,81,73,.5)}
+.meter.warn .mv{color:var(--amber)}
+.meter .mtag{font-family:"IBM Plex Mono";font-size:8.5px;color:var(--dim);flex-basis:100%;line-height:1.5}
+.spark{width:100%;height:34px;display:block}
+
+/* İddia Defteri */
+.claimlist{display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto}
+.claimrow-item{border:1px solid var(--line);border-radius:3px;padding:8px 10px;background:rgba(10,14,20,.35);cursor:pointer;transition:.15s}
+.claimrow-item:hover{border-color:rgba(57,197,207,.4)}
+.claimrow-item .cr1{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono";font-size:9.5px}
+.claimrow-item .crv{padding:2px 7px;border-radius:2px;font-size:8.5px;letter-spacing:.12em}
+.crv.ok{background:rgba(61,220,132,.14);color:var(--green);border:1px solid rgba(61,220,132,.4)}
+.crv.part{background:rgba(227,179,65,.14);color:var(--amber);border:1px solid rgba(227,179,65,.4)}
+.crv.bad{background:rgba(248,81,73,.14);color:var(--red);border:1px solid rgba(248,81,73,.4)}
+.crv.info{background:rgba(139,148,158,.14);color:var(--dim);border:1px solid var(--line2)}
+.claimrow-item .crs{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.claimrow-item .crb{margin-top:6px;font-size:10.5px;color:var(--dim);line-height:1.55;display:none;white-space:pre-wrap;border-top:1px dashed var(--line);padding-top:6px}
+.claimrow-item.open .crb{display:block}
+.claim-empty{font-family:"IBM Plex Mono";font-size:9.5px;color:var(--faint);letter-spacing:.08em;line-height:1.7}
+
+/* Zorunlu Oylama şeridi */
+.votestrip{display:none;grid-template-columns:repeat(5,1fr) auto;gap:8px;padding:10px 14px;border-top:1px dashed rgba(227,179,65,.35);background:rgba(227,179,65,.04);align-items:stretch}
+.votestrip.on{display:grid}
+@media(max-width:900px){.votestrip{grid-template-columns:repeat(2,1fr)}}
+.vcell{border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:rgba(10,14,20,.5);display:flex;flex-direction:column;gap:3px;min-height:74px}
+.vcell .vk{font-family:"IBM Plex Mono";font-size:9px;color:var(--faint);letter-spacing:.14em}
+.vcell .vs{font-family:"Space Grotesk";font-weight:700;font-size:20px;color:var(--amber)}
+.vcell .vw{font-family:"Space Grotesk";font-weight:600;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vcell .vt{font-size:9px;color:var(--faint);font-family:"IBM Plex Mono";overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vcell.waiting .vs{color:var(--faint);animation:breathe 1.2s infinite}
+.vsum{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;border:1px solid rgba(227,179,65,.5);border-radius:4px;padding:8px 14px;background:rgba(227,179,65,.08);min-width:110px}
+.vsum .vs{font-family:"Space Grotesk";font-weight:700;font-size:26px;color:var(--amber)}
+.vsum .vk{font-family:"IBM Plex Mono";font-size:8.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+
+/* ══ FAZ 3 (L2) — HUKUKİ KARAR PROTOKOLÜ ══ */
+.decision-panel{border-color:rgba(139,92,246,.4)}
+.decision-body{
+  margin:0 18px;padding:20px 24px;background:rgba(20,16,34,.55);border:1px solid var(--line);
+  border-top:3px double rgba(196,155,255,.55);border-radius:3px;max-height:560px;overflow-y:auto;
+  font-size:13px;line-height:1.7;color:var(--text);
+}
+.decision-body h1,.decision-body h2{font-family:"Space Grotesk";font-size:14px;letter-spacing:.06em;color:#c49bff;margin:18px 0 8px;border-bottom:1px solid rgba(196,155,255,.25);padding-bottom:4px}
+.decision-body h1:first-child,.decision-body h2:first-child{margin-top:0}
+.decision-body .doss{font-family:"IBM Plex Mono";font-size:10.5px;color:var(--faint);letter-spacing:.05em;line-height:1.9;border-bottom:1px dashed var(--line2);padding-bottom:12px;margin-bottom:6px}
+.decision-body .serh{border-left:3px solid rgba(244,63,94,.6);background:rgba(244,63,94,.05);padding:10px 14px;margin:10px 0;border-radius:0 3px 3px 0}
+.decision-body .serh .sh{font-family:"IBM Plex Mono";font-size:9.5px;letter-spacing:.14em;color:var(--crimson);margin-bottom:5px}
+.sigil-block{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:16px 18px 6px}
+.sigil-stamp{
+  border:2px solid var(--dc,#888);color:var(--dc,#888);border-radius:4px;padding:7px 12px;text-align:center;
+  font-family:"Space Grotesk";font-weight:700;font-size:11px;letter-spacing:.08em;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.4);position:relative;transform:rotate(-1.2deg);
+}
+.sigil-stamp:nth-child(even){transform:rotate(1.4deg)}
+.sigil-stamp small{display:block;font-family:"IBM Plex Mono";font-weight:400;font-size:8px;letter-spacing:.14em;opacity:.85;margin-top:2px}
+.sigil-stamp.dissent{border-color:var(--red);color:var(--red);border-style:dashed}
+.sigil-stamp.op{border-color:var(--crimson);color:var(--crimson)}
+.decision-foot{padding:10px 18px 16px;font-family:"IBM Plex Mono";font-size:9px;color:var(--faint);letter-spacing:.04em;line-height:1.8}
+.decision-foot .fp{color:var(--purple)}
+/* Sesli masa: mesaj üstü ses butonları (claimbtn ile aynı dil) */
+.claimbtn.spk.on{background:rgba(139,92,246,.25);border-color:var(--purple);color:#d8c5ff;box-shadow:0 0 12px rgba(139,92,246,.3)}
+/* ══ MASA 6 — ARŞİV & TUTANAK ══ */
+.arch{flex:1;display:grid;grid-template-columns:380px 1fr;gap:14px;padding:14px 18px;min-height:0}
+@media(max-width:1100px){.arch{grid-template-columns:1fr;overflow-y:auto}}
+.archlist{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.archlist .filter{padding:10px 12px;border-bottom:1px solid var(--line)}
+.sessrow{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);padding:11px 14px;transition:.15s;color:var(--text)}
+.sessrow:hover{background:rgba(57,197,207,.05)}
+.sessrow.on{background:linear-gradient(90deg,rgba(57,197,207,.1),transparent);box-shadow:inset 3px 0 0 var(--cyan)}
+.sessrow .sr1{display:flex;align-items:center;gap:8px;font-family:"Space Grotesk";font-weight:600;font-size:12.5px}
+.sessrow .sr1 .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sessrow .srbadge{font-family:"IBM Plex Mono";font-size:8px;letter-spacing:.14em;padding:2px 6px;border-radius:2px;border:1px solid var(--line2);color:var(--faint);white-space:nowrap}
+.sessrow .srbadge.active{color:var(--green);border-color:rgba(61,220,132,.4)}
+.sessrow .sr2{font-family:"IBM Plex Mono";font-size:9px;color:var(--faint);letter-spacing:.06em}
+.sessrow .sr3{font-size:10.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.archdetail{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.archdetail .adbar{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.archdetail .adbar .tt{font-family:"Space Grotesk";font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.archmsgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+
 </style>
 </head>
 <body>
@@ -945,12 +1143,21 @@ body::before {
         <span class="num">04</span>
         <span><span class="tt">Karakter Kütüphanesi</span><br><span class="sub">İkonik Şahsiyetler &amp; Mimar</span></span>
       </button>
+      <button class="roomnav" data-room="envelope">
+        <span class="num">05</span>
+        <span><span class="tt">Mühürlü Zarf &amp; İkna</span><br><span class="sub">Kararın Oluşum Kanıtı</span></span>
+      </button>
+      <button class="roomnav" data-room="archive">
+        <span class="num">06</span>
+        <span><span class="tt">Arşiv &amp; Tutanak</span><br><span class="sub">Oturum Geçmişi · İndirme</span></span>
+      </button>
       <div class="lbl">Sandalyeler</div>
       <div class="seatchips" id="seatChips"></div>
       <div class="foot">
-        KONSÜL AI v1.0<br>
+        KONSÜL AI v1.1<br>
         OpenAI-Uyumlu Evrensel Uç<br>
-        9Router · Ollama · LM Studio
+        9Router · Ollama · LM Studio<br>
+        Zarf Mühürlü · Delta Ölçülü
       </div>
     </nav>
 
@@ -988,7 +1195,7 @@ body::before {
                 <div class="core-tank-scanline"></div>
               </div>
               <div class="core-metrics">
-                <span>NÖRAL BAĞLANTI: %99.8</span>
+                <span id="coreNetStat">NÖRAL BAĞLANTI: KONTROL…</span>
                 <div class="core-wave"><span></span><span></span><span></span><span></span><span></span></div>
               </div>
             </div>
@@ -1011,12 +1218,14 @@ body::before {
                   <circle cx="20" cy="20" r="3.4" stroke="#f2f6fa" stroke-width="1.4"/>
                 </svg>
                 <h3>Masa boş — sandalyeler hazır</h3>
-                <p>Sağdaki panelden bir konu girin ve <b style="color:var(--cyan)">“Tartışmayı Başlat”</b> deyin. Konsey Stratejist → Tekniker → Eleştirmen sırasıyla paslaşır.</p>
+                <p>Sağdaki panelden bir konu girin ve <b style="color:var(--cyan)">“Tartışmayı Başlat”</b> deyin. 5 sandalye sırayla paslaşır; kırmızı çizgi tetiklenirse itiraz motoru söz keser.</p>
               </div>
             </div>
+            <div class="votestrip" id="voteStrip"></div>
             <div class="opbar">
               <span class="tag" style="background:var(--crimson);color:#ffffff;font-weight:700">👑 OPERATÖR</span>
-              <input type="text" id="opInput" placeholder="Masaya müdahale edin veya yeni gündem dayatın… (Enter)" />
+              <input type="text" id="opInput" placeholder="Masaya müdahale edin veya yeni gündem dayatın… (Enter / 🎙 dikte)" />
+              <button class="ghostbtn" id="btnDictate" title="Sesli komut: konuşun, söz metne dökülür (tr-TR)" style="font-size:15px">🎙</button>
               <button class="btn primary" id="opSend" style="background:var(--crimson);border-color:var(--crimson)">Söz Al &amp; Gönder</button>
             </div>
             <div class="op-tactics-bar">
@@ -1041,7 +1250,7 @@ body::before {
             </div>
             <div class="hud ctrl">
               <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-              <div class="t">Otomasyon</div>
+              <div class="t">Otomasyon &amp; Başkan</div>
               <div class="autorow">
                 <span class="minilabel">Otomatik Paslaşma</span>
                 <label class="switch"><input type="checkbox" id="autoChk"><span class="tr"></span></label>
@@ -1051,6 +1260,58 @@ body::before {
               </div>
               <div style="margin-top:10px;font-family:'IBM Plex Mono';font-size:9.5px;color:var(--faint);letter-spacing:.06em;line-height:1.6" id="autoNote">
                 Manuel mod: her sözü siz verirsiniz.
+              </div>
+              <div class="autorow" style="margin-top:8px">
+                <span class="minilabel" title="Delegelerin masaya söylemediği iç sesleri göster/gizle (director's cut)">İÇ SES MODU (Director's Cut)</span>
+                <label class="switch"><input type="checkbox" id="innerChk" checked><span class="tr"></span></label>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
+                <button class="btn wide" id="btnVote">🗳 ZORUNLU OYLAMA (0-10 + Kelime)</button>
+                <button class="btn wide" id="btnDecision" style="border-color:rgba(139,92,246,.6);color:#a78bfa">⚖ KARAR RAPORU &amp; ŞERHLER</button>
+                <button class="ghostbtn" id="btnConclude" style="width:100%">📁 OTURUMU KAPAT &amp; HATIRLAT</button>
+              </div>
+            </div>
+            <div class="hud ctrl">
+              <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+              <div class="t">Gerilim &amp; Yakınsama</div>
+              <div class="mk" style="font-family:'IBM Plex Mono';font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase">Gerilim Metresi</div>
+              <div class="meter" id="tensionMeter">
+                <span class="mv" id="tensionVal">—</span>
+                <span class="mbar"><i id="tensionBar" style="width:0%"></i></span>
+              </div>
+              <div class="mtag" id="tensionTag">İtiraz hakemi masanın ısısını ölçüyor…</div>
+              <div class="mk" style="font-family:'IBM Plex Mono';font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-top:12px">Yakınsama (tur başı)</div>
+              <div class="meter" id="convMeter">
+                <span class="mv" id="convVal">—</span>
+                <span class="mbar"><i id="convBar" style="width:0%;background:var(--purple)"></i></span>
+              </div>
+              <div class="mtag" id="convTag">Tam bir tur bitince 5 sandalyenin semantik yakınlığı ölçülür.</div>
+              <svg class="spark" id="convSpark" viewBox="0 0 100 34" preserveAspectRatio="none"><polyline id="convSparkLine" points="" fill="none" stroke="var(--purple)" stroke-width="1.5"/></svg>
+            </div>
+            <div class="hud ctrl">
+              <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+              <div class="t">İddia Defteri</div>
+              <div class="claimlist" id="claimList">
+                <div class="claim-empty">Henüz iddia doğrulanmadı.<br>Bir mesajın altındaki "🔍 İDDİAYI DOĞRULA" ile canlı web ajanı devreye girer; rapor bu deftere düşer.</div>
+              </div>
+            </div>
+            <div class="hud ctrl">
+              <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+              <div class="t">Sesli Masa</div>
+              <div class="autorow">
+                <span class="minilabel" title="Yeni sözler bitince karakterin kendi sesiyle otomatik okunur (tarayıcı TTS)">CANLI SES (otomatik okuma)</span>
+                <label class="switch"><input type="checkbox" id="liveVoiceChk"><span class="tr"></span></label>
+              </div>
+              <div class="autorow">
+                <span class="minilabel" title="Operatör müdahalelerini de seslendir (insan koltuğu, robot değil — siz konuşsanız da okusun)">OPERATÖRÜ DE OKU</span>
+                <label class="switch"><input type="checkbox" id="opVoiceChk"><span class="tr"></span></label>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="ghostbtn" id="btnVoiceStop" style="flex:1">⏸ SESİ DURDUR</button>
+                <button class="ghostbtn" id="btnVoiceTestAll" style="flex:1" title="Beş sandalyenin seslerini sırayla 1 cümleyle tanıt">🎭 SESLİ TANITIM</button>
+              </div>
+              <div style="margin-top:8px;font-family:'IBM Plex Mono';font-size:9px;color:var(--faint);letter-spacing:.05em;line-height:1.6" id="voiceNote">
+                Sesler tarayıcının yerel TTS motorundan gelir (harici servis yok). Her sandalye için modalda farklı ses atayabilirsiniz.
               </div>
             </div>
             <div class="hud ctrl">
@@ -1083,8 +1344,15 @@ body::before {
           <input type="text" id="juryPrompt" placeholder="Jüriye sunulacak soruyu yazın — üç modele aynı anda sorulur…" />
           <button class="btn primary" id="btnJury">⚡ Bağımsız Yanıtları Başlat</button>
           <button class="btn danger" id="btnJuryStop" disabled>■ Tümünü Durdur</button>
+          <button class="btn small" id="btnJuryBlind" disabled style="border-color:rgba(139,92,246,.6);color:#a78bfa" title="Başhakem, cevapları adlandırılmış halde (JÜRİ 1..5) okur; kimlikler rapordan sonra açılır.">⚖ KÖR DEĞERLENDİRME (HAKEM)</button>
         </div>
         <div class="jurygrid" id="juryGrid"></div>
+        <div class="hud" id="blindPanel" style="display:none;margin:14px 0 4px">
+          <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+          <div class="t" style="padding:12px 14px 0;color:#a78bfa">KÖR JÜRİ RAPORU · HAKEM YÜZLERİ GÖRMEDİ</div>
+          <div class="md" id="blindBody" style="padding:12px 14px;max-height:420px;overflow-y:auto"></div>
+          <div id="blindReveal" style="padding:0 14px 14px"></div>
+        </div>
       </section>
 
       <!-- ── MASA 3 · SENTEZ ── -->
@@ -1168,6 +1436,79 @@ body::before {
 
         <!-- Karakter Kartları Izgarası -->
         <div class="char-grid" id="charGrid"></div>
+      </section>
+
+      <!-- ── MASA 5 · MÜHÜRLÜ ZARF & İKNA DELTASI ── -->
+      <section class="room" id="room-envelope">
+        <div class="roomhead">
+          <div>
+            <div class="kicker">Masa 05 · Kararın Oluşum Kanıtı</div>
+            <h1>MÜHÜRLÜ ZARF &amp; İKNA DELTASI</h1>
+          </div>
+          <div class="desc">Açık tartışma başlamadan önce her delege, diğerlerinden habersiz izole kanaldan nihai pozisyonunu yazar; zarflar SHA-256 ile mühürlenir. Konsey bitince zarflar aynı saniyede açılır — ve İkna Deltası, kimi kimin hangi kanıtla ikna ettiğini ölçer.</div>
+        </div>
+        <div class="envbar">
+          <input type="text" id="envTopic" placeholder="Mühürlenecek konu… (Konseyde konu varsa otomatik dolar)" />
+          <button class="btn primary" id="btnEnvSeal">✉ ZARFLARI MÜHÜRLE</button>
+          <button class="btn" id="btnEnvOpen" disabled>⚖ ZARFLARI AÇ</button>
+          <button class="btn primary" id="btnEnvDelta" disabled>◆ İKNA DELTASI HESAPLA</button>
+        </div>
+        <div class="envstatus" id="envStatus">0/5 MÜHÜRLÜ — Konu girin ve zarfları mühürleyin. Sonra Masa 01'de aynı konuyu tartışın ve buraya dönün.</div>
+        <div class="envgrid" id="envGrid"></div>
+        <div class="hud delta-panel" id="deltaPanel" style="display:none">
+          <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+          <div class="d-head">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e3b341" stroke-width="1.7"><path d="M3 17 9 11l4 4 8-8"/><path d="M15 7h6v6"/></svg>
+            <span class="t">İKNA DELTASI RAPORU</span>
+            <span class="src" id="deltaSrc">—</span>
+          </div>
+          <div id="deltaBody"></div>
+        </div>
+
+        <div class="hud delta-panel decision-panel" id="decisionPanel" style="display:none">
+          <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+          <div class="d-head">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c49bff" stroke-width="1.7"><path d="M12 3v18M5 7l7-4 7 4M5 7v3a4 4 0 0 0 4 4M19 7v3a4 4 0 0 1-4 4"/><path d="M5 20h14"/></svg>
+            <span class="t" style="color:#c49bff">KONSÜL KARAR RAPORU · RESMÎ BELGE</span>
+            <span class="src" id="decisionSrc">—</span>
+            <button class="ghostbtn" id="btnDecisionDownload" style="margin-left:10px">⬇ İNDİR (.md)</button>
+          </div>
+          <div class="decision-body" id="decisionBody"></div>
+          <div class="sigil-block" id="sigilBlock"></div>
+          <div class="decision-foot" id="decisionFoot"></div>
+        </div>
+      </section>
+
+      <!-- ── MASA 6 · ARŞİV & TUTANAK ── -->
+      <section class="room" id="room-archive">
+        <div class="roomhead">
+          <div>
+            <div class="kicker">Masa 06 · Süreklilik ve Hesap Verebilirlik</div>
+            <h1>ARŞİV &amp; TUTANAK ODASI</h1>
+          </div>
+          <div class="desc">Tamamlanan tüm konsey oturumları yerel veritabanında saklanır. Tutanakları okuyun, Markdown olarak indirin ya da konuyu tekrar masaya taşıyın — karakterler kendi hafızalarıyla geri döner.</div>
+        </div>
+        <div class="arch">
+          <div class="hud archlist">
+            <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+            <div class="filter"><input type="text" id="archFilter" placeholder="Tutanakta ara (konu)…"></div>
+            <div style="flex:1;overflow-y:auto" id="sessList"></div>
+          </div>
+          <div class="hud archdetail">
+            <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+            <div class="adbar">
+              <span class="tt" id="adTitle">Tutanak seçilmedi</span>
+              <button class="ghostbtn" id="btnArchMd" disabled>⬇ MARKDOWN İNDİR</button>
+              <button class="btn small" id="btnArchReopen" disabled>↻ MASAYA TAŞI</button>
+            </div>
+            <div class="archmsgs" id="adBody">
+              <div class="empty" style="min-height:300px">
+                <h3>Arşiften bir oturum seçin</div>
+                <p>Soldaki listeden bir oturuma tıklayın; tam tutanak burada açılır.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -1278,6 +1619,14 @@ body::before {
           </div>
         </div>
 
+        <div class="field row" style="display:grid;grid-template-columns:2fr auto;gap:10px;margin-bottom:10px;align-items:end">
+          <div>
+            <label>Ses (Sesli Masa · tarayıcı TTS)</label>
+            <select id="fVoice" style="width:100%"></select>
+          </div>
+          <button class="ghostbtn" id="fVoiceTest" style="padding:7px 12px;font-size:11px">🔊 Bu Sesle Dene</button>
+        </div>
+
         <div class="mtest" style="margin-top:6px">
           <span class="led" id="mLed"></span>
           <span id="mTestTxt">Bağlantı testi bekleniyor</span>
@@ -1312,7 +1661,7 @@ body::before {
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 10);
-const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const now = () => new Date().toLocaleTimeString("tr-TR", {hour12:false});
 
 /* ── Uç presetleri ── */
@@ -1440,7 +1789,8 @@ const state = {
   backend: false,      // /api/health erişilebilir mi
   demo: false,         // demo mod zorlaması
   room: "council",
-  council: { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds:2, autoPending:false },
+  council: { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds:2, autoPending:false,
+    claims:[], tension:null, convHistory:[], votes:null, voting:false, verdict:"" },
   jury: {
     prompt: "",
     cols: {
@@ -1545,37 +1895,47 @@ function mountMd(container, text, streaming){
   });
 }
 
-/* ═══════════════════════ DEMO MOTORU ═══════════════════════ */
+/* ═══════════════════════ DEMO MOTORU v2 (5 koltuk) ═══════════════════════
+   Denetim B4: demo artık ROL dizesiyle değil KOLTUK ANAHTARIyla eşlenir.
+   5 sandalye 5 farklı tartışma işlevi görür: Çerçeve · Kanıt · Sahaya İndirme
+   · Güç Haritası · Derin Soru — karakter adıyla birinci şahıs konuşur. */
 const DEMO = {
-  stratejist(topic, prev){
-    const ref = prev ? '> '+prev.name+' — "'+prev.excerpt+'…" dedi. Teşhis doğru; ama öncelik sırası yeniden kurulmalı.\n\n' : "";
-    return ref+"Stratejik çerçeveyi üç katmanda kuruyorum — konu: **"+topic+"**\n\n## 1 · Büyük Resim\nBu mesele tek hamlelik değil; asıl kaldıraç *zamanlama* ve *öncelik sırası*. Erken kazanım getirecek adımla temeli ayırmak şart.\n\n## 2 · Hamle Sırası\n1. **Keşif (1–2 gün):** Mevcut durumun envanteri, kısıtların netleşmesi.\n2. **Çekirdek hamle:** En yüksek etki / en düşük maliyet kesişimindeki adım.\n3. **Doğrulama:** Sonucu ölçecek tek ve net metrik tanımlanır.\n\n## 3 · Risk ve Kaldıraç\n- En büyük risk: kapsamın sessizce şişmesi.\n- Kaldıraç: ilk 48 saatte küçük ama görünür bir çıktı.\n\n> Özet: Önce daralt, sonra derinleştir. Geniş başlamak bu konunun doğal düşmanı.";
-  },
-  teknikci(topic, prev){
-    const ref = prev ? prev.name+' noktasına teknik şerhim var — "'+prev.excerpt+'…" kulağa iyi geliyor, uygulanabilirlik başka mesele.\n\n' : "";
-    return ref+"İşi çalışan parçalara bölüyorum. Laf değil, adım:\n\n## Uygulama Planı\n1. **İskelet:** Minimal çalışan hat kurulur — süs yok, boru döşenir.\n2. **Veri akışı:** Girdi → işleme → çıktı zinciri tek noktadan izlenir.\n3. **Gözlem:** Her adımda kayıt; hata sessizce yutulmaz.\n\n```python\n# Örnek iskelet — konu: "+topic+"\ndef karar_hatti(girdi):\n    ara = normalize(girdi)        # 1. temizle\n    sonuc = cekirdek_islem(ara)   # 2. asıl iş\n    if not dogrula(sonuc):\n        raise Hata('Doğrulama başarısız')\n    return sonuc                  # 3. sessiz hata yok\n```\n\n## Teknik Açıklar\n- Strateji katmanındaki “hızlı çıktı” **test edilmeden** hızlı değil, kırılgandır.\n- Ölçek hesabı yapılmadan verilen söz teknik borç olarak geri döner.\n\nÖnce çalışan iskelet, sonra optimizasyon. Kod konuşur.";
-  },
-  elestirmen(topic, prev){
-    const ref = prev ? 'Özellikle "'+prev.excerpt+'…" — tam da burası sorgulanmalı.\n\n' : "";
-    return ref+"Masadaki sözleri okudum; şimdi acı kısım.\n\n## Zayıf Noktalar\n- **Kanıt boşluğu:** “En yüksek etki” denildi ama etkiyi ölçecek metrik yok. Ölçülmeyen iddia temennidir.\n- **Gizli varsayım:** Kaynağın sınırsız olduğu varsayılıyor. Ya değilse?\n- **Tek nokta hatası:** Plan tek doğru karara yaslanıyor; B planı yok.\n\n## Cevaplanmadan İlerlenmemeli\n1. Başarısızlık kriteri ne — neyi görürsek vazgeçeriz?\n2. En kötü senaryonun maliyeti ne?\n3. Bu çözüm 6 ay sonra hâlâ geçerli mi?\n\n## Hüküm\nFikir sağlam, *gerekçe zinciri zayıf*. Çerçeve, iskeletle **test edilmeden** karar verilmesin: önce küçük deney, sonra taahhüt.";
-  },
-  yanit(role, topic, prev){
-    const p = prev ? '"'+prev.excerpt+'…" itirazına yanıtım net: ' : "Son tur için pozisyonum net: ";
-    if(role==="Stratejist") return p+"önceliği değişen koşula göre güncelliyorum. "+(prev?prev.name+" haklı olduğu noktayı aldım, kalanını budadım. ":"")+"**Güncel hamle sırası:** 1) metriği kilitle, 2) dar kapsamla doğrula, 3) geçerse ölçekle. Konsey bu sıraya sadık kalırsa "+topic.slice(0,40)+" konusunda savrulmayız.";
-    if(role==="Tekniker") return p+"ölçmeden konuşmayı bırakalım. "+(prev?prev.name+" eleştirisindeki boşluk, tek bir doğrulama testiyle kapanır. ":"")+"İskelet 48 saatte çıkar; maliyeti düşük, bilgi değeri yüksek. **Karar kapısı teste bağlansın**, tartışmaya değil.";
-    return p+"hâlâ cevaplanmamış sorular masada. "+(prev?prev.name+" yakınlaşmayı abartıyor; ":"")+"konsensüs hissi, kanıt yerine geçmez. Deney tasarımında **başarısızlık kriteri** yazılı değilse, ben bu karara şerh koyarım.";
-  },
   hakem(){
-    return "# Hakem Raporu\n\nTarafların kayıtları tarandı; çapraz doğrulama tamamlandı.\n\n## KONSENSÜS — Ortaklaşılan Konular\n- Sorun tek hamlede değil, **aşamalı** çözülür — üç sandalye de bunda hemfikir.\n- Erken, küçük ve ölçülebilir çıktı ortak talep.\n- Kapsam şişmesi ortak düşman olarak işaretlendi.\n\n## ANLAŞMAZLIKLAR VE RİSKLER\n- **Öncelik çatışması:** Stratejist zamanlamayı, Tekniker altyapıyı öncelemek istiyor.\n- **Kanıt seviyesi:** Eleştirmen’in “metrik yok” itirazı hâlâ havada → kör uçuş riski.\n- Hız ↔ teknik borç gerilimi çözülmeden büyük taahhüt risklidir.\n\n## EYLEM PLANI VE NİHAİ KARAR\n1. **48 saat:** Tek başarı metriği tanımla.\n2. **1 hafta:** Minimal iskeleti kur, metrikle doğrula.\n3. **Karar kapısı:** Doğrulama geçerse ölçekle; geçmezse kapsamı daralt.\n\n**Nihai Karar:** Sentez “önce dar kapsamlı deney” diyor. Büyük vaat değil küçük kanıt üretin; kararı metrik yönetsin, sezgi değil.";
+    return "# Hakem Raporu\n\nTarafların kayıtları tarandı; çapraz doğrulama tamamlandı.\n\n## KONSENSÜS — Ortaklaşılan Konular\n- Sorun tek hamlede değil, **aşamalı** çözülür — masadaki zihinler bunda hemfikir.\n- Erken, küçük ve ölçülebilir çıktı ortak talep.\n- Kapsam şişmesi ortak düşman olarak işaretlendi.\n\n## ANLAŞMAZLIKLAR VE RİSKLER\n- **Öncelik çatışması:** Çerçeve kurucu zamanlamayı, Kanıtçı doğrulamayı öncelemek istiyor.\n- **Kanıt seviyesi:** Ölçülmeyen iddia itirazı hâlâ havada → kör uçuş riski.\n- Hız ↔ sağlamlık gerilimi çözülmeden büyük taahhüt risklidir.\n\n## EYLEM PLANI VE NİHAİ KARAR\n1. **48 saat:** Tek başarı metriği tanımla.\n2. **1 hafta:** Minimal iskeleti kur, metrikle doğrula.\n3. **Karar kapısı:** Doğrulama geçerse ölçekle; geçmezse kapsamı daralt.\n\n**Nihai Karar:** Sentez “önce dar kapsamlı deney” diyor. Büyük vaat değil küçük kanıt üretin; kararı metrik yönetsin, sezgi değil.";
+  },
+  yanit2(key, prev){
+    const p = prev ? '"'+prev.excerpt+'…" itirazını aldım. ' : "Son tur için pozisyonum net: ";
+    const moves = {
+      A: "Çerçeveyi güncelliyorum: öncelik sıralamasında bir kaydırma yapıyorum — önce dar kapsamda kanıt, sonra ölçek. Konsey bu disipline sadık kalırsa savrulmayız.",
+      B: "Tek bir doğrulama testiyle kapanan boşluk var; onu kuralım. **Karar kapısı teste bağlansın**, tartışmaya değil. Ölçmeden konuşmayı bırakalım.",
+      C: "Hesaplaşma zamanı geldi: bedeli ve kârı net söyleyene kadar tezi masada tutmam. Rakam yoksa söz de yok, kardeşim.",
+      D: "Güç haritası değişti; kararın fiilî iradesini yeniden okuyorum. Kudret nerede, oraya bakacağız — ahlaki cümleler araziyi değiştirmiyor.",
+      E: "Bastırılmış katman gün yüzüne çıktı: bu ısrarın altında korunan konforu görüyorum. Soruyu geri veriyorum — bu tartışmayı *neden* bu kadar savunuyorsunuz?"
+    };
+    return p + (moves[key] || moves.E);
   },
 };
 function demoTextFor(seat, ctx){
-  const role = seat.role.toLocaleLowerCase("tr");
-  if(seat.key==="H" || role.includes("hakem")) return DEMO.hakem();
-  if(ctx.turn >= 3) return DEMO.yanit(seat.role, ctx.topic, ctx.prev);
-  if(role.includes("stratej")) return DEMO.stratejist(ctx.topic, ctx.prev);
-  if(role.includes("tekn")) return DEMO.teknikci(ctx.topic, ctx.prev);
-  return DEMO.elestirmen(ctx.topic, ctx.prev);
+  if(seat.key === "H") return DEMO.hakem();
+  const focus = ["kanıt zinciri","öncelik sırası","güven varsayımı","çıkar haritası","sorusu"][ctx.turn % 5];
+  const ref = ctx.prev
+    ? '> '+ctx.prev.name+' — "'+ctx.prev.excerpt+'…" dedi. Teşhisde haklı olduğu yer var; ama '+focus+' yeniden kurulmalı.\n\n'
+    : "";
+  if(ctx.turn >= 3) return ref + DEMO.yanit2(seat.key, ctx.prev);
+  switch(seat.key){
+    case "A":
+      return ref + "Çerçeve benden gelsin — konu: **" + ctx.topic + "**. Bu mesele tek hamlelik değil; asıl kaldıraç *zamanlama* ve *güven* katmanında. Üç eksende kurayım: 1) kim ne kaybeder, 2) hangi kanıt tartışmayı bitirir, 3) hangi varsayım görünmez kalmış.\n\n> Özet: Önce daralt, sonra derinleştir — çerçevesiz karar, rüzgârda sallanan duvardır.";
+    case "B":
+      return ref + "Ben laf değil kanıt isterim: **" + ctx.topic + "**. İddiaları üç kademede tartarım — ölçülebilir mi, tekrarlanabilir mi, çürütülebilir mi?\n\n1. **Veri:** Mevcut rakamlar neler, kim hangi kaynağı kullanıyor?\n2. **Deney:** Küçük ve ucuz doğrulama adımı ne olabilir?\n3. **Hüküm:** Kanıt gelmeden taraf tutmayız; geldiği an tarafımız netleşir.\n\nÖlçülmeyen iddia temennidir. Kod konuşur, slogan susar.";
+    case "C":
+      return ref + "Sahada gördüğüm kadarıyla **" + ctx.topic + "** kâğıtta çok temiz durur. Dikkat ediniz: bu masada her sözü verenin bir hesabı vardır. Ben hesabı sorarım — ne zaman, kimin cebi, kimin sırtı?\n\n- Bedeli kim ödeyecek?\n- Kârı kim toplayacak?\n- İş bozulursa kim kaybolacak?\n\nÜçüne net cevap gelmeden tezi masada tutmam. Sokağın kanunu yazılı kanunu ezer.";
+    case "D":
+      return ref + "Güç haritası olmadan tartışma eğlencedir. **" + ctx.topic + "** için üç soru:\n\n1. **Kim kazanır?** Bu kararın alıcısı kim, ne elde eder?\n2. **Kim direnir?** Ve direnişin bedeli ne?\n3. **Kudret nerede?** Kağıt üzerindeki yetki ile fiilî irade aynı mı?\n\nAhlaki cümleler masaya su serper; karar, suyun akış yönünü belirleyen arazide verilir. Bana araziyi gösterin, gerisini söyleyeyim.";
+    case "E":
+      return ref + "Sorunun yüzeyi değil, derini ilgimi çekiyor. **" + ctx.topic + "** derken asıl neyi kastediyoruz? Her yüzeysel uzlaşının altında bastırılmış bir dürtü, gizli bir korku ya da korunmak istenen bir konfor vardır.\n\nSorulması gerekenler: 1) Bu konuyu *neden şimdi* tartışıyoruz? 2) Kim bu tartışmanın bitmesini istemiyor? 3) Tartışmayı kazanan, aslında ne kaybediyor?\n\nYanıt, sorunun arkasındaki soruda saklıdır.";
+    default:
+      return ref + "Pozisyonum netleşiyor: **" + ctx.topic + "**. Kanıt, çıkar ve zamanlama birlikte okunmadan taraf tutmak lükstür. Masadaki uzlaşı hissi, kanıt yerine asla geçemez.";
+  }
 }
 function demoStream(seat, messages, hooks){
   const lastUser = [...messages].reverse().find(m=>m.role==="user") || {content:""};
@@ -1682,6 +2042,9 @@ function councilMsgEl(m){
       '<div class="bbody md" id="body-'+m.id+'"></div>' +
       (m.error ? '<div class="errnote">⚠ '+esc(m.error)+'</div>' : '') +
       (m.stopped ? '<div class="stoppednote">■ OPERATÖR TARAFINDAN DURDURULDU</div>' : '') +
+      (m.inner ? '<div class="inner-note"><span class="ilbl">◉ İç Ses — kimsenin duymadığı katman</span>' + esc(m.inner) + '</div>' : '') +
+      (m.kind !== "op" ? '<div class="claimrow"><button class="claimbtn spk" data-spk="'+m.id+'">🔊</button><button class="claimbtn" data-verify="'+m.id+'">🔍 İDDİAYI DOĞRULA</button></div>' : '') +
+      (m.kind === "op" ? '<div class="claimrow"><button class="claimbtn spk" data-spk="'+m.id+'">🔊</button></div>' : '') +
     '</div>';
   return div;
 }
@@ -1689,9 +2052,21 @@ function pushCouncil(m){
   $("#cEmpty") && $("#cEmpty").remove();
   const el = councilMsgEl(m);
   cScroll.appendChild(el);
+  const vb = el.querySelector("[data-verify]");
+  if(vb) vb.onclick = ()=>runVerifyClaim(m, vb);
+  const sb = el.querySelector("[data-spk]");
+  if(sb) sb.onclick = ()=>toggleSpeakMsg(m, sb);
   mountMd(el.querySelector("#body-"+m.id), m.text || "", m.streaming);
   cScroll.scrollTop = cScroll.scrollHeight;
   return el;
+}
+function toggleSpeakMsg(m, btn){
+  if(!ttsSupported()){ toast("Tarayıcınız TTS desteklemiyor (Chrome/Edge önerilir)."); return; }
+  if(btn.classList.contains("on")){ stopAllSpeech(); return; }
+  const seatKey = m.kind === "op" ? "OP" : m.seat;
+  markSpkButtons(false);
+  setSpkButton(btn, true);
+  speakSeat(seatKey, m.text, { onend: ()=>setSpkButton(btn, false) });
 }
 function updateCouncilMsg(m){
   const el = document.getElementById("msg-"+m.id);
@@ -1720,6 +2095,854 @@ function councilTranscript(){
   });
   return lines.join("\n");
 }
+
+/* ═══════════════════════ FAZ 2 MOTORLARI ═══════════════════════ */
+
+/* ── K2 · Gerilim Metresi (hakemin itiraz değerlendirirken ölçtüğü masa ısısı) ── */
+function updateTensionMeter(t, note){
+  if(t == null || isNaN(t)) return;
+  t = Math.max(0, Math.min(100, Math.round(t)));
+  state.council.tension = t;
+  const meter = $("#tensionMeter"), val = $("#tensionVal"), bar = $("#tensionBar"), tag = $("#tensionTag");
+  if(!meter) return;
+  val.textContent = t;
+  bar.style.width = t + "%";
+  let col = "var(--cyan)", cls = "";
+  if(t >= 70){ col = "var(--red)"; cls = "alert"; }
+  else if(t >= 40){ col = "var(--amber)"; cls = "warn"; }
+  bar.style.background = col;
+  meter.className = "meter" + (cls ? " " + cls : "");
+  if(tag) tag.textContent = (note || (t >= 70 ? "Masa kızıştı — hakem gerginlik algılıyor." : t >= 40 ? "Masa ılımlı — itiraz havası var." : "Masa soğuk — tartışma kontrollü akıyor.")) + " (hakem ölçümü)";
+}
+function resetTensionMeter(){
+  state.council.tension = null;
+  const meter = $("#tensionMeter"), val = $("#tensionVal"), bar = $("#tensionBar"), tag = $("#tensionTag");
+  if(!meter) return;
+  val.textContent = "—"; bar.style.width = "0%"; meter.className = "meter";
+  if(tag) tag.textContent = "İtiraz hakemi masanın ısısını ölçüyor…";
+}
+
+/* ── K3 · Yakınsama Radarı (tur başı 5 pozisyonun örtüşmesi) ── */
+function resetConvMeter(){
+  state.council.convHistory = [];
+  const val = $("#convVal"), bar = $("#convBar"), tag = $("#convTag");
+  if(val) val.textContent = "—";
+  if(bar) bar.style.width = "0%";
+  if(tag) tag.textContent = "Tam bir tur bitince 5 sandalyenin semantik yakınlığı ölçülür.";
+  const line = $("#convSparkLine"); if(line) line.setAttribute("points", "");
+}
+function renderConvSpark(){
+  const line = $("#convSparkLine"); if(!line) return;
+  const h = state.council.convHistory.slice(-20);
+  if(h.length < 2){ line.setAttribute("points", ""); return; }
+  const pts = h.map((v,i)=>{
+    const x = (i / (h.length - 1)) * 96 + 2;
+    const y = 31 - (v / 100) * 28;
+    return x.toFixed(1) + "," + y.toFixed(1);
+  }).join(" ");
+  line.setAttribute("points", pts);
+}
+async function computeConvergence(){
+  const c = state.council;
+  if(!c.sessionId) return;
+  const tag = $("#convTag");
+  if(tag) tag.textContent = "Radar hesaplanıyor… (hakem modeli)";
+  const positions = {};
+  ["A","B","C","D","E"].forEach(k=>{
+    const last = [...c.msgs].reverse().find(m=>m.seat===k && m.kind!=="op" && m.text);
+    positions[k] = last ? last.text.slice(0, 1500) : "";
+  });
+  try{
+    const H = state.seats.H;
+    const r = await fetch("/api/convergence", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        positions,
+        base_url: (H && H.baseUrl) || "https://text.pollinations.ai/openai",
+        api_key: (H && H.apiKey) || "",
+        model: (H && H.model) || "openai"
+      })
+    });
+    const d = await r.json();
+    if(d.ok && d.convergence != null){
+      c.convHistory.push(d.convergence);
+      $("#convVal").textContent = d.convergence;
+      const bar = $("#convBar"); bar.style.width = d.convergence + "%";
+      if(tag) tag.textContent = (d.note ? d.note + " — " : "") + (d.source === "mekanik" ? "mekanik benzerlik (modelsiz)" : "hakem ölçümü");
+      renderConvSpark();
+    } else {
+      if(tag) tag.textContent = "Radar hesaplanamadı: " + (d.error || "veri yok");
+    }
+  }catch(e){
+    if(tag) tag.textContent = "Radar hatası: " + e.message;
+  }
+}
+
+/* ── K1 · İç Ses Modu (director's cut: masaya söylenmeyen ikinci katman) ──
+   Her tur sonunda aynı model, izole bir geçişte "masadaki kimsenin duymadığı"
+   1-2 cümlelik iç monolog üretir. Toggle kapalıysa DOM'a hiç yazılmaz. */
+function innerThoughtEnabled(){ const el = $("#innerChk"); return !el || el.checked; }
+function innerNoteHtml(m){
+  if(!m.inner) return "";
+  return '<div class="inner-note"><span class="ilbl">◉ İç Ses — kimsenin duymadığı katman</span>' + esc(m.inner) + '</div>';
+}
+async function fetchInnerThought(m){
+  const seat = state.seats[m.seat];
+  if(!seat) return;
+  if(state.demo || !state.backend){ /* demo modda iç ses sahte üretim yapmaz — dürüst boşluk */ }
+  else {
+    const ac = new AbortController();
+    setTimeout(()=>ac.abort(), 30000);
+    const sys = (seat.system || compileSystemPrompt(seat)) +
+      "\n\nİÇ SES PROTOKOLÜ: Şimdi masadaki KİMSENİN DUYMAYACAĞI gizli iç monoloğunu yaz. 1-2 cümle, birinci şahıs, dürüst ve samimi: ne hissettin, neyi sakladın, kime karşı savunma pozisyonundasın, hangi cümlene sen de inanmıyorsun. Başlık, etiket veya açıklama EKLEME; SADECE iç ses cümlelerini yaz. Robotik kalıplar yasak.";
+    const user = "Bu turda masaya söylediklerin:\n\"" + (m.text || "").slice(0, 2500) +
+      "\n\"\nKonu: " + state.council.topic + "\nŞimdi iç sesini yaz:";
+    let acc = "";
+    await streamChat(seat, [
+      { role:"system", content: sys },
+      { role:"user", content: user },
+    ], {
+      signal: ac.signal,
+      onDelta: (t)=>{ acc = t; },
+      onError: ()=>{},
+      onDone: (stopped)=>{
+        if(!stopped){
+          const clean = acc.replace(/^\s*(İÇ SES|IC SES|İç ses)[:\s-]*/i, "").trim();
+          if(clean && clean.length < 600) m.inner = clean;
+        }
+        finalizeCouncilRecord(m);
+      },
+    });
+    return;
+  }
+  finalizeCouncilRecord(m);
+}
+function finalizeCouncilRecord(m){
+  // Veritabanına kalıcı kayıt: içerik + (varsa) iç ses tek seferde düşer (K8 loop'unun besini)
+  if(state.council.sessionId && m.text){
+    fetch("/api/session/record_message", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        session_id: state.council.sessionId,
+        seat: m.seat,
+        character_id: (state.seats[m.seat] && state.seats[m.seat].id) || m.seat,
+        role: (state.seats[m.seat] && state.seats[m.seat].role) || "seat",
+        content: m.text,
+        inner_thought: m.inner || ""
+      })
+    }).catch(()=>{});
+  }
+  if(innerThoughtEnabled() && m.inner) paintInnerNote(m);
+}
+function paintInnerNote(m){
+  const el = document.getElementById("msg-" + m.id);
+  if(!el) return;
+  const bubble = el.querySelector(".bubble");
+  if(!bubble || bubble.querySelector(".inner-note")) return;
+  const html = innerNoteHtml(m);
+  const cr = bubble.querySelector(".claimrow");
+  if(cr){ const tmp = document.createElement("div"); tmp.innerHTML = html; cr.parentNode.insertBefore(tmp.firstElementChild, cr); }
+  else bubble.insertAdjacentHTML("beforeend", html);
+}
+function toggleInnerThought(){
+  document.body.classList.toggle("inner-off", !innerThoughtEnabled());
+  // geç geçişlerde mevcut mesajları yeniden boyayalım
+  state.council.msgs.forEach(m=>{
+    const el = document.getElementById("msg-" + m.id);
+    if(!el) return;
+    const note = el.querySelector(".inner-note");
+    if(innerThoughtEnabled() && m.inner && !note) paintInnerNote(m);
+  });
+}
+
+/* ── K6 · Zorunlu Oylama (başkan yetkisi: 0-10 puan + tek kelime pozisyon) ── */
+let voteACs = {};
+function renderVoteStrip(){
+  const strip = $("#voteStrip"); if(!strip) return;
+  const c = state.council;
+  if(!c.votes){ strip.className = "votestrip"; strip.innerHTML = ""; return; }
+  const cells = ["A","B","C","D","E"].map(k=>{
+    const v = c.votes[k];
+    const s = state.seats[k];
+    if(!v) return '<div class="vcell waiting"><span class="vk">' + k + ' · ' + esc(s.charName || s.name) + '</span><span class="vs">…</span><span class="vw">oy veriyor…</span></div>';
+    return '<div class="vcell"><span class="vk">' + k + ' · ' + esc(s.charName || s.name) + '</span>' +
+      '<span class="vs">' + (v.score == null ? "?" : v.score) + '<small style="font-size:11px;color:var(--faint)">/10</small></span>' +
+      '<span class="vw" title="' + esc(v.word || "") + '">' + esc(v.word || "—") + '</span>' +
+      (v.reason ? '<span class="vt" title="' + esc(v.reason) + '">' + esc(v.reason) + '</span>' : '') +
+      '</div>';
+  }).join("");
+  const done = ["A","B","C","D","E"].filter(k=>c.votes[k] && c.votes[k].score != null);
+  const avg = done.length ? (done.reduce((a,k)=>a + c.votes[k].score, 0) / done.length).toFixed(1) : "—";
+  strip.innerHTML = cells +
+    '<div class="vsum"><span class="vk">Ortalama</span><span class="vs">' + avg + '</span><span class="vt">' + done.length + '/5 oy</span></div>';
+  strip.className = "votestrip on";
+}
+async function runMandatoryVote(){
+  const c = state.council;
+  if(c.voting){
+    Object.values(voteACs).forEach(ac=>ac.abort());
+    c.voting = false;
+    $("#btnVote").textContent = "🗳 ZORUNLU OYLAMA (0-10 + Kelime)";
+    if(!c.votes || !["A","B","C","D","E"].some(k=>c.votes[k] && c.votes[k].score==null)) renderVoteStrip();
+    return;
+  }
+  if(!c.topic){ toast("Önce bir gündem belirleyin (Masa 01)."); return; }
+  c.voting = true;
+  c.votes = { A:null, B:null, C:null, D:null, E:null };
+  $("#btnVote").textContent = "■ OYLAMAYI DURDUR";
+  pushCouncil({ id: uid(), kind:"op", text:"🗳 **ZORUNLU OYLAMA** istendi. Beş delege değerlerine göre son oyunu kullanıyor — 0-10 puan + tek kelime pozisyon.", time: now() });
+  renderVoteStrip();
+  let finished = 0;
+  const allDone = ()=>{
+    finished++;
+    if(finished < 5) return;
+    c.voting = false;
+    $("#btnVote").textContent = "🗳 ZORUNLU OYLAMA (0-10 + Kelime)";
+    const done = ["A","B","C","D","E"].filter(k=>c.votes[k] && c.votes[k].score != null);
+    if(done.length){
+      const avg = (done.reduce((a,k)=>a + c.votes[k].score, 0) / done.length).toFixed(1);
+      const words = done.map(k=>c.votes[k].word).filter(Boolean);
+      const freq = {};
+      words.forEach(w=>{ const k2 = w.toUpperCase(); freq[k2] = (freq[k2]||0)+1; });
+      const majority = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+      pushCouncil({
+        id: uid(), kind:"op",
+        text: "🗳 **OYLAMA SONUCU** — ortalama puan: **" + avg + "/10** · çoğunluk kelimesi: **" + majority + "**\n" +
+          done.map(k=>{ const v = c.votes[k]; return k + " = " + v.score + "/10 (" + (v.word||"—") + ")"; }).join(" · ") +
+          ". Başkan kaydı tutanağa geçti.",
+        time: now()
+      });
+    }
+  };
+  ["A","B","C","D","E"].forEach(k=>{
+    const seat = state.seats[k];
+    const ac = new AbortController(); voteACs[k] = ac;
+    const sys = (seat.system || compileSystemPrompt(seat)) +
+      "\n\nZORUNLU OYLAMA PROTOKOLÜ: Operatör (masa başkanı) sondan soruyor. Karakterinin değerlerine göre son oyunu ver. Yanıtını YALNIZCA şu üç satırda ver:\nPUAN: 0-10 arası tam sayı\nKELİME: Pozisyonunu özetleyen TEK kelime\nGEREKÇE: Tek cümle";
+    const user = "GÜNDEM: " + c.topic + "\nOyunu ver:";
+    let acc = "";
+    streamChat(seat, [
+      { role:"system", content: sys },
+      { role:"user", content: user },
+    ], {
+      signal: ac.signal,
+      onDelta: (t)=>{
+        acc = t;
+        const sm = t.match(/PUAN:\s*(\d{1,2})/i), wm = t.match(/KELİME:\s*([^\n]+)/i), rm = t.match(/GEREK[Ç]E:\s*([^\n]+)/i);
+        c.votes[k] = {
+          score: sm ? Math.max(0, Math.min(10, parseInt(sm[1],10))) : null,
+          word: wm ? wm[1].trim().slice(0,30) : "",
+          reason: rm ? rm[1].trim().slice(0,160) : ""
+        };
+        renderVoteStrip();
+      },
+      onError: (e)=>{ c.votes[k] = c.votes[k] || {}; c.votes[k].error = e; renderVoteStrip(); allDone(); },
+      onDone: (stopped)=>{
+        if(stopped){ c.votes[k] = c.votes[k] || {}; c.votes[k].score = c.votes[k].score ?? null; }
+        renderVoteStrip(); allDone();
+      },
+    });
+  });
+}
+
+/* ── K8 · Oturumu Kapat & Hatırlat (karar metni → episodik hafıza damıtımı) ── */
+async function concludeSession(){
+  const c = state.council;
+  if(!c.sessionId || c.modelTurns === 0){ toast("Kapatılacak aktif bir konsey oturumu yok."); return; }
+  if($("#btnConclude").textContent.includes("…")) return;
+  $("#btnConclude").disabled = true;
+  const oldLabel = $("#btnConclude").innerHTML;
+  $("#btnConclude").innerHTML = "⏳ KARAR METNİ DÖKÜLÜYOR…";
+  const H = state.seats.H;
+  const sys = (H && H.system) || "Sen tarafsız bir başhakemsin. KESİNLİKLE yapay zeka değil; gerçek bir insansın.";
+  const user = "AŞAĞIDAKİ konsey oturumu KAPATILIYOR. Resmî bir KARAR METNİ yaz: 3-5 cümle, bağlayıcı; neye uzlaşıldığı, neyin hâlâ tartışmalı olduğu ve nihai hüküm. Başlık veya 'Nihai Karar:' gibi kalıplar KULLANMA; düz paragraf yaz.\n\n" + councilTranscript().slice(0, 9000);
+  let acc = "";
+  const ac = new AbortController();
+  await streamChat(H || { system: sys, baseUrl:"https://text.pollinations.ai/openai", model:"openai" }, [
+    { role:"system", content: sys },
+    { role:"user", content: user },
+  ], {
+    signal: ac.signal,
+    onDelta: (t)=>{ acc = t; },
+    onError: (e)=>{ acc = ""; toast("Karar metni alınamadı: " + e); },
+    onDone: async (stopped)=>{
+      const verdict = (stopped ? acc : acc).trim() || "(karar metni üretilmedi)";
+      c.verdict = verdict;
+      try{
+        await fetch("/api/session/conclude", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            session_id: c.sessionId,
+            verdict: verdict,
+            topic: c.topic,
+            seated_characters: ["A","B","C","D","E"].map(k=>({ seat: k, character_id: (state.seats[k] && state.seats[k].id) || k }))
+          })
+        });
+      }catch(e){}
+      pushCouncil({
+        id: uid(), kind:"op",
+        text: "📁 **OTURUM KAPATILDI.** Karar metni tutanağa, beş karakterin bu oturuma dair damıtılmış hafızası ise **Yaşayan Hafıza** defterine işlendi — bir sonraki oturumda bu karakterler *geçen oturumda* ne dediğini hatırlayacak.\n\n> " + esc(verdict).replace(/\n/g, "\n> "),
+        time: now()
+      });
+      toast("Oturum kapatıldı — hafıza damıtıldı 🧠");
+      $("#btnConclude").disabled = false;
+      $("#btnConclude").innerHTML = oldLabel;
+    },
+  });
+}
+
+/* ── K4 · Arşiv & Tutanak Odası ── */
+let archiveSessions = [];
+let archiveReports = {}; // session_id -> {fingerprint, dissent_seats, created_at}
+async function loadArchive(){
+  const box = $("#sessList"); if(!box) return;
+  box.innerHTML = '<div class="claim-empty">Arşiv taranıyor…</div>';
+  try{
+    const [sr, rr] = await Promise.all([
+      fetch("/api/sessions?limit=100").then(r=>r.json()),
+      fetch("/api/reports?limit=100").then(r=>r.json()).catch(()=>({ok:false}))
+    ]);
+    archiveSessions = (sr.ok && sr.sessions) ? sr.sessions : [];
+    archiveReports = {};
+    if(rr.ok && rr.reports) rr.reports.forEach(rp=>{ archiveReports[rp.session_id] = rp; });
+    renderArchiveList();
+  }catch(e){
+    box.innerHTML = '<div class="claim-empty">Arşive ulaşılamadı: ' + esc(e.message) + '</div>';
+  }
+}
+function renderArchiveList(){
+  const box = $("#sessList"); if(!box) return;
+  const q = ($("#archFilter") ? $("#archFilter").value : "").toLowerCase();
+  const rows = archiveSessions.filter(s=>!q || (s.topic||"").toLowerCase().includes(q));
+  if(!rows.length){ box.innerHTML = '<div class="claim-empty">' + (archiveSessions.length ? "Filtreye uyan oturum yok." : "Arşiv boş — tamamlanan oturumlar burada birikir.") + '</div>'; return; }
+  box.innerHTML = "";
+  rows.forEach(s=>{
+    const b = document.createElement("button");
+    b.className = "sessrow" + (s.id === archiveSelected ? " on" : "");
+    const d = s.started_at ? new Date(s.started_at.replace(" ","T") + "Z") : null;
+    b.innerHTML =
+      '<div class="sr1"><span class="tt">' + esc(s.topic || "(konusuz oturum)") + '</span>' +
+      (archiveReports[s.id] ? '<span class="srbadge" style="color:#c49bff;border-color:rgba(196,155,255,.45)" title="Karar raporu — ' + (archiveReports[s.id].dissent_seats ? archiveReports[s.id].dissent_seats + ' sandalye şerh verdi' : 'oy birliği') + '">📜 RAPOR</span>' : '') +
+      '<span class="srbadge' + (s.status==="active" ? " active" : "") + '">' + (s.status==="active" ? "AKTİF" : "KAPALI") + '</span></div>' +
+      '<div class="sr2">' + esc(s.id) + (d ? " · " + d.toLocaleString("tr-TR") : "") + '</div>' +
+      '<div class="sr3">' + (s.msg_count||0) + ' kayıt' + (s.referee_verdict ? " · karar: " + esc(String(s.referee_verdict).slice(0,60)) : "") + '</div>';
+    b.onclick = ()=>openArchiveSession(s.id);
+    box.appendChild(b);
+  });
+}
+let archiveSelected = null;
+async function openArchiveSession(sid){
+  archiveSelected = sid;
+  renderArchiveList();
+  const body = $("#adBody"); if(!body) return;
+  const sess = archiveSessions.find(s=>s.id===sid);
+  $("#adTitle").textContent = sess ? (sess.topic || sid) : sid;
+  $("#btnArchMd").disabled = false; $("#btnArchReopen").disabled = false;
+  body.innerHTML = '<div class="claim-empty">Tutanak açılıyor…</div>';
+  try{
+    const r = await fetch("/api/session/" + encodeURIComponent(sid) + "/messages");
+    const d = await r.json();
+    if(!d.ok){ body.innerHTML = '<div class="claim-empty">' + esc(d.error||"bulunamadı") + '</div>'; return; }
+  body.innerHTML = "";
+  if(sess){
+    const head = document.createElement("div");
+    head.innerHTML = '<div style="font-family:\'IBM Plex Mono\';font-size:10px;color:var(--faint);letter-spacing:.06em;line-height:1.8;border-bottom:1px dashed var(--line);padding-bottom:10px">' +
+      'KONU: ' + esc(sess.topic||"—") + ' · DURUM: ' + (sess.status==="active" ? "AKTİF" : "KAPALI") +
+      (sess.referee_verdict ? '<br>KARAR METNİ: ' + esc(String(sess.referee_verdict).slice(0,300)) : '') + '</div>';
+    body.appendChild(head);
+  }
+  // Faz 3 (L2): oturuma damgalanmış resmî karar raporu varsa en üste düşer
+  if(archiveReports[sid]){
+    const repWrap = document.createElement("div");
+    const rep = archiveReports[sid];
+    const fpShort = (rep.fingerprint||"").slice(0,16);
+    repWrap.innerHTML =
+      '<button class="ghostbtn" style="width:100%;text-align:left;margin:10px 0;border-color:rgba(196,155,255,.4)" id="archRepToggle">📜 KARAR RAPORU AÇ — sha256: ' + esc(fpShort) + '… · ' +
+      (rep.dissent_seats ? esc(rep.dissent_seats) + " sandalye şerh verdi" : "oy birliği") + '</button>' +
+      '<div id="archRepBody" style="display:none;margin:0 0 14px;max-height:460px;overflow-y:auto;border:1px solid var(--line);border-top:3px double rgba(196,155,255,.5);border-radius:3px;padding:16px 18px"></div>';
+    body.appendChild(repWrap);
+    repWrap.querySelector("#archRepToggle").onclick = async ()=>{
+      const b = repWrap.querySelector("#archRepBody");
+      if(b.style.display !== "none"){ b.style.display = "none"; return; }
+      b.style.display = "";
+      if(!b.dataset.loaded){
+        b.innerHTML = '<div class="claim-empty">Rapor getiriliyor…</div>';
+        try{
+          const rr = await fetch("/api/session/" + encodeURIComponent(sid) + "/report").then(r=>r.json());
+          if(rr.ok && rr.report) b.innerHTML = '<div class="md">' + mdToHtml(rr.report.report_md) + '</div>';
+          else b.innerHTML = '<div class="claim-empty">' + esc((rr.error||"rapor bulunamadı")) + '</div>';
+        }catch(e){ b.innerHTML = '<div class="claim-empty">Rapor alınamadı: ' + esc(e.message) + '</div>'; }
+        b.dataset.loaded = "1";
+      }
+    };
+  }
+    d.messages.forEach(mg=>{
+      const div = document.createElement("div");
+      const inner = mg.inner_thought ? '<div class="inner-note" style="margin:6px 0 0"><span class="ilbl">◉ İç Ses</span>' + esc(mg.inner_thought) + '</div>' : "";
+      const rebut = mg.rebuttal_target_id ? '<div style="font-family:\'IBM Plex Mono\';font-size:9px;color:var(--amber);margin-top:5px">⚡ İTİRAZ BAĞI · ' + esc(mg.rebuttal_target_id) + '</div>' : "";
+      div.innerHTML =
+        '<div style="font-family:\'IBM Plex Mono\';font-size:9.5px;color:var(--cyan);letter-spacing:.08em">' + esc((mg.seat||"?").toUpperCase()) + (mg.role ? " · " + esc(mg.role) : "") + (mg.created_at ? " · " + esc(mg.created_at) : "") + '</div>' +
+        '<div class="md" style="font-size:12.5px;line-height:1.6;color:var(--text)">' + mdToHtml(mg.content) + '</div>' + inner + rebut;
+      body.appendChild(div);
+    });
+    body.scrollTop = 0;
+  }catch(e){
+    body.innerHTML = '<div class="claim-empty">Tutanak alınamadı: ' + esc(e.message) + '</div>';
+  }
+}
+async function downloadArchiveMd(sid){
+  const s = sid || archiveSelected;
+  if(!s) return;
+  try{
+    const [sr, mr, rr] = await Promise.all([
+      fetch("/api/sessions?limit=100").then(r=>r.json()),
+      fetch("/api/session/" + encodeURIComponent(s) + "/messages").then(r=>r.json()),
+      fetch("/api/session/" + encodeURIComponent(s) + "/report").then(r=>r.json()).catch(()=>({ok:false}))
+    ]);
+    const sess = (sr.ok && sr.sessions ? sr.sessions : []).find(x=>x.id===s);
+    let md = "# KONSÜL AI — Oturum Tutanağı\n\n";
+    md += "- **Oturum:** " + s + "\n";
+    md += "- **Konu:** " + (sess ? (sess.topic||"—") : "—") + "\n";
+    md += "- **Durum:** " + (sess ? (sess.status||"—") : "—") + "\n";
+    if(sess && sess.referee_verdict) md += "- **Karar metni:** " + sess.referee_verdict + "\n";
+    md += "\n---\n\n";
+    if(mr.ok){
+      mr.messages.forEach(mg=>{
+        md += "### [" + (mg.seat||"?").toUpperCase() + "] " + (mg.role||"") + " · " + (mg.created_at||"") + "\n\n" + mg.content + "\n\n";
+        if(mg.inner_thought) md += "> ◉ **İç ses:** " + mg.inner_thought + "\n\n";
+      });
+    }
+    if(rr.ok && rr.report){
+      md += "\n---\n\n" + rr.report.report_md + "\n\n";
+      if(rr.report.fingerprint) md += "*Rapor parmak izi (SHA-256): " + rr.report.fingerprint + "*\n";
+    }
+    const blob = new Blob([md], {type:"text/markdown;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tutanak_" + s + ".md";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    toast("Tutanak indirildi: tutanak_" + s + ".md");
+  }catch(e){ toast("İndirme hatası: " + e.message); }
+}
+function reopenArchiveSession(){
+  const s = archiveSelected;
+  if(!s) return;
+  const sess = archiveSessions.find(x=>x.id===s);
+  if(!sess) return;
+  $("#topicInput").value = sess.topic || "";
+  switchRoom("council");
+  toast("Konu masaya taşındı — 'Tartışmayı Başlat'a basın (karakterler hafızalarıyla döner).");
+}
+
+/* ── K7 · Körlü Jüri 2.0: adlandırmasız değerlendirme + kimlik açılışı ── */
+function resetJuryBlind(){
+  if(state.jury) { state.jury.blindReport = null; state.jury.blindRunning = false; }
+  const p = $("#blindPanel"); if(p) p.style.display = "none";
+  const b = $("#btnJuryBlind"); if(b){ b.disabled = true; b.textContent = "⚖ KÖR DEĞERLENDİRME (HAKEM)"; }
+}
+function readyJuryCount(){ return ["A","B","C","D","E"].filter(k=>state.jury.cols[k].text && state.jury.cols[k].text.trim().length > 40).length; }
+async function runBlindJury(){
+  const J = state.jury;
+  if(J.blindRunning) return;
+  const n = readyJuryCount();
+  if(n < 3){ toast("Kör değerlendirme için en az 3 bağımsız yanıt hazır olmalı (" + n + "/3)."); return; }
+  if(!J.prompt){ toast("Önce bir jüri sorusu olmalı."); return; }
+  J.blindRunning = true;
+  $("#btnJuryBlind").textContent = "⏳ HAKEM İNCELİYOR… (yüzler gizli)";
+  const panel = $("#blindPanel");
+  panel.style.display = "";
+  const body = $("#blindBody");
+  body.innerHTML = '<div class="claim-empty">Başhakem cevapları ADLANDIRMASIz okuyor — kimin ne dediği bilinmiyor; yalnız argüman tartılıyor…</div>';
+  const reveal = $("#blindReveal"); reveal.innerHTML = "";
+  // Tesadüfi kör eşleme: JÜRİ 1..5 → sandalye (her çalıştırmada karılır)
+  const order = ["A","B","C","D","E"].filter(k=>state.jury.cols[k].text.trim().length > 40);
+  const shuffled = [...order];
+  for(let i = shuffled.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]] = [shuffled[j],shuffled[i]]; }
+  const mapping = shuffled.map((k, i)=>({ label: "JÜRİ " + (i+1), seat: k, name: state.seats[k].charName || state.seats[k].name, hex: state.seats[k].hex }));
+  const anon = mapping.map(m=>{
+    let t = state.jury.cols[m.seat].text.trim();
+    // bariz öz-adlandırma temizliği: ismi metinden at (kimlik sızıntısını daralt)
+    t = t.replace(new RegExp(m.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "[YANIT SAHİBİ]");
+    return "=== " + m.label + " (bağımsız yanıt) ===\n" + t.slice(0, 4000);
+  }).join("\n\n");
+  const H = state.seats.H;
+  const sys = (H && H.system) || "Sen tarafsız bir başhakemsin. KESİNLİKLE yapay zeka değil; gerçek bir insansın.";
+  const user = "KÖR JÜRİ PROTOKOLÜ 2.0: Aşağıdaki " + mapping.length + " yanıt aynı soruya verildi. Yanıtlar ADLANDIRILDI (JÜRİ 1.." + mapping.length + "); yazarları bilmiyorsun ve tahmin etmeye ÇALIŞMAYACAKSIN. Yalnız argümanın niteliğine bak: kanıt, mantık, derinlik, uygulanabilirlik, iç tutarlılık.\n\nSORU: " + J.prompt + "\n\n" + anon + "\n\nRAPORUN BAŞLIKLARI:\n## SIRALAMA\n(1.'den sonuncuya; her sıra için 1 cümlelik gerekçe)\n## EN GÜÇLÜ ARGÜMANLAR\n(3 madde, kısa alıntıyla)\n## ZAYIF NOKTALAR\n(3 madde)\n## SENTEZ VE NİHAİ HÜKMÜ";
+  const ac = new AbortController();
+  J.blindAc = ac;
+  let acc = "";
+  await streamChat(H || { system: sys, baseUrl:"https://text.pollinations.ai/openai", model:"openai" }, [
+    { role:"system", content: sys },
+    { role:"user", content: user },
+  ], {
+    signal: ac.signal,
+    onDelta: (t)=>{ acc = t; mountMd(body, t, true); },
+    onError: (e)=>{ body.innerHTML = '<div class="errnote">⚠ ' + esc(e) + '</div>'; },
+    onDone: (stopped)=>{
+      J.blindRunning = false;
+      J.blindReport = { text: acc + (stopped ? " (yarıda kesildi)" : ""), mapping };
+      mountMd(body, J.blindReport.text, false);
+      reveal.innerHTML = '<div style="font-family:\'IBM Plex Mono\';font-size:9px;letter-spacing:.16em;color:var(--faint);margin:14px 0 8px">◉ KİMLİK AÇILIŞI — hakem bunları bilmiyordu</div>' +
+        mapping.map(m=>'<span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:3px;padding:4px 9px;margin:0 8px 8px 0;font-family:\'Space Grotesk\';font-size:11px"><b style="color:' + m.hex + '">' + m.label + '</b> = ' + esc(m.name) + ' <span style="color:var(--faint)">(Sandalye ' + m.seat + ')</span></span>').join("");
+      $("#btnJuryBlind").textContent = "⚖ KÖR DEĞERLENDİRMEYİ TEKRARLA (YENİ KARIŞIM)";
+      toast("Kör değerlendirme tamam — kimlikler açıldı");
+    },
+  });
+}
+
+/* ── Faz 2 kontrollerinin kablosu ── */
+$("#innerChk").addEventListener("change", toggleInnerThought);
+$("#btnVote").addEventListener("click", runMandatoryVote);
+$("#btnConclude").addEventListener("click", concludeSession);
+$("#btnJuryBlind").addEventListener("click", runBlindJury);
+if($("#archFilter")) $("#archFilter").addEventListener("input", renderArchiveList);
+if($("#btnArchMd")) $("#btnArchMd").addEventListener("click", ()=>downloadArchiveMd());
+if($("#btnArchReopen")) $("#btnArchReopen").addEventListener("click", reopenArchiveSession);
+
+/* ═══════════════════════ FAZ 3 (L1) · SESLİ MASA ═══════════════════════
+   Mimari: ses TAMAMEN tarayıcıda üretilir (Web Speech API) — sunucuya ses
+   gitmez, harici TTS servisi yok, gecikme yok. Her sandalyeye modalda
+   kalıcı ses ataması yapılır; dogma değeri tonu etkiler. */
+const tts = {
+  voices: [],
+  ready: false,
+  pitchMap: { A:0.94, B:1.02, C:1.1, D:0.9, E:1.05, OP:1.0, H:0.72 },
+  rateMap:  { A:0.98, B:1.0, C:1.02, D:0.95, E:1.0, OP:1.0, H:0.9 },
+};
+function ttsSupported(){ return "speechSynthesis" in window; }
+function loadVoices(){
+  if(!ttsSupported()) return;
+  const v = speechSynthesis.getVoices();
+  if(!v.length) return;
+  tts.voices = v;
+  tts.ready = true;
+  // modal açıksa seçeneği tazele
+  if($("#seatModal").classList.contains("on") && editingSeat){
+    const cur = $("#fVoice").value;
+    populateVoiceSelect(cur);
+    $("#fVoice").value = cur;
+  }
+}
+function populateVoiceSelect(selectedURI){
+  const sel = $("#fVoice"); if(!sel) return;
+  if(!tts.ready) loadVoices();
+  const tr = tts.voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith("tr"));
+  const others = tts.voices.filter(v=>!(v.lang && v.lang.toLowerCase().startsWith("tr")));
+  const order = tr.concat(others);
+  sel.innerHTML = '<option value="">Sistem varsayılanı</option>' +
+    order.map(v=>'<option value="'+esc(v.voiceURI)+'">'+esc(v.name)+' ('+esc(v.lang)+')</option>').join("");
+  if(selectedURI) sel.value = selectedURI;
+}
+function resolveSeatVoice(seatKey){
+  const seat = state.seats[seatKey];
+  let voice = null;
+  if(seat && seat.voiceURI) voice = tts.voices.find(v=>v.voiceURI === seat.voiceURI) || null;
+  if(!voice){
+    const tr = tts.voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith("tr"));
+    const pool = tr.length ? tr : tts.voices;
+    const idx = {A:0,B:1,C:2,D:3,E:4,OP:5,H:0}[seatKey] || 0;
+    voice = pool.length ? pool[idx % pool.length] : null;
+  }
+  return voice;
+}
+function mdToSpeech(t){
+  return (t||"")
+    .replace(/```[\s\S]*?```/g, " Kod bloğu atlandı. ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s?/gm, "")
+    .replace(/[*_~|]/g, "")
+    .replace(/^- /gm, "")
+    .replace(/\s+/g, " ").trim();
+}
+function speakSeat(seatKey, text, opts){
+  opts = opts || {};
+  if(!ttsSupported()){ if(opts.onError) opts.onError("tarayıcı TTS desteklemiyor"); return null; }
+  const plain = mdToSpeech(text);
+  if(!plain) return null;
+  const u = new SpeechSynthesisUtterance(plain);
+  const voice = resolveSeatVoice(seatKey);
+  if(voice) u.voice = voice;
+  if(voice) u.lang = voice.lang;
+  u.pitch = tts.pitchMap[seatKey] != null ? tts.pitchMap[seatKey] : 1;
+  u.rate = tts.rateMap[seatKey] != null ? tts.rateMap[seatKey] : 1;
+  if(opts.onend){ u.onend = opts.onend; u.onerror = opts.onend; }
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+  return u;
+}
+function stopAllSpeech(){ if(ttsSupported()) speechSynthesis.cancel(); markSpkButtons(false); }
+function markSpkButtons(active){
+  $$(".claimbtn.spk.on").forEach(b=>b.classList.remove("on"));
+}
+function setSpkButton(btn, on){
+  if(!btn) return;
+  btn.classList.toggle("on", on);
+  btn.textContent = on ? "⏹" : "🔊";
+}
+function liveVoiceOn(){ const el = $("#liveVoiceChk"); return ttsSupported() && el && el.checked; }
+function opVoiceOn(){ const el = $("#opVoiceChk"); return ttsSupported() && el && el.checked; }
+function voiceIntro(){
+  if(!ttsSupported()){ toast("Tarayıcınız TTS desteklemiyor (Chrome/Edge önerilir)."); return; }
+  speechSynthesis.cancel();
+  ["A","B","C","D","E"].forEach(k=>{
+    const s = state.seats[k];
+    const u = new SpeechSynthesisUtterance("Merhaba. Ben " + (s.charName || s.name) + ", sandalye " + k + ". Masaya hazırım.");
+    const v = resolveSeatVoice(k);
+    if(v){ u.voice = v; u.lang = v.lang; }
+    u.pitch = tts.pitchMap[k] != null ? tts.pitchMap[k] : 1;
+    u.rate = tts.rateMap[k] != null ? tts.rateMap[k] : 1;
+    speechSynthesis.speak(u); // kuyruğa eklenir — önceki cancel() etmez
+  });
+  toast("Beş sandalye kendini tanıtıyor… (⏸ SESİ DURDUR ile kesilir)");
+}
+let dictation = null, dictating = false;
+function toggleDictation(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = $("#btnDictate");
+  if(!SR){ toast("Bu tarayıcı konuşma tanımayı desteklemiyor — Chrome ile deneyin."); return; }
+  if(dictating){ dictation && dictation.stop(); return; }
+  const rec = new SR();
+  dictation = rec;
+  rec.lang = "tr-TR";
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.maxAlternatives = 1;
+  const input = $("#opInput");
+  const before = input.value ? input.value.replace(/\s+$/,"") + " " : "";
+  let finalTxt = "";
+  rec.onresult = (e)=>{
+    let interim = "";
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i];
+      if(r.isFinal) finalTxt += r[0].transcript + " ";
+      else interim += r[0].transcript;
+    }
+    input.value = before + finalTxt + interim;
+  };
+  rec.onend = ()=>{
+    dictating = false;
+    btn.classList.remove("on");
+    if(input.value.trim()) toast("Dikte tamam — sözünüz kutuda, Enter ile masaya.");
+  };
+  rec.onerror = (e)=>{
+    dictating = false;
+    btn.classList.remove("on");
+    if(e.error !== "aborted") toast("Dikte hatası: " + e.error);
+  };
+  dictating = true;
+  btn.classList.add("on");
+  toast("🎙 Dikte açık — konuşun…");
+  try{ rec.start(); }catch(e){ dictating = false; btn.classList.remove("on"); }
+}
+
+/* ── Faz 3 (L1) kontrolleri ── */
+if(ttsSupported()){
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+  setTimeout(loadVoices, 600);
+}
+$("#btnVoiceStop").addEventListener("click", stopAllSpeech);
+$("#btnVoiceTestAll").addEventListener("click", voiceIntro);
+$("#btnDictate").addEventListener("click", toggleDictation);
+$("#btnDictate").addEventListener("mouseenter", ()=>{ if(!dictating) return; });
+$("#fVoiceTest").addEventListener("click", ()=>{
+  if(!ttsSupported()){ toast("Tarayıcınız TTS desteklemiyor."); return; }
+  const sel = $("#fVoice");
+  const u = new SpeechSynthesisUtterance("Bu sandalyenin sesi böyle işiteceksiniz: masaya, kanıta ve kararımda duruyorum.");
+  const v = tts.voices.find(x=>x.voiceURI === (sel ? sel.value : ""));
+  if(v) u.voice = v;
+  if(v) u.lang = v.lang;
+  if(editingSeat && tts.pitchMap[editingSeat] != null) u.pitch = tts.pitchMap[editingSeat];
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+});
+
+/* ═══════════════════════ FAZ 3 (L2) · HUKUKİ KARAR PROTOKOLÜ ═══════════════════════
+   Masanın terminali: Başhakem, Türk kurum kültüründeki resmî karar raporları
+   üslubunda 8 bölümlü belgeyi dökün; karara açıkça çelişen sandalyeler
+   KENDİ sesleriyle muhalefet şerhi verir (paralel, izole çağrılar).
+   Belge: İddia Defteri'ne bağlı (kanıt raporunun besini), sha256 parmak izi
+   + 5 sandalye mührü + başkan onayıyla damgalanır ve arşive yazılır. */
+async function sha256Hex(text){
+  try{
+    const data = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }catch(e){ return "(tarayıcı şifreleme boşluğu)"; }
+}
+function sectionOf(md, num, nextNum){
+  const startM = md.match(new RegExp("^##\\s+" + num + "\\.", "m"));
+  if(!startM) return "";
+  let start = md.indexOf(startM[0]);
+  let end = md.length;
+  const nextM = md.slice(start + 1).match(new RegExp("^##\\s+" + nextNum + "\\.", "m"));
+  if(nextM) end = start + 1 + nextM.index;
+  return md.slice(start, end).trim();
+}
+async function generateDecisionReport(){
+  const c = state.council;
+  if(!c.topic || c.modelTurns === 0){ toast("Karar raporu için önce bir oturum sürdürün (Masa 01)."); return; }
+  if(generatingDecision) return;
+  generatingDecision = true;
+  const btn = $("#btnDecision");
+  const panel = $("#decisionPanel");
+  const body = $("#decisionBody");
+  btn.disabled = true;
+  const oldLabel = btn.innerHTML;
+  btn.innerHTML = "⏳ BAŞHAKEM BELGEYİ DÖKÜYOR…";
+  panel.style.display = "";
+  body.innerHTML = '<div class="claim-empty">Başhakem 8 bölümlü resmî iskeleti dolduruyor — Kanıt Raporu İddia Defteri\'nden besleniyor…</div>';
+  $("#sigilBlock").innerHTML = "";
+  $("#decisionFoot").innerHTML = "";
+
+  const claimsBlock = c.claims.length
+    ? c.claims.map(x => "- [" + x.verdict + "] (" + x.speaker + " iddiası): " + (x.report||"").slice(0,300).replace(/\n+/g," ")).join("\n")
+    : "- Doğrulanmış iddia kaydı YOK — Kanıt Raporu bölümünde tüm kritik iddialar 'kanıt boşluğu' olarak işaretlenmelidir.";
+  const H = state.seats.H;
+  const today = new Date().toLocaleDateString("tr-TR", { day:"numeric", month:"long", year:"numeric" });
+  const sys = (H && H.system) || "Sen tarafsız bir başhakemsin. KESİNLİKLE yapay zeka değil; gerçek bir insansın.";
+  const user =
+"KONSÜL KARAR PROTOKOLÜ (RESMÎ): Aşağıdaki konsey oturumu KAPANIYOR. Sen BAŞHAKEMSİN. " +
+"Türk hukuk kurum kültüründeki resmî karar raporları üslubuyla (soğuk, nesnel, bağlayıcı, makamı olan) bir KARAR RAPORU yaz. " +
+"İSKELETİN BAŞLIKLARINI AYNI SIRAYLA VE AYNI İSİMLE KULLAN. Robotik kalıplar yasak.\n\n" +
+"DOSYA NO: " + c.sessionId + "\nGÜNDEM: " + c.topic + "\nTARİH: " + today + "\n\n" +
+"İDİA DEFTERİ (canlı web ajanıyla doğrulanmış kayıtlar):\n" + claimsBlock + "\n\n" +
+"TUTANAK (son 9000 karakter):\n" + councilTranscript().slice(-9000) + "\n\n" +
+"İSKELET:\n" +
+"# KONSÜL KARAR RAPORU\n" +
+"Dosya No: " + c.sessionId + " · Gündem: " + c.topic + " · Tarih: " + today + "\n" +
+"## 1. GÖREV\n(masa neyle görevlendirildi; 2-3 cümle)\n" +
+"## 2. SÜREÇ\n(oturumun akışı: kaç tur, itirazlar, operatör müdahaleleri, oylama; 3-5 cümle)\n" +
+"## 3. KANIT RAPORU\n(İddia Defteri'ndeki her kaydı tek tek değerlendir; defterde OLMAYAN kritik iddiaları 'kanıt boşluğu' olarak açıkça işaretle; defter boşsa bunu hüküm gibi yaz)\n" +
+"## 4. KARAR\n(bağlayıcı hüküm; 4-8 cümle; son cümle 'Bu karar, ... ile sonuçlanır.' kalıbıyla bitmelidir)\n" +
+"## 5. MUHALEFET ŞERHLERİ\n(tutanaktaki NİHAİ pozisyonları karşılaştır: kararın gerekçesiyle açıkça çelişen her sandalyeyi tek tek '- Sandalye X — <isim>: şerh verecek' şeklinde SATIR SATIR listele; kimse çelişmiyorsa yalnızca 'Yok — karar oy birliğiyle kurulmuştur.' yaz)\n" +
+"## 6. EYLEM PLANI\n(1-5 numaralı, somut ve ölçülebilir maddeler)\n" +
+"## 7. BAŞARI METRİKLERİ\n(yalnızca 3 madde)\n" +
+"## 8. RİSK KAYDI\n(2-4 madde)";
+
+  let report = "";
+  let dissentSeats = [];
+  let decisionText = "";
+  const ac = new AbortController();
+  await streamChat(H || { system: sys, baseUrl:"https://text.pollinations.ai/openai", model:"openai" }, [
+    { role:"system", content: sys },
+    { role:"user", content: user },
+  ], {
+    signal: ac.signal,
+    onDelta: (t)=>{ report = t; mountMd(body, t, true); body.scrollTop = body.scrollHeight; },
+    onError: (e)=>{ report = ""; body.innerHTML = '<div class="errnote">⚠ ' + esc(e) + '</div>'; },
+    onDone: async (stopped)=>{
+      if(!report){
+        body.innerHTML = '<div class="errnote">⚠ Rapor dökülemedi. (Hakem kanalı yanıt vermedi)</div>';
+        finishDecisionBtn(oldLabel); return;
+      }
+      mountMd(body, report, false);
+      // 1) Çelişen sandalyeleri ayıkla
+      const sec5 = sectionOf(report, "5", "6");
+      const found = [...sec5.matchAll(/Sandalye\s*([A-E])/gi)].map(x=>x[1].toUpperCase());
+      dissentSeats = ["A","B","C","D","E"].filter(k=>found.includes(k));
+      decisionText = sectionOf(report, "4", "5").replace(/^##\s+4\.[^\n]*\n/,"").trim();
+      // 2) Muhalefet şerhleri — her çelişen sandalye KENDİ sesiyle, paralel ve izole
+      if(dissentSeats.length){
+        body.insertAdjacentHTML("beforeend", '<div class="claim-empty" style="padding:14px 0">⚖ ' + dissentSeats.length + " sandalye muhalefet şerhini kendi masasından yazıyor…</div>");
+        const serhs = {};
+        await Promise.all(dissentSeats.map(k=>(async ()=>{
+          const seat = state.seats[k];
+          const lastPos = ([...c.msgs].reverse().find(m=>m.seat===k && m.kind!=="op" && m.text) || {}).text || "(nihai pozisyon kaydı yok)";
+          const s = (seat.system || compileSystemPrompt(seat)) +
+            "\n\nMUHALEFET ŞERHİ PROTOKOLÜ: Masanın resmî kararı senin nihai pozisyonunla çelişiyor. Karakterine sadık kalarak RESMÎ BİR MUHALEFET ŞERHİ yaz: 2-4 cümle, hukuki üslup; mutlaka 'Bu kararın …' cümlesiyle gerekçeni göster. Başlık eklemE, şerh metnini yaz.";
+          const u = "RESMÎ KARAR (Madde 4):\n\"" + decisionText.slice(0,1500) + "\"\n\nSENİN NİHAİ POZİSYONUN:\n\"" + lastPos.slice(0,1500) + "\"\n\nMuhalefet şerhini yaz:";
+          let acc2 = "";
+          const sac = new AbortController();
+          setTimeout(()=>sac.abort(), 45000);
+          await streamChat(seat, [{role:"system",content:s},{role:"user",content:u}], {
+            signal: sac.signal,
+            onDelta: (t)=>{ acc2 = t; },
+            onError: ()=>{ acc2 = ""; },
+            onDone: (st)=>{ if(!st && acc2.trim()) serhs[k] = acc2.trim().slice(0,900); }
+          });
+        })()));
+        // 3) Şerhleri 5. bölüme göm: belge = head + yeniden 5. bölüm + kuyruk (6-8 bozulmadan)
+        const headEnd = report.indexOf("## 5.");
+        const tailStart = report.indexOf("## 6.");
+        const head = headEnd >= 0 ? report.slice(0, headEnd) : report;
+        const tail = tailStart >= 0 ? report.slice(tailStart) : "";
+        const rebuilt = "## 5. MUHALEFET ŞERHLERİ\n" +
+          "Aşağıdaki sandalyeler kararın gerekçesiyle açıkça çelişmiş olup şerhlerini tutanağa geçirmiştir:\n" +
+          dissentSeats.map(k=>{
+            const name = (state.seats[k].charName || state.seats[k].name);
+            return "### Sandalye " + k + " — " + name + "\n> " + (serhs[k] || "(şerh metni alınamadı — çelişkinin tespiti 4. maddede esasa alınmıştır)");
+          }).join("\n") + "\n";
+        report = head + rebuilt + (tail ? "\n" + tail : "");
+      }
+      await finalizeDecisionReport(report, dissentSeats, today, oldLabel, H);
+    },
+  });
+}
+let generatingDecision = false;
+function finishDecisionBtn(oldLabel){
+  generatingDecision = false;
+  const btn = $("#btnDecision");
+  btn.disabled = false;
+  btn.innerHTML = oldLabel;
+}
+async function finalizeDecisionReport(report, dissentSeats, today, oldLabel, H){
+  // belgeyi düzleştir: şerh blokları için ham md'yi kullan
+  const fp = await sha256Hex(report);
+  $("#decisionSrc").textContent = "DOSYA " + (state.council.sessionId||"—").toUpperCase().slice(0,18);
+  mountMd($("#decisionBody"), report, false);
+  // imza bloğu: 5 sandalye mührü + başkan onayı
+  const sb = $("#sigilBlock");
+  sb.innerHTML = "";
+  ["A","B","C","D","E"].forEach(k=>{
+    const s = state.seats[k];
+    const d = dissentSeats.includes(k);
+    const st = document.createElement("div");
+    st.className = "sigil-stamp" + (d ? " dissent" : "");
+    st.style.setProperty("--dc", d ? "var(--red)" : s.hex);
+    st.innerHTML = esc(s.charName || s.name) + "<small>" + (d ? "ŞERH İLE RED" : "ONAY") + " · S. " + k + "</small>";
+    sb.appendChild(st);
+  });
+  const op = document.createElement("div");
+  op.className = "sigil-stamp op";
+  op.innerHTML = "OPERATÖR · MASA BAŞKANI<small>TUTANAK ONAYI</small>";
+  sb.appendChild(op);
+  $("#decisionFoot").innerHTML =
+    "Rapor parmak izi (SHA-256): <span class='fp'>" + fp + "</span><br>" +
+    "Üretim: Başhakem (" + esc((H && H.model) || "openai") + ") · Şerhler: " + dissentSeats.length + " sandalye (" +
+    (dissentSeats.length ? dissentSeats.join(", ") : "yok — oy birliği") + ") · " + today +
+    " · Belge arşive damgalandı.";
+  // arşive yaz
+  try{
+    await fetch("/api/session/report", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        session_id: state.council.sessionId, topic: state.council.topic,
+        report_md: report, fingerprint: fp,
+        dissent_seats: dissentSeats.join(",")
+      })
+    });
+  }catch(e){}
+  $("#btnDecisionDownload").dataset.md = report;
+  finishDecisionBtn(oldLabel);
+  toast("⚖ Karar raporu imzalandı — " + dissentSeats.length + " muhalefet şerhi");
+}
+$("#btnDecision").addEventListener("click", generateDecisionReport);
+$("#btnDecisionDownload").addEventListener("click", ()=>{
+  const md = $("#btnDecisionDownload").dataset.md;
+  if(!md) return;
+  const blob = new Blob([md], {type:"text/markdown;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "karar_raporu_" + (state.council.sessionId || "oturum") + ".md";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast("Karar raporu indirildi");
+});
 
 /* ══ MÜZAKERE, İTİRAZ VE DOĞRULAMA MOTORU ══ */
 let pendingRebuttalSeat = null;
@@ -1751,6 +2974,8 @@ async function checkForRebuttal(lastMsg){
     if(d.has_objection && d.seat && state.seats[d.seat]){
       showRebuttalBanner(d.seat, d.character_name, d.reason);
     }
+    // Faz 2 (K2): hakem her itiraz taramasında masanın ısısını da ölçer
+    if(d.ok !== false && d.tension != null) updateTensionMeter(d.tension, d.tension_note);
   }catch(e){}
 }
 
@@ -1788,54 +3013,81 @@ function showRebuttalBanner(seatKey, charName, reason){
 }
 
 function overrideNextSpeaker(seatKey){
-  if(state.council.running) return;
+  // Denetim B5: otomatik paslaşma sürerken basılan "Sözü Ver" sessizce yutuluyordu.
+  // Artık override hep kuyruğa girer; otomatik tur nextSpeaker() onu öncelikli alır.
   state.council.overrideSeat = seatKey;
-  councilTurn();
+  toast("Söz " + (state.seats[seatKey] ? (state.seats[seatKey].charName || seatKey) : seatKey) + " için ayırtıldı.");
+  if(!state.council.running) councilTurn();
 }
 
-async function verifyClaimWithAgent(text, speakerName){
-  pushCouncil({
-    id: uid(),
-    kind: "op",
-    text: `🔍 **[ARAŞTIRMA VE DOĞRULAMA AJANI ÇALIŞIYOR...]**\n"${speakerName}" tarafından öne sürülen iddia taranıyor ve doğrulanıyor…`,
-    time: now()
-  });
-
+/* Faz 2 (K5) — İddia Defteri: mesaj üstü "İddiayı Doğrula" aksiyonu.
+   Araştırma ajanı HAKEM (H) uç noktasından çağrılır (tarafsızlık); tam rapor
+   deftere düşer, tutanağa yalnız darbe vuran hüküm geçer. */
+async function runVerifyClaim(m, btn){
+  if(!btn) return;
+  btn.disabled = true; btn.classList.add("busy"); btn.textContent = "🔍 CANLI ARAŞTIRILIYOR…";
+  const seatName = m.seat ? (state.seats[m.seat].charName || state.seats[m.seat].name) : "Katılımcı";
   try{
+    const H = state.seats.H;
     const r = await fetch("/api/research/verify", {
       method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        claim: text,
-        session_id: state.sessionId,
-        base_url: state.seats.A.baseUrl || "https://text.pollinations.ai/openai",
-        model: state.seats.A.model || "openai",
-        api_key: state.seats.A.apiKey || ""
+        claim: (m.text || "").slice(0, 4000),
+        session_id: state.council.sessionId || "",
+        base_url: (H && H.baseUrl) || "https://text.pollinations.ai/openai",
+        api_key: (H && H.apiKey) || "",
+        model: (H && H.model) || "openai"
       })
     });
     const d = await r.json();
     if(d.ok && d.report){
+      const vm = d.report.match(/\*\*Doğruluk Durumu:\*\*\s*([^\n]+)/);
+      const verdict = vm ? vm[1].trim().toUpperCase().slice(0,60) : "RAPOR ÜRETİLDİ";
+      state.council.claims.push({ speaker: seatName, time: now(), verdict, report: d.report });
+      renderClaimList();
       pushCouncil({
-        id: uid(),
-        kind: "op",
-        text: `📑 **[RESMİ DOĞRULAMA RAPORU]**\n${d.report}`,
+        id: uid(), kind: "op",
+        text: "📑 **DOĞRULAMA HÜKMÜ:** " + verdict + " — tam rapor ve kaynaklar **İddia Defteri**'nde (sağ panel).",
         time: now()
       });
-    }else{
-      pushCouncil({
-        id: uid(),
-        kind: "op",
-        text: `⚠️ **[DOĞRULAMA HATASI]** ${d.error || "Doğrulama raporu alınamadı."}`,
-        time: now()
-      });
+      toast("İddia tarandı: " + verdict);
+    } else {
+      toast("Doğrulama hatası: " + (d.error || "rapor alınamadı"));
     }
   }catch(e){
-    pushCouncil({
-      id: uid(),
-      kind: "op",
-      text: `⚠️ **[BAĞLANTI HATASI]** Araştırma servisine ulaşılamadı.`,
-      time: now()
-    });
+    toast("Araştırma servisine ulaşılamadı: " + e.message);
   }
+  btn.disabled = false; btn.classList.remove("busy"); btn.textContent = "🔍 İDDİAYI DOĞRULA";
+}
+
+function verdictClass(v){
+  v = (v||"").toUpperCase();
+  if(v.includes("DOĞRULANDI")) return "ok";
+  if(v.includes("KISMEN")) return "part";
+  if(v.includes("ÇARPITILMIŞ") || v.includes("YANLIŞ")) return "bad";
+  return "info";
+}
+
+function renderClaimList(){
+  const box = $("#claimList");
+  const claims = state.council.claims;
+  if(!claims.length){
+    box.innerHTML = '<div class="claim-empty">Henüz iddia doğrulanmadı.<br>Bir mesajın altındaki "🔍 İDDİAYI DOĞRULA" ile canlı web ajanı devreye girer; rapor bu deftere düşer.</div>';
+    return;
+  }
+  box.innerHTML = "";
+  [...claims].reverse().forEach(c=>{
+    const item = document.createElement("div");
+    item.className = "claimrow-item";
+    item.innerHTML =
+      '<div class="cr1">' +
+        '<span class="crv ' + verdictClass(c.verdict) + '">' + esc(c.verdict) + '</span>' +
+        '<span class="crs">' + esc(c.speaker) + ' · ' + esc(c.time) + '</span>' +
+      '</div>' +
+      '<div class="crb">' + esc(c.report) + '</div>';
+    item.onclick = ()=>item.classList.toggle("open");
+    box.appendChild(item);
+  });
 }
 
 function nextSpeaker(){
@@ -2000,7 +3252,8 @@ async function councilTurn(){
   setCouncilRunning(true);
   const ac = new AbortController(); c.ac = ac;
   const seatedDesc = ["A","B","C","D","E"].map(k => state.seats[k].name + " (" + (state.seats[k].charName || state.seats[k].role) + ")").join(", ");
-  const sysExtra = "\n\nTARTIŞMA KURALLARI: Masada 5 Bağımsız Yapay Zeka [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör var. Sıradaki söz SENDE. Önceki konuşmacıların iddialarını dinle, açıklarını yakala, kök inançlarına tavizsiz sadık kalarak argümanını geliştir. Asla robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. 100–220 kelime arasında kal. Operatör müdahaleleri bağlayıcıdır.";
+  const sysExtra = "\n\nTARTIŞMA KURALLARI: Masada 5 Bağımsız Yapay Zeka [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör var. Sıradaki söz SENDE. Önceki konuşmacıların iddialarını dinle, açıklarını yakala, kök inançlarına tavizsiz sadık kalarak argümanını geliştir. Asla robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. 100–220 kelime arasında kal. Operatör müdahaleleri bağlayıcıdır." +
+    (seat.memoryText ? "\n\n" + seat.memoryText : "");
   const messages = [
     { role:"system", content: (seat.system || compileSystemPrompt(seat)) + sysExtra },
     { role:"user", content: transcriptBefore + "\nŞimdi söz sırası sende: " + (seat.charName || seat.name) + " (" + seat.role + ")." },
@@ -2027,23 +3280,22 @@ async function councilTurn(){
       updateCouncilMsg(m); c.ac = null;
       setCouncilRunning(false);
 
-      // Veritabanına kalıcı olarak kaydet
-      if(state.council.sessionId && m.text){
-        fetch("/api/session/record_message", {
-          method: "POST", headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({
-            session_id: state.council.sessionId,
-            seat: m.seat,
-            character_id: (state.seats[m.seat] && state.seats[m.seat].id) || m.seat,
-            role: (state.seats[m.seat] && state.seats[m.seat].role) || "seat",
-            content: m.text
-          })
-        }).catch(()=>{});
+      // Faz 2 (K1): iç ses katmanı + (K8) veritabanına içerik+iç ses tek kayıtta
+      if(m.text) fetchInnerThought(m);
+
+      // Faz 3 (L1): Sesli Masa — söz bitince karakterin sesiyle okunur
+      if(!stopped && m.text && liveVoiceOn()){
+        speakSeat(m.seat, m.text);
       }
 
       // İtiraz / Söz İsteme Kontrolü (Dinamik Müzakere Motoru)
       if(!stopped && m.text.length > 60){
         checkForRebuttal(m);
+      }
+
+      // Faz 2 (K3): tam tur bitince yakınsama radarını besle
+      if(!stopped && c.modelTurns > 0 && c.modelTurns % 5 === 0){
+        setTimeout(()=>computeConvergence(), 800);
       }
 
       if(!stopped && $("#autoChk").checked && c.modelTurns < c.autoRounds * 5){
@@ -2058,7 +3310,27 @@ $("#btnStart").onclick = ()=>{
   if(!topic){ $("#topicInput").focus(); $("#topicInput").style.borderColor="var(--red)"; setTimeout(()=>$("#topicInput").style.borderColor="",900); return; }
   state.council.msgs = []; state.council.modelTurns = 0; state.council.topic = topic;
   state.council.sessionId = "ses_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,6);
-  
+  state.council.claims = []; state.council.votes = null; state.council.voting = false; state.council.verdict = "";
+  renderClaimList(); renderVoteStrip(); resetTensionMeter(); resetConvMeter();
+
+  // Faz 2 (K8): Yaşayan Hafıza — oturum açılırken her sandalyenin eski oturum anıları çekilir
+  ["A","B","C","D","E"].forEach(k=>{
+    const seat = state.seats[k];
+    seat.memoryText = null;
+    if(!seat.id || state.demo) return;
+    fetch("/api/memory/" + encodeURIComponent(seat.id))
+      .then(r=>r.json())
+      .then(d=>{
+        if(d.ok && d.text){
+          state.seats[k].memoryText = d.text;
+        }
+      }).catch(()=>{});
+  });
+  setTimeout(()=>{
+    const total = ["A","B","C","D","E"].reduce((a,k)=>a + ((state.seats[k].memoryText?1:0)), 0);
+    if(total > 0) toast("🧠 Yaşayan Hafıza: " + total + " sandalyede eski oturum anıları masaya taşındı.");
+  }, 1200);
+
   // Veritabanına oturum kaydı aç
   fetch("/api/session/start", {
     method: "POST", headers: {"Content-Type":"application/json"},
@@ -2100,6 +3372,16 @@ function opSend(){
   const m = { id: uid(), kind:"op", text: v, time: now() };
   state.council.msgs.push(m);
   pushCouncil(m);
+  // Faz 3 (L1): operatör sözü isteğe bağlı seslendirilir (komut kaydı efekti)
+  if(opVoiceOn()) speakSeat("OP", v);
+}
+/* Denetim B1: taktik butonlarının çağırdığı fonksiyon (önceki sürümde hiç tanımlı değildi) */
+function insertTactic(text){
+  const inp = $("#opInput");
+  if(!inp) return;
+  inp.value = (inp.value ? inp.value.replace(/\s+$/,"") + " " : "") + text;
+  inp.focus();
+  toast("Taktik operatör mikrofonuna yüklendi — 'Söz Al & Gönder' ile masaya verin.");
 }
 $("#opSend").onclick = opSend;
 $("#opInput").addEventListener("keydown", e=>{ if(e.key==="Enter") opSend(); });
@@ -2118,7 +3400,7 @@ function buildJuryCols(){
         '<span><span class="nm" style="color:'+s.hex+'">'+esc(s.charName || s.name)+'</span><br><span class="md">'+esc(s.model)+' · '+esc(s.role)+'</span></span>' +
         '<span class="jstate" id="jst-'+k+'">BEKLEMEDE</span>' +
       '</div>' +
-      '<div class="jbody md" id="jbody-'+k+'"><div class="empty" style="padding:40px 0"><p>Bağımsız kanal açık.<br>Yanıt diğer iki modelden <b style="color:'+s.hex+'">tamamen izole</b> üretilir.</p></div></div>' +
+      '<div class="jbody md" id="jbody-'+k+'"><div class="empty" style="padding:40px 0"><p>Bağımsız kanal açık.<br>Yanıt diğer dört sandalyeden <b style="color:'+s.hex+'">tamamen izole</b> üretilir.</p></div></div>' +
       '<div style="padding:9px 12px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center">' +
         '<span class="mono" style="font-size:9px;color:var(--faint);letter-spacing:.14em" id="jwc-'+k+'">0 KARAKTER</span>' +
         '<button class="btn danger small" style="margin-left:auto" id="jstop-'+k+'" disabled>■ DURDUR</button>' +
@@ -2144,7 +3426,7 @@ function runJuryCol(k, prompt){
   setJuryState(k, "run");
   const ac = new AbortController(); state.jury.cols[k].ac = ac;
   const messages = [
-    { role:"system", content: seat.system + "\n\nKURALLAR: Bir kör jüri masasındasın. Aynı soru iki modele daha soruldu ama sen onların cevaplarını ASLA göremezsin. Tamamen bağımsız, eksiksiz ve kendine güvenen bir yanıt ver. Markdown kullan." },
+    { role:"system", content: seat.system + "\n\nKURALLAR: Bir kör jüri masasındasın. Aynı soru dört sandalyeye daha soruldu ama sen onların cevaplarını ASLA göremezsin. Tamamen bağımsız, eksiksiz ve kendine güvenen bir yanıt ver. Markdown kullan." },
     { role:"user", content: "SORU: " + prompt },
   ];
   streamChat(seat, messages, {
@@ -2195,6 +3477,11 @@ function updatePullMeta(){
   $("#pullCMeta").textContent = cN ? "MASA 01 · " + cN + " KAYIT · " + (state.council.topic ? state.council.topic.slice(0,26).toUpperCase() : "") : "MASA 01 · KAYIT YOK";
   const jN = ["A","B","C","D","E"].filter(k=>state.jury.cols[k].text).length;
   $("#pullJMeta").textContent = jN ? "MASA 02 · " + jN + "/5 YANIT HAZIR" : "MASA 02 · KAYIT YOK";
+  // Faz 2 (K7): kör değerlendirme, en az 3 yanıt ve oturum kapalıyken açılır
+  const jb = $("#btnJuryBlind");
+  if(jb && !state.jury.blindRunning){
+    jb.disabled = readyJuryCount() < 3;
+  }
 }
 function setMaterial(text, source){
   state.synth.material = text; state.synth.source = source;
@@ -2251,6 +3538,8 @@ function switchRoom(r){
   state.room = r;
   $$(".roomnav").forEach(b=>b.classList.toggle("active", b.dataset.room===r));
   $$(".room").forEach(s=>s.classList.toggle("on", s.id==="room-"+r));
+  // Faz 2 (K4): Arşiv odası her açılışta taze tutanak listesi çeker
+  if(r === "archive") loadArchive();
 }
 $$(".roomnav").forEach(b=>{ b.onclick = ()=>switchRoom(b.dataset.room); });
 
@@ -2283,6 +3572,7 @@ function readCurrentModalFields(){
     marital: $("#fMarital").value.trim() || currentSeat.marital || "",
     dogma: parseInt($("#fDogma").value, 10) || currentSeat.dogma || 5,
     extra: $("#fExtra").value.trim() || "",
+    voiceURI: ($("#fVoice") ? $("#fVoice").value : "") || currentSeat.voiceURI,
     baseUrl: $("#fUrl").value.trim() || currentSeat.baseUrl,
     apiKey: $("#fKey").value.trim(),
     model: $("#fModel").value.trim() || currentSeat.model,
@@ -2320,7 +3610,10 @@ function openSeatModal(k){
   $("#fUrl").value = s.baseUrl || "";
   $("#fKey").value = s.apiKey || "";
   $("#fModel").value = s.model || "";
-  
+
+  // Faz 3 (L1): Sesli Masa — tarayıcı TTS ses seçimi
+  populateVoiceSelect(s.voiceURI || "");
+
   // Canlı Sistem İstemi
   if(!s.system || s.system.trim() === ""){
     s.system = compileSystemPrompt(s);
@@ -2334,15 +3627,10 @@ function openSeatModal(k){
 
 $("#fDogma").oninput = (e)=>{
   updateDogmaLabel(e.target.value);
-  triggerRecompilePrompt();
 };
 
-["fName", "fAge", "fRole", "fCity", "fBelief", "fMarital", "fExtra"].forEach(id=>{
-  const el = $("#" + id);
-  if(el){
-    el.oninput = triggerRecompilePrompt;
-  }
-});
+/* Denetim B7: alanlarda tuşa basışta zengin sistem istemi otomatik EZİLİYORDU.
+   İstem artık YALNIZCA "Yeniden Derle ↺" butonuyla bilinçli olarak yeniden üretilir. */
 
 const btnRecompile = $("#btnRecompile");
 if(btnRecompile) btnRecompile.onclick = triggerRecompilePrompt;
@@ -2388,7 +3676,8 @@ $("#newSession").onclick = ()=>{
   if(state.council.running) state.council.ac && state.council.ac.abort();
   ["A","B","C","D","E"].forEach(k=>state.jury.cols[k].ac && state.jury.cols[k].ac.abort());
   if(state.synth.running) state.synth.ac && state.synth.ac.abort();
-  state.council = { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds: state.council.autoRounds, autoPending:false };
+  state.council = { topic:"", msgs:[], running:false, ac:null, current:null, modelTurns:0, autoRounds: state.council.autoRounds, autoPending:false,
+    claims:[], tension:null, convHistory:[], votes:null, voting:false, verdict:"" };
   state.jury = { prompt:"", cols:{ A:{text:"",state:"idle",ac:null}, B:{text:"",state:"idle",ac:null}, C:{text:"",state:"idle",ac:null}, D:{text:"",state:"idle",ac:null}, E:{text:"",state:"idle",ac:null} }, running:false };
   state.synth = { material:"", source:"", running:false, ac:null };
   cScroll.querySelectorAll(".msg").forEach(n=>n.remove());
@@ -2397,7 +3686,12 @@ $("#newSession").onclick = ()=>{
   buildJuryCols(); setMaterial("", ""); $("#reportBody").innerHTML = '<div class="empty" style="min-height:340px"><h3>Hakem henüz kürsüye çıkmadı</h3></div>';
   $("#reportMeta").textContent = "BEKLEMEDE";
   $("#btnNext").disabled = true; $("#btnSynth").disabled = true;
+  resetEnvelopeRoom();
   renderSpeakers(); updatePullMeta();
+  renderClaimList(); resetTensionMeter(); resetConvMeter(); renderVoteStrip();
+  if(typeof resetJuryBlind === "function") resetJuryBlind();
+  const dp = $("#decisionPanel"); if(dp) dp.style.display = "none";
+  const ddb = $("#btnDecisionDownload"); if(ddb) delete ddb.dataset.md;
 };
 $("#demoToggle").onclick = ()=>{
   state.demo = !state.demo;
@@ -2407,10 +3701,35 @@ $("#demoToggle").onclick = ()=>{
 };
 function applyStatus(){
   const led = $("#ledMain"), txt = $("#statusTxt");
-  if(state.demo){ led.className="led demo"; txt.textContent="DEMO SİMÜLASYONU"; }
-  else if(state.backend){ led.className="led live"; txt.textContent="PROXY CANLI · 127.0.0.1:8888"; }
-  else { led.className="led err"; txt.textContent="PROXY YOK · DEMO’YA GEÇ"; state.demo = true; led.className="led demo"; txt.textContent="DEMO SİMÜLASYONU"; $("#demoToggle").style.color="var(--amber)"; $("#demoToggle").style.borderColor="var(--amber)"; }
+  const core = $("#coreNetStat");
+  if(state.demo){ led.className="led demo"; txt.textContent="DEMO SİMÜLASYONU"; if(core) core.textContent="NÖRAL BAĞLANTI: SİMÜLASYON"; }
+  else if(state.backend){ led.className="led live"; txt.textContent="PROXY CANLI · 127.0.0.1:8888"; if(core) core.textContent="NÖRAL BAĞLANTI: CANLI"; }
+  else { led.className="led err"; txt.textContent="PROXY YOK · DEMO’YA GEÇ"; if(core) core.textContent="NÖRAL BAĞLANTI: KOPUK"; state.demo = true; led.className="led demo"; txt.textContent="DEMO SİMÜLASYONU"; if(core) core.textContent="NÖRAL BAĞLANTI: SİMÜLASYON"; $("#demoToggle").style.color="var(--amber)"; $("#demoToggle").style.borderColor="var(--amber)"; }
 }
+/* HUD toast (alert yerine — Denetim B6) */
+function toast(msg){
+  let box = $("#toastBox");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "toastBox";
+    box.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none";
+    document.body.appendChild(box);
+  }
+  const t = document.createElement("div");
+  t.textContent = msg;
+  t.style.cssText = "background:rgba(22,27,34,.96);border:1px solid var(--cyan);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:10px 18px;border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 14px rgba(57,197,207,.18);opacity:0;transition:opacity .25s;max-width:80vw;text-align:center";
+  box.appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity = "1"; });
+  setTimeout(()=>{ t.style.opacity = "0"; setTimeout(()=>t.remove(), 300); }, 2600);
+}
+/* Denetim B2: hologram masanın daraltılabilir görünümü (buton handler'sızdı) */
+$("#toggleHoloTable").onclick = ()=>{
+  const arena = $("#holoArena");
+  const btn = $("#toggleHoloTable");
+  const collapsed = arena.style.display === "none";
+  arena.style.display = collapsed ? "" : "none";
+  btn.textContent = collapsed ? "◈ GÖRÜNÜMÜ DARALT" : "◈ GÖRÜNÜMÜ AÇ";
+};
 async function checkBackend(){
   try{
     const c = new AbortController(); setTimeout(()=>c.abort(), 2500);
@@ -2492,22 +3811,29 @@ function renderCharacterLibrary(){
 function assignCharacterToSeat(c, seatKey){
   if(!state.seats[seatKey]) return;
   const target = state.seats[seatKey];
+  target.id = c.id || null; // Faz 2 (K8): Yaşanan Hafıza'nın karakter anahtarı
   target.name = c.name;
   target.charName = c.name;
   target.role = c.title;
   target.city = c.era || "";
   target.belief = c.worldview || "";
   target.dogma = c.dogma || 5;
-  target.extra = (c.quote ? '"' + c.quote + '"\n' : '') + (c.irritants ? 'Tahammülsüzlük: ' + c.irritants : '');
+  /* Denetim B6: tartışma DNA'sının geri kalanı (üslup + kelime dağarcığı)
+     da masaya taşınır; önceki sürümde bu iki alan sessizce düşüyordu. */
+  const dna = (c.quote ? '"' + c.quote + '"\n' : '')
+    + (c.irritants ? 'Tahammülsüzlük: ' + c.irritants + '\n' : '')
+    + (c.argument_style ? 'Tartışma Üslubu: ' + c.argument_style + '\n' : '')
+    + (c.vocabulary ? 'Kavram ve Kelime Dağarcığı: ' + c.vocabulary + '\n' : '');
+  target.extra = dna.trim();
   target.system = c.system_prompt || compileSystemPrompt(target);
-  
+
   saveSeats();
   renderSeatChips();
   renderSpeakers();
   buildJuryCols();
-  
-  // Bildirim ver
-  alert(`✓ ${c.name} başarıyla Sandalye ${seatKey} (${target.role}) konumuna oturtuldu!`);
+
+  // Bildirim ver (alert yerine toast — Denetim B6)
+  toast(`✓ ${c.name} — Sandalye ${seatKey} (${target.role}) konumuna oturdu.`);
 }
 
 // Karakter Mimarı Ajanı Tetikleyicisi
@@ -2555,10 +3881,308 @@ if(btnRunArch){
   };
 }
 
+/* ═══════════════════ MASA 5 · MÜHÜRLÜ ZARF & İKNA DELTASI ═══════════════════ */
+state.envelope = {
+  sessionId: null, topic: "", sealing: false,
+  cols: {
+    A: { text: "", state: "idle", ac: null, word: "", hash: "", position: "", openedAt: "" },
+    B: { text: "", state: "idle", ac: null, word: "", hash: "", position: "", openedAt: "" },
+    C: { text: "", state: "idle", ac: null, word: "", hash: "", position: "", openedAt: "" },
+    D: { text: "", state: "idle", ac: null, word: "", hash: "", position: "", openedAt: "" },
+    E: { text: "", state: "idle", ac: null, word: "", hash: "", position: "", openedAt: "" },
+  },
+  delta: null,
+};
+
+function envSessionId(){
+  if(!state.envelope.sessionId){
+    state.envelope.sessionId = "zarf_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,6);
+    fetch("/api/session/start", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ session_id: state.envelope.sessionId, topic: state.envelope.topic })
+    }).catch(()=>{});
+  }
+  return state.envelope.sessionId;
+}
+
+function envColHtml(k){
+  const s = state.seats[k], c = state.envelope.cols[k];
+  const st = c.state === "sealing" ? "YAZIYOR" : c.state === "sealed" ? "MÜHÜRLÜ" : c.state === "opened" ? "AÇILDI" : "BOŞ";
+  let body;
+  if(c.state === "sealing"){
+    body = '<div class="env-live">' + esc(c.text.slice(-600) || "…") + '</div>';
+  } else if(c.state === "idle"){
+    body = '<div class="env-live" style="color:var(--faint)">Zarf kapalı.<br>İzole kanal, "Zarfları Mühürle" ile açılır.</div>';
+  } else {
+    body =
+      (c.word ? '<div class="env-word">' + esc(c.word) + '</div>' : "") +
+      (c.state === "opened"
+        ? '<div class="env-pos">' + esc(c.position) + '</div>'
+        : '<div class="env-live" style="color:var(--faint)">Pozisyon mühürlü — açılışta görünecek.</div>');
+  }
+  return '<div class="env-top">' +
+      '<span class="env-sealmark">' + k + '</span>' +
+      '<span style="min-width:0"><span class="env-name">' + esc(s.charName || s.name) + '</span><br><span class="env-seatlbl">Sandalye ' + k + ' · İzole Kanal</span></span>' +
+      '<span class="env-state">' + st + '</span>' +
+    '</div>' +
+    '<div class="env-body">' + body + '</div>' +
+    (c.hash ? '<div class="env-sealline">MÜHRÜR <b>' + esc(c.hash.slice(0,16)) + '…</b> · SHA-256</div>' : "");
+}
+
+function renderEnvCard(k){
+  const card = $("#envcard-" + k);
+  if(!card) return;
+  card.className = "envcard" + (c2class(state.envelope.cols[k].state));
+  card.innerHTML = envColHtml(k);
+  if(state.envelope.cols[k].state === "sealing"){
+    const live = card.querySelector(".env-live");
+    if(live) live.scrollTop = live.scrollHeight;
+  }
+}
+function c2class(st){ return st === "sealing" ? " sealing" : st === "sealed" ? " sealed env-locked-look" : st === "opened" ? " opened" : ""; }
+
+function buildEnvCards(){
+  const grid = $("#envGrid");
+  grid.innerHTML = "";
+  ["A","B","C","D","E"].forEach(k=>{
+    const card = document.createElement("div");
+    card.id = "envcard-" + k;
+    card.className = "envcard" + c2class(state.envelope.cols[k].state);
+    card.innerHTML = envColHtml(k);
+    grid.appendChild(card);
+  });
+}
+
+function updateEnvStatus(){
+  const sealed = ["A","B","C","D","E"].filter(k=>state.envelope.cols[k].state==="sealed"||state.envelope.cols[k].state==="opened").length;
+  const opened = ["A","B","C","D","E"].filter(k=>state.envelope.cols[k].state==="opened").length;
+  const el = $("#envStatus");
+  const btnOpen = $("#btnEnvOpen"), btnDelta = $("#btnEnvDelta"), btnSeal = $("#btnEnvSeal");
+  btnSeal.disabled = false; // mühürleme sırasında tıklama = DURDUR (devre dışı buton olay ateşlemez)
+  btnOpen.disabled = opened === 5 || sealed < 5 || state.envelope.sealing;
+  if(state.envelope.sealing){
+    el.innerHTML = '<span class="warn">İZOLE KANALLAR AÇIK — 5 delege yalnız kendi vicdanıyla yazıyor…</span>';
+    return;
+  }
+  if(opened === 5){
+    el.innerHTML = '<span class="ok">5/5 AÇILDI — Mühürlü ve nihai pozisyonlar yan yana. İkna Deltası hesaplanabilir.</span>';
+    return;
+  }
+  if(sealed === 5){
+    el.innerHTML = '<span class="warn">5/5 MÜHÜRLÜ — Şimdi Masa 01\'de aynı konuyu tartışın, dönüp "Zarfları Aç" deyin.</span>';
+  } else {
+    el.textContent = sealed + "/5 MÜHÜRLÜ — Konu girin ve zarfları mühürleyin. Sonra Masa 01'de aynı konuyu tartışın ve buraya dönün.";
+  }
+}
+
+function runSealCol(k, topic){
+  const seat = state.seats[k];
+  const c = state.envelope.cols[k];
+  c.text = ""; c.state = "sealing";
+  renderEnvCard(k);
+  const ac = new AbortController(); c.ac = ac;
+  const messages = [
+    { role:"system", content: seat.system + "\n\nKURALLAR: Ayrı bir MÜHÜRLÜ ZARF odasındasın. Diğer masadakileri ne tanıyorsun ne duyarsın; cevaplarını ASLA göremezsin. Bu konuda nihai pozisyonunu, yalnız kendi vicdanın ve ilkelerinle, 60-120 kelimeyle yaz. Markdown kullanma, düz cümleler yaz. En SON satıra, pozisyonunu en iyi ifade eden TEK BİR KELİME yaz (örnek: RED / ONAY / ŞERH / ERTELE / BOYKOT)." },
+    { role:"user", content: "KONU: " + topic },
+  ];
+  streamChat(seat, messages, {
+    signal: ac.signal,
+    onDelta: (t)=>{ c.text = t; renderEnvCard(k); },
+    onError: (e)=>{ c.state = "idle"; c.text = ""; renderEnvCard(k); updateEnvStatus(); toast("Sandalye " + k + " mühürleyemedi: " + e); },
+    onDone: async (stopped)=>{
+      c.ac = null;
+      const text = c.text.trim();
+      if(stopped || !text){ c.state = "idle"; c.text = ""; renderEnvCard(k); updateEnvStatus(); return; }
+      // tek kelime: son dolu satır; pozisyon: geri kalan
+      const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
+      let word = lines.length ? lines[lines.length-1] : "";
+      word = word.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü0-9 \-]/g,"").trim().slice(0,24).toUpperCase();
+      const position = (lines.length > 1 ? lines.slice(0,-1).join("\n") : text).trim();
+      try{
+        const r = await fetch("/api/envelope/seal", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            session_id: envSessionId(), seat: k,
+            character_id: (state.seats[k] && state.seats[k].id) || k,
+            word: word, position: position,
+          })
+        });
+        const d = await r.json();
+        if(d.ok && d.envelope){
+          c.state = "sealed"; c.hash = d.envelope.seal_hash; c.word = word; c.position = position;
+        } else { c.state = "idle"; c.text = ""; }
+      }catch(e){ c.state = "idle"; c.text = ""; }
+      renderEnvCard(k);
+      checkEnvSealDone();
+    },
+  });
+}
+
+function checkEnvSealDone(){
+  const sealing = ["A","B","C","D","E"].some(k=>state.envelope.cols[k].state==="sealing");
+  if(!sealing && state.envelope.sealing){
+    state.envelope.sealing = false;
+    $("#btnEnvSeal").textContent = "✉ ZARFLARI MÜHÜRLE";
+    updateEnvStatus();
+  }
+  updateEnvStatus();
+}
+
+function renderDeltaPanel(d){
+  const body = $("#deltaBody");
+  const seatColors = k => (state.seats[k] ? state.seats[k].hex : "#39c5cf");
+  const tagFor = score => score < 30 ? "Pozisyonunu korudu" : score < 60 ? "Kısmen esnedi" : "İkna edildi";
+  let html = "";
+  if(d.delta_summary) html += '<div class="delta-summary">' + esc(d.delta_summary) + '</div>';
+  html += '<div class="delta-grid">';
+  (d.seats || []).forEach(s=>{
+    const col = seatColors(s.seat);
+    html +=
+      '<div class="delta-card" style="--dc:' + col + '">' +
+        '<div class="dc-top"><span class="dc-key">' + esc(s.seat) + '</span><span class="dc-name">' + esc(s.name || s.seat) + '</span></div>' +
+        '<div class="dc-score">' + (s.delta_score ?? 0) + '<small> /100</small></div>' +
+        '<div class="dc-bar"><i style="width:' + (s.delta_score ?? 0) + '%"></i></div>' +
+        '<div class="dc-tag">' + tagFor(s.delta_score ?? 0) + (s.moved_by && s.moved_by !== "—" && s.moved_by !== "HİÇKİMSE" ? " · ikna eden: " + esc(s.moved_by) : "") + '</div>' +
+        (s.note ? '<div class="dc-note">' + esc(s.note) + '</div>' : "") +
+        (s.trigger ? '<div class="dc-trig">⚡ Kanıt: ' + esc(s.trigger) + '</div>' : "") +
+      '</div>';
+  });
+  html += '</div>';
+  if(d.persuasion_map && d.persuasion_map.length){
+    html += '<div class="t" style="font-family:\'IBM Plex Mono\';font-size:9.5px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase;margin:4px 0 8px">İkna Haritası (kim → kimi, ne kadar, hangi kanıtla)</div><div class="pmap">';
+    d.persuasion_map.forEach(p=>{
+      html +=
+        '<div class="pmap-row">' +
+          '<span style="color:var(--text)">' + esc(p.from_seat) + '</span>' +
+          '<span class="arrow">━━▶</span>' +
+          '<span style="color:var(--text)">' + esc(p.to_seat) + '</span>' +
+          '<span class="bar"><i style="width:' + (p.strength ?? 0) + '%"></i></span>' +
+          '<span class="ev">' + esc(p.evidence || "") + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+  body.innerHTML = html;
+  $("#deltaSrc").textContent = (d.source === "llm" ? "MODELSİZ ANALİZ · " : "MEKANİK BENZERLİK · ") + now().toUpperCase();
+  $("#deltaPanel").style.display = "";
+}
+
+function resetEnvelopeRoom(){
+  ["A","B","C","D","E"].forEach(k=>{
+    const c = state.envelope.cols[k];
+    c.ac && c.ac.abort();
+    c.text=""; c.state="idle"; c.ac=null; c.word=""; c.hash=""; c.position=""; c.openedAt="";
+  });
+  state.envelope.sessionId = null;
+  state.envelope.topic = "";
+  state.envelope.sealing = false;
+  state.envelope.delta = null;
+  $("#btnEnvSeal").textContent = "✉ ZARFLARI MÜHÜRLE";
+  $("#btnEnvOpen").disabled = true;
+  $("#btnEnvDelta").disabled = true;
+  $("#deltaPanel").style.display = "none";
+  $("#deltaBody").innerHTML = "";
+  $("#envTopic").value = "";
+  buildEnvCards();
+  updateEnvStatus();
+}
+
+$("#btnEnvSeal").onclick = ()=>{
+  if(state.envelope.sealing){
+    // tek tık = tümünü durdur
+    ["A","B","C","D","E"].forEach(k=>state.envelope.cols[k].ac && state.envelope.cols[k].ac.abort());
+    return;
+  }
+  const t = $("#envTopic").value.trim() || state.council.topic;
+  if(!t){ $("#envTopic").focus(); $("#envTopic").style.borderColor="var(--red)"; setTimeout(()=>$("#envTopic").style.borderColor="",900); return; }
+  state.envelope.topic = t;
+  state.envelope.sealing = true;
+  $("#btnEnvSeal").textContent = "■ TÜMÜNÜ DURDUR";
+  // önceki dökülmüş delta/görünümü sıfırla
+  ["A","B","C","D","E"].forEach(k=>{
+    const c = state.envelope.cols[k];
+    if(c.state === "sealed" || c.state === "opened"){ c.word=""; c.hash=""; c.position=""; }
+    c.state = "idle";
+  });
+  state.envelope.delta = null;
+  $("#deltaPanel").style.display = "none";
+  buildEnvCards();
+  updateEnvStatus();
+  ["A","B","C","D","E"].forEach(k=>runSealCol(k, t));
+};
+
+$("#btnEnvOpen").onclick = async ()=>{
+  const r = await fetch("/api/envelope/open", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ session_id: state.envelope.sessionId })
+  });
+  const d = await r.json();
+  if(!d.ok){ toast(d.error || "Zarflar açılamadı."); return; }
+  d.envelopes.forEach(e=>{
+    const c = state.envelope.cols[e.seat];
+    if(!c) return;
+    c.state = "opened"; c.hash = e.seal_hash; c.word = e.sealed_word || ""; c.position = e.sealed_position || ""; c.openedAt = e.opened_at || "";
+    renderEnvCard(e.seat);
+  });
+  state.envelope.delta = null;
+  $("#deltaPanel").style.display = "none";
+  updateEnvStatus();
+  toast("5 zarf aynı saniyede açıldı — mühürlü pozisyonlar masada.");
+};
+
+$("#btnEnvDelta").onclick = async ()=>{
+  const modelTurns = state.council.msgs.filter(m=>m.kind!=="op" && m.text);
+  if(modelTurns.length < 2){ toast("Önce Masa 01'de aynı konu üzerinde açık konseyi yürütün (en az birkaç söz)."); return; }
+  if(state.envelope.topic && state.council.topic && state.council.topic !== state.envelope.topic){
+    toast("Uyarı: Konsey konusu farklı görünüyor — delta, konsey tutanağındaki son sözlere göre hesaplanır.");
+  }
+  const finalPos = {};
+  ["A","B","C","D","E"].forEach(k=>{
+    const last = [...state.council.msgs].reverse().find(m=>m.kind!=="op" && m.seat===k && m.text);
+    if(last) finalPos[k] = last.text.slice(0, 3000);
+  });
+  const H = state.seats.H;
+  const btn = $("#btnEnvDelta");
+  btn.disabled = true;
+  const panel = $("#deltaPanel");
+  panel.style.display = "";
+  $("#deltaBody").innerHTML = '<div class="delta-busy"><i></i>Hakem modeli mühürlü ve nihai pozisyonları karşılaştırıyor — ikna haritası çiziliyor…</div>';
+  $("#deltaSrc").textContent = "HESAPLANIYOR…";
+  try{
+    const r = await fetch("/api/delta/compute", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        session_id: state.envelope.sessionId,
+        base_url: H.baseUrl || "https://text.pollinations.ai/openai",
+        api_key: H.apiKey || "",
+        model: H.model || "openai",
+        transcript: councilTranscript(),
+        final_positions: finalPos,
+      })
+    });
+    const d = await r.json();
+    if(d.ok && d.report){ state.envelope.delta = d.report; renderDeltaPanel(d.report); }
+    else { panel.style.display = "none"; toast(d.error || "Delta hesaplanamadı."); }
+  }catch(e){
+    panel.style.display = "none";
+    toast("Delta servisine ulaşılamadı: " + e.message);
+  }
+  btn.disabled = false;
+};
+
+/* Konsey başlarsa konu mühür odasına da aksın */
+const _origBtnStart = $("#btnStart");
+_origBtnStart.addEventListener("click", ()=>{
+  setTimeout(()=>{
+    if(state.council.topic && !$("#envTopic").value) $("#envTopic").value = state.council.topic;
+  }, 0);
+});
+
 /* ── Kalkış ── */
 renderSeatChips();
 renderSpeakers();
 buildJuryCols();
+buildEnvCards();
 syncAutoNote();
 updatePullMeta();
 checkBackend();
