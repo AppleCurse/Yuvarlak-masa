@@ -188,19 +188,25 @@ def get_character_memory(char_id: str, limit: int = 4) -> List[Dict[str, Any]]:
         return [dict(r) for r in rows]
 
 def get_character_memory_text(char_id: str, limit: int = 4) -> str:
-    """Karakterin geçmiş hafızasını sistem istemine dokunacak metin bloğu olarak döndürür (Faz 2 — yaşayan hafıza)."""
+    """Karakterin geçmiş hafızasını sistem istemine dokunacak metin bloğu olarak döndürür (Faz 2 — yaşayan hafıza;
+    Faz 3b — rivalries: karakterler birbirine küskün kalır)."""
     memories = get_character_memory(char_id, limit)
     if not memories:
         return ""
-    lines = "\n".join(
-        f"- {m.get('entry') or ''} (tutum: {m.get('stance') or 'belirtilmemiş'})"
-        for m in memories
-    )
-    return (
+    lines = []
+    grudges = []
+    for m in memories:
+        lines.append(f"- {m.get('entry') or ''} (tutum: {m.get('stance') or 'belirtilmemiş'})")
+        if m.get("rivalries"):
+            grudges.append(f"- {m['rivalries']}")
+    text = (
         "GEÇMİŞ MÜZAKERELERDEN KALAN KİŞİSEL HAFIZAN:\n"
-        + lines
+        + "\n".join(lines)
         + "\nBu hafızayı doğal biçimde kullan; gerekli yerlerde 'geçen oturumda…' diye atıfta bulun."
     )
+    if grudges:
+        text += "\n\nKİŞİSEL HESAPLARIN (masada bu kişiler varsa hislerini hisset, ama nezaketi bozma):\n" + "\n".join(grudges)
+    return text
 
 
 def add_character_memory(char_id: str, session_id: str, entry: str, stance: str = "", rivalries: str = ""):
@@ -766,7 +772,7 @@ async def compute_persuasion_delta(
     return {"ok": True, "report": _mechanical_delta(envelopes, final_positions)}
 
 
-# ── Yakınsama Radarı (Faz 2 — K3): 5 sandalyenin semantik yakınlığı ─────
+# ── Yakınsama Radarı (Faz 2 — K3): masadaki sandalyelerin semantik yakınlığı (Faz 4: 2-8) ─────
 def _mechanical_convergence(positions: Dict[str, str]) -> Dict[str, Any]:
     """LLM yoksa: her çift arasındaki dizel benzerliği ortalamala (0-100)."""
     texts = {k: (v or "").strip() for k, v in positions.items() if (v or "").strip()}
@@ -797,10 +803,11 @@ async def compute_convergence(
     pos_block = "\n\n".join(
         f"--- SANDALYE {k.upper()} ---\n{(v or '(boş)')[:1500]}" for k, v in positions.items()
     )
+    n_pos = len(positions)
     sys_msg = (
         "Sen KONSÜL Masası'nın YAKINSAMA RADARI analistisin. Sana aynı konsey oturumunun "
-        "biten bir turunda 5 delegenin pozisyonu verilir. Görevin SOĞUK BİR ÖLÇÜM yapmaktır: "
-        "Bu 5 pozisyon birbirine ne kadar yakınsadı? 100 = tam konsensüs, 0 = tamamen savrulma. "
+        f"biten bir turunda {n_pos} delegenin pozisyonu verilir. Görevin SOĞUK BİR ÖLÇÜM yapmaktır: "
+        f"Bu {n_pos} pozisyon birbirine ne kadar yakınsadı? 100 = tam konsensüs, 0 = tamamen savrulma. "
         "YANITIN SADECE VE SADECE GEÇERLİ BİR JSON NESNESİ OLMALIDIR."
     )
     user_msg = (

@@ -9,7 +9,7 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 
 ---
 
-## 🏛️ Çalışma Odaları (6)
+## 🏛️ Çalışma Odaları (7)
 
 ### 1. Ana Müzakere Masası (Konsey Arenası)
 * 5 bağımsız sandalye + 1 İnsan Operatör koltuğu.
@@ -24,11 +24,16 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 * **Oturumu Kapat & Hatırlat:** Hakem modeli resmî **karar metni** dökülür; karar oturuma damgalanır ve beş karakterin *Yaşayan Hafıza*'sına damıtılır (bir sonraki oturumda "geçen oturumda…" diye atıfta bulunurlar).
 * **Karar Raporu & Muhalefet Şerhleri (Faz 3):** "⚖ KARAR RAPORU & ŞERHLER" — Başhakem, Türk kurum kültüründeki resmî karar raporları üslubunda 8 bölümlü belgeyi döküyor (GÖREV / SÜREÇ / **KANIT RAPORU — İddia Defteri'nden beslenir** / KARAR / **MUHALEFET ŞERHLERİ** / EYLEM PLANI / BAŞARI METRİKLERİ / RİSK KAYDI). Kararın gerekçesiyle çelişen her sandalye **kendi sesiyle** resmî şerh yazar (paralel, izole çağrılar). Belge `SHA-256` parmak izi + 5 sandalye mührü + başkan onayıyla imzalanır, arşive yazılır, `.md` indirilir.
 * **Sesli Masa (Faz 3):** Ses tamamen tarayıcıda üretilir (Web Speech API — harici TTS servisi yok, sunucuya ses gitmez). Her mesajda `🔊` tek söz okuma; konsoldaki **CANLI SES** ile sözler bitince karakterin kendi sesiyle otomatik akar; her sandalyeye modalda kalıcı ses ataması + `🎭 SESLİ TANITIM` (5 koltuk kendini tanıtır); operatör barındaki `🎙` ile sesli komut (tr-TR dikte) müdahale kutusuna dökülür.
+* **Zaman Makinesi (Faz 3b):** Konsolun altındaki sinematik şerit, tutanağın her sözünü bir kareye çizer (renk = sandalye; yükseklik = söz uzunluğu; tur ayracı her 5 sözde). Kareye tıklamak konsolu o ana *geri sarar*: "SÖZ i/n · konuşmacı · saat · tur" çubuğuyla kare kare (◀ ▶) gezinilir, `ŞİMDİYE DÖN` ile anında bugün. Geçmişte gezinirken yeni söz gelirse masa otomatik olarak şimdiki zamana sarılır.
+* **Başkan Kontrolleri (Faz 3b):** Operatör artık masanın gerçek başkanına dönüyor — her konuşmacı satırında `🔇 SESSİZE AL` (sıradaki söz hakkı atlanır, tek tıkla geri açılır), sandalye modalında `⛔ OTURUMDAN İHRAÇ ET` (aktif oturumda; modal açık kalır ki karakter kütüphanesinden yenisini oturtsun, `↻ GERİ OTURT` ile affedilir) ve konsoldaki `⚡ SÖZÜ KES` (streaming söz yarıda kesilir, operatör müdahalesi tutanağa damgalanır).
+* **Güvenirlilik Rozeti (Faz 3b):** Her sözün iç ses geçişinde model, söylenenle hissedilenin uyumunu 0-100 puanlar; sandalye satırındaki `GÜV` rozeti bu son puanı taşır (kırmızı < 40 ikiyüzlülük alarmı, amber < 70, yeşil dürüst).
+* **Dinamik Masa — 2–8 Koltuk (Faz 4):** Masa artık sabit 5 değil: sağ paneldeki **MASA KOLTUKLARI** seçicisiyle 2–8 yapay zeka koltuğu (A–H) kurulur; seçim kalıcıdır (localStorage). Yeni koltuklarda hazır karakterler: **F = Frank Abagnale Jr.** (Efsane Sahtekâr), **G = Prof. Dr. İlber Ortaylı** (Tarihçi), **H = Nelson Mandela** (Uzlaşma Mimarı); hakem koltuğu artık **K** anahtarında. Koltuk sayısına uyan her şey: söz sırası (tur = N söz), holografik masa ve delege kartları (sütun sayısı dahil), zorunlu oylama, mühürlü zarf (N zarf), kör jüri (ilk 5 koltuk, üst sınır 5), karar raporu mührleri, sesli tanıtım, zaman makinesi tur ayraçları ve yakınsama radarı. Karakter kütüphanesindeki "sandalyeye oturt" butonları da aktif koltuklara göre üretilir.
 * **Müdahale Taktikleri:** Operatör çubuğundan hazır operatör sözleri (delil iste, çelişkiyi vur, uzlaşma çağrısı, 5 modele meydan oku).
 * Otomatik paslaşma: 1/2/3/5 tur; tek tek söz verme modu.
+* Operatör müdahaleleri artık `record_message` ile tutanağa da yazılır — arşiv ve film şeridi tam sürüktür.
 
 ### 2. Kör Jüri İstasyonu (2.0)
-* 5 model birbirini ne görür ne duyar; aynı soruya **izole kanallardan** paralel, anonim yanıt verir.
+* Jüri, konseyin **ilk 5 koltuğunu** (2–8 koltuklu masada da üst sınır 5) kullanır; modeller birbirini ne görür ne duyar, aynı soruya **izole kanallardan** paralel, anonim yanıt verir.
 * **Kör Değerlendirme (2.0):** Başhakem, yanıtları adlandırılmış halde (*JÜRİ 1..5*, her çalıştırmada yeniden karılır; isim metinden soyulur) okur ve **yalnız argüman niteliğine** bakarak sıralama + en güçlü/zayıf argümanlar + sentez raporlar. Rapor bitince **Kimlik Açılışı** şeridi hakemin bilmediği eşlemeyi gösterir.
 * Yanıtlar Sentez Odası'na tek tıkla aktarılır.
 
@@ -42,10 +47,10 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 ### 4. Karakter Kütüphanesi & Mimar Ajanı
 * 10 derin karakter dosyası hazır: Sülün Osman, Frank Abagnale Jr., Nikola Tesla, Baba Vanga, Nelson Mandela, Güç Radikali (Arketip), Prof. Dr. İlber Ortaylı, Niccolò Machiavelli, Sigmund Freud, Sokrates.
 * **Karakter Mimarı Ajanı:** "Kimi inşa etmek istiyorsunuz?" yazın — dünya görüşü, kırmızı çizgiler, tartışma üslubu ve tam sistem istemiyle zihinsel dosya üretir.
-* Her karttan karakter tek tıkla A–E veya Hakem sandalyesine oturtulur.
+* Her karttan karakter tek tıkla aktif koltuklara (A–H) veya Hakem sandalyesine (K) oturtulur — butonlar masa koltuk sayısına göre üretilir.
 
 ### 5. Mühürlü Zarf & İkna Deltası (ürünün taç özelliği)
-* **Mühürleme:** Konsey başlamadan önce her sandalye, diğerlerinden habersiz **izole kanaldan** nihai pozisyonunu + tek kelimesini yazar; zarf `SHA-256` ile mühürlenir (zaman damgalı, değiştirilemez).
+* **Mühürleme:** Konsey başlamadan önce her sandalye, diğerlerinden habersiz **izole kanaldan** nihai pozisyonunu + tek kelimesini yazar; zarf `SHA-256` ile mühürlenir (zaman damgalı, değiştirilemez). Zarf sayısı Masa 01'deki koltuk sayısına (2–8) otomatik uyarlanır.
 * **Açılış töreni:** Konsey bitince "Zarfları Aç" — 5 zarf aynı saniyede açılır, mühürlü ve nihai pozisyonlar yan yana durur.
 * **İkna Deltası:** Hakem modeli her sandalye için **0-100 delta skoru**, **ikna eden sandalye** ve **tetikleyen kanıt/cümle**yi raporlar; ayrıca "kim → kimi" **İkna Haritası** çizilir. Model yanıt veremezse özellik ölmez: mekani̇k metin benzerliği (difflib) ile delta hesaplanır.
 * Akış: `✉ Mühürle` → Masa 01'de aynı konuyu tartış → `⚖ Aç` → `◆ İkna Deltası Hesapla`.
@@ -54,6 +59,15 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 * Tüm oturumlar yerel veritabanında birikir: konu, durum (AKTİF/KAPALI), kayıt sayısı, karar metni.
 * Konu filtresiyle tarayın; bir oturuma tıklayınca **tam tutanak** açılır — her sözün yanı sıra damıtılmış **iç ses** katmanı ve itiraz bağları da görünür.
 * `⬇ MARKDOWN İNDİR` tutanağı tek dosya olarak kaydeder; `↻ MASAYA TAŞI` konuyu Masa 01'e geri koyar (karakterler Yaşayan Hafızalarıyla döner).
+* **Film Şeridi (Faz 3b):** `🎬 FİLM ŞERİDİ (.html)` — oturumu sinematik, tek dosyalık bir `.html` film olarak dışa aktarır: açılış kartı (konu + dosya numarası), her söz için tam ekran sayfa (sandalye rengi dev harfi, konuşmacı şeridi, markdown gövde, kırmızı kesikli **iç ses** bloğu), resmî karar raporu sayfası (SHA-256 bandıyla) ve jenerik. Dosya internetsiz açılır; `Ctrl+P` ile her sayfa ayrı sayfaya basar.
+
+### 7. Sıfır Sığınak — Arena 1v1 (Faz 3b)
+* İki sandalye seçilir (A ve B, farklı karakterler), bir **iddia** yazılır, salvo sayısı 1/2/3/5 belirlenir.
+* Düello protokolü: **A "iddia GEÇERSİZ"i, B "iddia GEÇERLİDİR"i** savunur; her salvo, rakibin *önceki sözünü adıyla ve içeriğiyle* çürütmek zorundadır (anti-tekrar kuralları istemde sabittir), 60-120 kelime, birinci şahıs, tam persona.
+* Salvolar gerçek zamanlı akar (A→B), `■ KES` düellosunu her iki kanaldan da anında durdurur.
+* Bitişte **Başhakem** (H sandalyesi) düello tutanağını okuyup `⚖ BAŞHAKEM HÜKMÜ` döküyor: **KAZANAN** (A/B) · **EN GÜÇLÜ DARBE** · **EN ZAYIF AN** · **NİHAİ HÜKMÜ**. Kazanan sandalye altın çerçeveye, kaybeden soluklaşır.
+* Düello `arena_…` dosya numarasıyla arşive yazılır — Masa 06'da film şeridine de dökülebilir.
+* Masanın **Küskünlük Defteri (Faz 3b):** Oturum kapatılırken (Masa 01 "Oturumu Kapat") hakem modeli tutanağı tarayıp kimin kiminle sert çeliştiğini JSON olarak çıkarır; her tarafla ilgili girdi *o karakterin* Yaşayan Hafıza'sının **rivalries** defterine damıtılır. Bir sonraki oturumda karakter, kişisel istem bloğundaki "KİŞİSEL HESAPLARIN" bölümünden bu kişileri *hatırlar* (nezaket kurallarıyla birlikte) — masada süreklilik ve dram doğar.
 
 ### İçerik Politikası
 Tarihsel olarak hassas figürler (totaliter liderler, insanlık suçluları) **birinci şahıs bedenlemeyle seed edilmeyiz.** Bu tür briefler için Karakter Mimarı "analitik mesafe" arketipi üretir: tezi savunan, ancak şiddet/ırkçılık/nefret söylemi üretmeyen, kişilere hakaret etmeyen soyut bir zihniyet dosyası. (Denetim raporu §3.6)
@@ -138,6 +152,7 @@ KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
 | POST | `/api/debate/evaluate_rebuttal` | İtiraz hakemi (+ 0-100 gerilim ölçümü) |
 | POST | `/api/convergence` | Yakınsama Radarı (LLM + mekani̇k fallback) |
 | GET | `/api/memory/{char_id}` | Yaşayan Hafıza: karakterin önceki oturum anıları (istem bloğu olarak biçimlenmiş) |
+| POST | `/api/memory/add` | Hafıza girdisi ekle (`entry` + `rivalries`) — Küskünlük Haritası bunu besler |
 | POST | `/api/session/report` | Karar raporunu (şerhli) oturuma damgala |
 | GET | `/api/session/{id}/report` | Oturumun en yeni karar raporu |
 | GET | `/api/reports` | Karar raporu arşivi (tam metinsiz) |
