@@ -4,6 +4,8 @@ KONSÜL 2.0 — Çekirdek Zihinsel Simülasyon, Hafıza ve Müzakere Motoru
 SQLite tabanlı kalıcı karakter hafızası, oturum arşivi ve canlı web araştırması servisi.
 """
 
+import difflib
+import hashlib
 import html
 import json
 import re
@@ -20,8 +22,12 @@ DB_PATH = BASE_DIR / "konsul.db"
 CHARS_JSON = BASE_DIR / "characters.json"
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
     conn.row_factory = sqlite3.Row
+    # Denetim §3.5: eşzamanlı yazımlarda kilit hatası yok, hızlı okuma
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=2000")
+    conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
 def init_database():
@@ -88,7 +94,44 @@ def init_database():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        # Faz 2 taç: Mühürlü Zarf protokolü (ikna deltasi için karşi-özgür referans)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS envelopes (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            seat TEXT NOT NULL,
+            character_id TEXT,
+            sealed_word TEXT,
+            sealed_position TEXT NOT NULL,
+            seal_hash TEXT NOT NULL,
+            sealed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            opened_at TIMESTAMP
+        )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_envelopes_session ON envelopes(session_id)")
+        # Faz 3: Hukuki Karar Protokolü — resmî karar raporu arşivi (muhalefet şerhli)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS decision_reports (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            topic TEXT,
+            report_md TEXT NOT NULL,
+            fingerprint TEXT,
+            dissent_seats TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_decision_reports_session ON decision_reports(session_id)")
         conn.commit()
+
+        # İndeksler (arşiv sorguları)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_session_time ON messages(session_id, created_at)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_memory_char ON episodic_memory(character_id, created_at DESC)")
+
+        # Denetim §3.6: hassas figür seed'i veritabanından kalıcı olarak temizle
+        # (var olan eski DB'ler için savunan silme; yeni DB'ler characters.json'dan gelir)
+        conn.execute("DELETE FROM characters WHERE id = 'adolf_hitler'")
 
         # İlk karakterleri yükle
         cur = conn.cursor()
@@ -144,6 +187,22 @@ def get_character_memory(char_id: str, limit: int = 4) -> List[Dict[str, Any]]:
         """, (char_id, limit)).fetchall()
         return [dict(r) for r in rows]
 
+def get_character_memory_text(char_id: str, limit: int = 4) -> str:
+    """Karakterin geçmiş hafızasını sistem istemine dokunacak metin bloğu olarak döndürür (Faz 2 — yaşayan hafıza)."""
+    memories = get_character_memory(char_id, limit)
+    if not memories:
+        return ""
+    lines = "\n".join(
+        f"- {m.get('entry') or ''} (tutum: {m.get('stance') or 'belirtilmemiş'})"
+        for m in memories
+    )
+    return (
+        "GEÇMİŞ MÜZAKERELERDEN KALAN KİŞİSEL HAFIZAN:\n"
+        + lines
+        + "\nBu hafızayı doğal biçimde kullan; gerekli yerlerde 'geçen oturumda…' diye atıfta bulun."
+    )
+
+
 def add_character_memory(char_id: str, session_id: str, entry: str, stance: str = "", rivalries: str = ""):
     mid = str(uuid.uuid4())
     with get_db() as conn:
@@ -173,10 +232,56 @@ def get_session_messages(session_id: str) -> List[Dict[str, Any]]:
         rows = conn.execute("SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC", (session_id,)).fetchall()
         return [dict(r) for r in rows]
 
+def list_sessions(limit: int = 50) -> List[Dict[str, Any]]:
+    """Arşiv odası için oturum listesi (yeni → eski), mesaj sayılarıyla."""
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT s.*, (SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id) AS msg_count
+               FROM sessions s ORDER BY s.started_at DESC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
 def close_session(session_id: str, verdict: str):
     with get_db() as conn:
         conn.execute("UPDATE sessions SET status = 'ended', ended_at = CURRENT_TIMESTAMP, referee_verdict = ? WHERE id = ?", (verdict, session_id))
         conn.commit()
+
+
+# ── Hukuki Karar Protokolü (Faz 3): resmî karar raporu + muhalefet şerhleri ──
+def save_decision_report(
+    session_id: str, topic: str, report_md: str,
+    fingerprint: str = "", dissent_seats: str = "",
+) -> str:
+    """Karar raporunu (şerhleri ve imza bloğuyla birlikte) oturuma damgalar."""
+    rid = "rpt_" + uuid.uuid4().hex[:10]
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO decision_reports (id, session_id, topic, report_md, fingerprint, dissent_seats) VALUES (?, ?, ?, ?, ?, ?)",
+            (rid, session_id, topic, report_md, fingerprint, dissent_seats),
+        )
+        conn.commit()
+    return rid
+
+
+def get_session_report(session_id: str) -> Optional[Dict[str, Any]]:
+    """Oturumun en yeni karar raporu (yoksa None).
+    Aynı saniyede birden çok rapor için rowid monoton sıralama belirleyicidir."""
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM decision_reports WHERE session_id = ? ORDER BY rowid DESC LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def list_decision_reports(limit: int = 100) -> List[Dict[str, Any]]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, session_id, topic, fingerprint, dissent_seats, created_at FROM decision_reports ORDER BY rowid DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
 
 def record_fact_check(claim: str, verdict: str, source_data: str, session_id: Optional[str] = None) -> str:
     fc_id = str(uuid.uuid4())[:8]
@@ -367,7 +472,8 @@ async def research_fact_check(claim: str, base_url: str, api_key: str, model: st
 
     report_text = ""
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        # Denetim §3.7: reasoning modeller için 8 sn yetersizdi → 60 sn
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=8.0)) as client:
             resp = await client.post(base_url.rstrip("/") + "/chat/completions", json=body, headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
@@ -385,9 +491,12 @@ async def research_fact_check(claim: str, base_url: str, api_key: str, model: st
 {source_links if source_links else 'Doğrudan canlı kaynak bulunamadı.'}"""
 
     # Veritabanına fact-check kaydı düş
-    record_fact_check(claim, report_text, json.dumps(live_sources, ensure_ascii=False), session_id)
+    # Denetim §3.5: 'verdict' sütuna TAM rapor değil, kısa durum değeri gitsin
+    status_match = re.search(r"\*\*Doğruluk Durumu:\*\*\s*([^\n]+)", report_text)
+    verdict = status_match.group(1).strip()[:200] if status_match else "RAPOR ÜRETİLDİ"
+    record_fact_check(claim, verdict, json.dumps(live_sources, ensure_ascii=False), session_id)
 
-    return {"ok": True, "report": report_text, "sources": live_sources}
+    return {"ok": True, "report": report_text, "sources": live_sources, "verdict": verdict}
 
 # ── İtiraz ve Araya Girme Değerlendirme Motoru (Rebuttal) ────────────────
 async def evaluate_rebuttals(last_speaker_name: str, last_message_text: str, candidates: List[Dict[str, Any]], base_url: str, api_key: str, model: str) -> Dict[str, Any]:
@@ -405,20 +514,22 @@ async def evaluate_rebuttals(last_speaker_name: str, last_message_text: str, can
         "tetikleyip tetiklemediğini tarafsızca değerlendirmektir. "
         "SADECE GEÇERLİ BİR JSON NESNESİ DÖNDÜR."
     )
+    cand_block = "\n".join(cand_lines)  # 3.11 uyumu: f-string içinde backslash olamaz
     user_msg = f"""
 SON KONUŞMACI: {last_speaker_name}
 SÖYLEDİĞİ SÖZ:
 "{last_message_text}"
 
 MASADAKİ DİĞER KONUŞMACILAR:
-{"\n".join(cand_lines)}
+{cand_block}
 
 Şablon:
 {{
   "has_objection": true veya false,
   "seat": "İtiraz eden sandalye harfi (A, B, C veya yok)",
   "character_name": "İtiraz eden karakterin adı",
-  "reason": "Neden itiraz etmek istediğinin 1 cümlelik gerekçesi"
+  "reason": "Neden itiraz etmek istediğinin 1 cümlelik gerekçesi",
+  "tension": 0-100 arası tam sayı: masadaki tartışma ısısı (0 = sakin teknik sohbet, 50 = keskin itirazlar, 80+ = kırmızı çizgiler alevlendi, söz kesilmeleri başladı)
 }}
 """
     headers = {"Content-Type": "application/json"}
@@ -435,7 +546,8 @@ MASADAKİ DİĞER KONUŞMACILAR:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        # Denetim §3.7: 15 sn reasoning modellerde sürekli sessiz fallback üretti → 45 sn
+        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=8.0)) as client:
             resp = await client.post(base_url.rstrip("/") + "/chat/completions", json=body, headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
@@ -445,10 +557,306 @@ MASADAKİ DİĞER KONUŞMACILAR:
                     if m:
                         raw = m.group(1).strip()
                 parsed = json.loads(raw)
+                # Faz 2: gerilim değeri normalize edilir (Geriilim Metresi için)
+                try:
+                    tension = int(round(float(parsed.get("tension", 30))))
+                except (TypeError, ValueError):
+                    tension = 30
+                parsed["tension"] = max(0, min(100, tension))
                 return parsed
     except Exception:
         pass
-    return {"has_objection": False}
+    return {"has_objection": False, "tension": 30}
+
+# ── Mühürlü Zarf Protokolü (Faz 2 — taç) ────────────────────────────────
+def seal_envelope(session_id: str, seat: str, char_id: str, word: str, position: str) -> Dict[str, Any]:
+    """Bir sandalyenin kapalı kanaldan yazdığı nihai pozisyonunu SHA-256 ile mühürler."""
+    seal_hash = hashlib.sha256(
+        f"{session_id}|{seat}|{word}|{position}".encode("utf-8")
+    ).hexdigest()
+    env_id = f"env_{session_id}_{seat}"
+    with get_db() as conn:
+        conn.execute(
+            """INSERT OR REPLACE INTO envelopes
+               (id, session_id, seat, character_id, sealed_word, sealed_position, seal_hash)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (env_id, session_id, seat, char_id, word, position, seal_hash),
+        )
+        conn.commit()
+    return {
+        "id": env_id, "session_id": session_id, "seat": seat,
+        "sealed_word": word, "sealed_position": position, "seal_hash": seal_hash,
+    }
+
+
+def get_envelopes(session_id: str) -> List[Dict[str, Any]]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM envelopes WHERE session_id = ? ORDER BY seat", (session_id,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def open_envelopes(session_id: str) -> List[Dict[str, Any]]:
+    """Zarfları aynı anda açar (opened_at damgası bir kez vurulur)."""
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE envelopes SET opened_at = CURRENT_TIMESTAMP WHERE session_id = ? AND opened_at IS NULL",
+            (session_id,),
+        )
+        conn.commit()
+    return get_envelopes(session_id)
+
+
+def _mechanical_delta(envelopes: List[Dict[str, Any]], final_positions: Dict[str, str]) -> Dict[str, Any]:
+    """Model yanıt veremezse mekani̇k metin benzerliğiyle delta üretir (özellik hiç ölmesin diye)."""
+    seats = []
+    for e in envelopes:
+        final = (final_positions or {}).get(e["seat"], "")
+        if final:
+            ratio = difflib.SequenceMatcher(
+                None, e["sealed_position"][:2000], final[:2000]
+            ).ratio()
+            score = int(round((1 - ratio) * 100))
+            note = "Mekanik metin benzerliği ölçümü (model analizi yapılamadı)"
+        else:
+            score, note = 0, "Konseyde nihai söz kaydı yok"
+        seats.append({
+            "seat": e["seat"], "name": e["seat"],
+            "delta_score": max(0, min(100, score)),
+            "moved_by": "—", "trigger": "", "note": note,
+        })
+    return {
+        "delta_summary": "Model analizi yapılamadığından mekani̇k metin benzerliği kullanıldı: yüksek delta, pozisyonun tartışma boyunca değiştiğine işaret eder.",
+        "seats": seats,
+        "persuasion_map": [],
+        "source": "mekanik",
+    }
+
+
+async def compute_persuasion_delta(
+    session_id: str, base_url: str, api_key: str, model: str,
+    transcript: str, final_positions: Dict[str, str],
+) -> Dict[str, Any]:
+    """İkna Deltası: mühürlü pozisyon ↔ nihai pozisyon farkını ölçer,
+    'kimi kim hangi kanıtla ikna etti' haritasını üretir."""
+    envelopes = get_envelopes(session_id)
+    if not envelopes:
+        return {"ok": False, "error": "Bu oturumda mühürlü zarf yok. Önce zarfları mühürleyin."}
+
+    seats_block = []
+    for e in envelopes:
+        final = (final_positions or {}).get(e["seat"], "(konseyde nihai söz kaydedilmedi)")
+        seats_block.append(
+            f"--- SANDALYE {e['seat']} (mühürlü tek kelime: {e.get('sealed_word') or 'yok'}) ---\n"
+            f"MÜHÜRLÜ POZİSYON: {e['sealed_position']}\n"
+            f"NİHAİ POZİSYON: {final}"
+        )
+
+    sys_msg = (
+        "Sen KONSÜL Masası'nın İKNA DELTASI analistisin. Sana 5 delegenin "
+        "tartışma BAŞLAMADAN önce izole kanallardan yazdığı MÜHÜRLÜ pozisyonları ve "
+        "konseyden sonra söyledikleri NİHAİ sözler verilir. Görevin soğuk, kanıta dayalı, "
+        "duygusuz bir ölçüm yapmaktır: Her sandalyenin pozisyonu ne kadar değişti? "
+        "Değiştiyse onu kim, hangi somut kanıt/cümleyle ikna etti? Değişmediyse bunun "
+        "nedenini bir cümleyle not et. Kimseyi yüceltme, kimseyi suçlama; yalnız ölç. "
+        "YANITIN SADECE VE SADECE GEÇERLİ BİR JSON NESNESİ OLMALIDIR."
+    )
+    user_msg = (
+        f"OTURUM: {session_id}\n\n"
+        "KONSEY TUTANAĞI (son 6000 karakter):\n" + transcript[-6000:] +
+        "\n\nSANDALYE KARŞILAŞTIRMALARI:\n" + "\n\n".join(seats_block) +
+        """
+
+ŞABLON:
+{
+  "delta_summary": "Tüm masa için 2-3 cümlelik genel hüküm: tartışma masayı toplu olarak hareket ettirdi mi?",
+  "seats": [
+    {
+      "seat": "A",
+      "name": "karakterin adı",
+      "delta_score": 0 ile 100 arası tam sayı (0 = hiç değişmedi, 100 = tamamen ikna edildi),
+      "moved_by": "ikna eden sandalye harfi; kimse etmediyse 'HİÇKİMSE'",
+      "trigger": "ikna eden somut kanıt veya cümle (kısa alıntı); yoksa boş",
+      "note": "1 cümlelik gerekçe"
+    }
+  ],
+  "persuasion_map": [
+    {"from_seat": "B", "to_seat": "A", "strength": 0-100, "evidence": "kanıtın kısa alıntısı"}
+  ]
+}"""
+    )
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        "temperature": 0.2,
+    }
+
+    report = ""
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=8.0)) as client:
+            resp = await client.post(base_url.rstrip("/") + "/chat/completions", json=body, headers=headers)
+            if resp.status_code == 200:
+                report = resp.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        pass
+
+    if report:
+        clean = report
+        if "```" in clean:
+            m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean)
+            if m:
+                clean = m.group(1).strip()
+        try:
+            parsed = json.loads(clean)
+            # alanları zorla düzleştir (model şaplağına karşı)
+            parsed_seats = []
+            by_seat = {e["seat"]: e for e in envelopes}
+            for s in parsed.get("seats", []):
+                if not isinstance(s, dict) or s.get("seat") not in by_seat:
+                    continue
+                try:
+                    score = int(round(float(s.get("delta_score", 0))))
+                except (TypeError, ValueError):
+                    score = 0
+                parsed_seats.append({
+                    "seat": s["seat"],
+                    "name": str(s.get("name", s["seat"]))[:80],
+                    "delta_score": max(0, min(100, score)),
+                    "moved_by": str(s.get("moved_by", "—"))[:12],
+                    "trigger": str(s.get("trigger", ""))[:400],
+                    "note": str(s.get("note", ""))[:400],
+                })
+            # eksik sandalyeleri mekani̇k olarak tamamlama
+            for seat_key, e in by_seat.items():
+                if not any(ps["seat"] == seat_key for ps in parsed_seats):
+                    parsed_seats.append(_mechanical_delta([e], final_positions)["seats"][0])
+            pmap = []
+            for p in parsed.get("persuasion_map", []) or []:
+                if not isinstance(p, dict):
+                    continue
+                try:
+                    strength = int(round(float(p.get("strength", 0))))
+                except (TypeError, ValueError):
+                    strength = 0
+                pmap.append({
+                    "from_seat": str(p.get("from_seat", ""))[:4],
+                    "to_seat": str(p.get("to_seat", ""))[:4],
+                    "strength": max(0, min(100, strength)),
+                    "evidence": str(p.get("evidence", ""))[:300],
+                })
+            return {
+                "ok": True,
+                "report": {
+                    "delta_summary": str(parsed.get("delta_summary", ""))[:800],
+                    "seats": parsed_seats,
+                    "persuasion_map": pmap,
+                    "source": "llm",
+                },
+            }
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass  # model JSON üretemedi → mekani̇k fallback
+    return {"ok": True, "report": _mechanical_delta(envelopes, final_positions)}
+
+
+# ── Yakınsama Radarı (Faz 2 — K3): 5 sandalyenin semantik yakınlığı ─────
+def _mechanical_convergence(positions: Dict[str, str]) -> Dict[str, Any]:
+    """LLM yoksa: her çift arasındaki dizel benzerliği ortalamala (0-100)."""
+    texts = {k: (v or "").strip() for k, v in positions.items() if (v or "").strip()}
+    if len(texts) < 2:
+        return {"convergence": 0, "source": "mekanik", "note": "Ölçülebilir en az iki pozisyon yok."}
+    keys = sorted(texts)
+    total, n = 0.0, 0
+    for i in range(len(keys)):
+        for j in range(i + 1, len(keys)):
+            total += difflib.SequenceMatcher(None, texts[keys[i]], texts[keys[j]]).ratio()
+            n += 1
+    score = max(0, min(100, int(round(total / n * 100))))
+    return {
+        "convergence": score,
+        "source": "mekanik",
+        "note": f"Çift dizel benzerlik ortalaması ({n} çift, {len(texts)} sandalye).",
+    }
+
+
+async def compute_convergence(
+    positions: Dict[str, str], base_url: str, api_key: str, model: str,
+) -> Dict[str, Any]:
+    """Yakınsama Radarı: bir turun 5 nihai pozisyonunun ne kadar örtüştüğünü 0-100 ölçer.
+    LLM (hakem modeli) yoksa mekani̇k çift-benzerlik fallback'i devreye girer."""
+    if not positions:
+        return {"ok": False, "error": "positions boş olamaz."}
+
+    pos_block = "\n\n".join(
+        f"--- SANDALYE {k.upper()} ---\n{(v or '(boş)')[:1500]}" for k, v in positions.items()
+    )
+    sys_msg = (
+        "Sen KONSÜL Masası'nın YAKINSAMA RADARI analistisin. Sana aynı konsey oturumunun "
+        "biten bir turunda 5 delegenin pozisyonu verilir. Görevin SOĞUK BİR ÖLÇÜM yapmaktır: "
+        "Bu 5 pozisyon birbirine ne kadar yakınsadı? 100 = tam konsensüs, 0 = tamamen savrulma. "
+        "YANITIN SADECE VE SADECE GEÇERLİ BİR JSON NESNESİ OLMALIDIR."
+    )
+    user_msg = (
+        "TUR POZİSYONLARI:\n" + pos_block +
+        """
+
+ŞABLON:
+{
+  "convergence": 0 ile 100 arası tam sayı,
+  "note": "1-2 cümlelik gerekçe: en çok örtüşen ve en çok savrulan eksenler"
+}"""
+    )
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        "temperature": 0.1,
+    }
+
+    report = ""
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=8.0)) as client:
+            resp = await client.post(base_url.rstrip("/") + "/chat/completions", json=body, headers=headers)
+            if resp.status_code == 200:
+                report = resp.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        pass
+
+    if report:
+        clean = report
+        if "```" in clean:
+            m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean)
+            if m:
+                clean = m.group(1).strip()
+        try:
+            parsed = json.loads(clean)
+            try:
+                score = int(round(float(parsed.get("convergence", 0))))
+            except (TypeError, ValueError):
+                score = 0
+            return {
+                "ok": True,
+                "convergence": max(0, min(100, score)),
+                "note": str(parsed.get("note", ""))[:300],
+                "source": "llm",
+            }
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass  # model JSON üretemedi → mekani̇k fallback
+    return {"ok": True, **_mechanical_convergence(positions)}
+
 
 # ── Persona Guard Entegrasyonu ──────────────────────────────────────────
 def filter_persona_text(text: str) -> str:
