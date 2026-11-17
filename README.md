@@ -27,12 +27,13 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 * **Zaman Makinesi (Faz 3b):** Konsolun altındaki sinematik şerit, tutanağın her sözünü bir kareye çizer (renk = sandalye; yükseklik = söz uzunluğu; tur ayracı her 5 sözde). Kareye tıklamak konsolu o ana *geri sarar*: "SÖZ i/n · konuşmacı · saat · tur" çubuğuyla kare kare (◀ ▶) gezinilir, `ŞİMDİYE DÖN` ile anında bugün. Geçmişte gezinirken yeni söz gelirse masa otomatik olarak şimdiki zamana sarılır.
 * **Başkan Kontrolleri (Faz 3b):** Operatör artık masanın gerçek başkanına dönüyor — her konuşmacı satırında `🔇 SESSİZE AL` (sıradaki söz hakkı atlanır, tek tıkla geri açılır), sandalye modalında `⛔ OTURUMDAN İHRAÇ ET` (aktif oturumda; modal açık kalır ki karakter kütüphanesinden yenisini oturtsun, `↻ GERİ OTURT` ile affedilir) ve konsoldaki `⚡ SÖZÜ KES` (streaming söz yarıda kesilir, operatör müdahalesi tutanağa damgalanır).
 * **Güvenirlilik Rozeti (Faz 3b):** Her sözün iç ses geçişinde model, söylenenle hissedilenin uyumunu 0-100 puanlar; sandalye satırındaki `GÜV` rozeti bu son puanı taşır (kırmızı < 40 ikiyüzlülük alarmı, amber < 70, yeşil dürüst).
+* **Dinamik Masa — 2–8 Koltuk (Faz 4):** Masa artık sabit 5 değil: sağ paneldeki **MASA KOLTUKLARI** seçicisiyle 2–8 yapay zeka koltuğu (A–H) kurulur; seçim kalıcıdır (localStorage). Yeni koltuklarda hazır karakterler: **F = Frank Abagnale Jr.** (Efsane Sahtekâr), **G = Prof. Dr. İlber Ortaylı** (Tarihçi), **H = Nelson Mandela** (Uzlaşma Mimarı); hakem koltuğu artık **K** anahtarında. Koltuk sayısına uyan her şey: söz sırası (tur = N söz), holografik masa ve delege kartları (sütun sayısı dahil), zorunlu oylama, mühürlü zarf (N zarf), kör jüri (ilk 5 koltuk, üst sınır 5), karar raporu mührleri, sesli tanıtım, zaman makinesi tur ayraçları ve yakınsama radarı. Karakter kütüphanesindeki "sandalyeye oturt" butonları da aktif koltuklara göre üretilir.
 * **Müdahale Taktikleri:** Operatör çubuğundan hazır operatör sözleri (delil iste, çelişkiyi vur, uzlaşma çağrısı, 5 modele meydan oku).
 * Otomatik paslaşma: 1/2/3/5 tur; tek tek söz verme modu.
 * Operatör müdahaleleri artık `record_message` ile tutanağa da yazılır — arşiv ve film şeridi tam sürüktür.
 
 ### 2. Kör Jüri İstasyonu (2.0)
-* 5 model birbirini ne görür ne duyar; aynı soruya **izole kanallardan** paralel, anonim yanıt verir.
+* Jüri, konseyin **ilk 5 koltuğunu** (2–8 koltuklu masada da üst sınır 5) kullanır; modeller birbirini ne görür ne duyar, aynı soruya **izole kanallardan** paralel, anonim yanıt verir.
 * **Kör Değerlendirme (2.0):** Başhakem, yanıtları adlandırılmış halde (*JÜRİ 1..5*, her çalıştırmada yeniden karılır; isim metinden soyulur) okur ve **yalnız argüman niteliğine** bakarak sıralama + en güçlü/zayıf argümanlar + sentez raporlar. Rapor bitince **Kimlik Açılışı** şeridi hakemin bilmediği eşlemeyi gösterir.
 * Yanıtlar Sentez Odası'na tek tıkla aktarılır.
 
@@ -46,10 +47,10 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 ### 4. Karakter Kütüphanesi & Mimar Ajanı
 * 10 derin karakter dosyası hazır: Sülün Osman, Frank Abagnale Jr., Nikola Tesla, Baba Vanga, Nelson Mandela, Güç Radikali (Arketip), Prof. Dr. İlber Ortaylı, Niccolò Machiavelli, Sigmund Freud, Sokrates.
 * **Karakter Mimarı Ajanı:** "Kimi inşa etmek istiyorsunuz?" yazın — dünya görüşü, kırmızı çizgiler, tartışma üslubu ve tam sistem istemiyle zihinsel dosya üretir.
-* Her karttan karakter tek tıkla A–E veya Hakem sandalyesine oturtulur.
+* Her karttan karakter tek tıkla aktif koltuklara (A–H) veya Hakem sandalyesine (K) oturtulur — butonlar masa koltuk sayısına göre üretilir.
 
 ### 5. Mühürlü Zarf & İkna Deltası (ürünün taç özelliği)
-* **Mühürleme:** Konsey başlamadan önce her sandalye, diğerlerinden habersiz **izole kanaldan** nihai pozisyonunu + tek kelimesini yazar; zarf `SHA-256` ile mühürlenir (zaman damgalı, değiştirilemez).
+* **Mühürleme:** Konsey başlamadan önce her sandalye, diğerlerinden habersiz **izole kanaldan** nihai pozisyonunu + tek kelimesini yazar; zarf `SHA-256` ile mühürlenir (zaman damgalı, değiştirilemez). Zarf sayısı Masa 01'deki koltuk sayısına (2–8) otomatik uyarlanır.
 * **Açılış töreni:** Konsey bitince "Zarfları Aç" — 5 zarf aynı saniyede açılır, mühürlü ve nihai pozisyonlar yan yana durur.
 * **İkna Deltası:** Hakem modeli her sandalye için **0-100 delta skoru**, **ikna eden sandalye** ve **tetikleyen kanıt/cümle**yi raporlar; ayrıca "kim → kimi" **İkna Haritası** çizilir. Model yanıt veremezse özellik ölmez: mekani̇k metin benzerliği (difflib) ile delta hesaplanır.
 * Akış: `✉ Mühürle` → Masa 01'de aynı konuyu tartış → `⚖ Aç` → `◆ İkna Deltası Hesapla`.

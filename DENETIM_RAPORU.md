@@ -234,7 +234,17 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > * **Küskünlük Haritası (K8 `rivalries` döngüsü):** Oturum kapatılırken Başhakem tutanağı JSON olarak tarar (30 sn zaman aşımı, hata toleranslı): `{grudges:[{a,b,why,intensity}]}`. Her çiftin iki tarafına da *kendi karakterinin* defterine `POST /api/memory/add` ile girdi damıtılır. `get_character_memory_text` (engine.py) rivalries satırlarını "KİŞİSEL HESAPLARIN" bloğu olarak kişisel hafıza metnine ekliyor — karakter bir sonraki oturumda bu kişileri nezaket kurallarıyla birlikte hatırlıyor.
 > * **Film Şeridi (Arşiv):** `🎬 FİLM ŞERİDİ (.html)` — seçili oturumun (arşiv) mesajları + iç ses + karar raporu, tek dosyalık bağımsız `.html` filme dökülür: açılış kartı, söz başına tam ekran sayfa (dev sandalye harfi, konuşmacı şeridi, iç ses bloğu), resmî belge sayfası (SHA-256 bandı), jenerik. Sayfa içi `mdToHtml` yeniden kullanılıyor; ölü kopya butonları statik belgeden soğruluyor.
 >
-> **Kalan borç (Faz 4'a):** 2-8 sandalye esnekliği; K5→sentez bağlama adımı; K7 operatör kör oyu + kazanan/kaybeden diff; K6 süre kısıtı; O(n²) markdown yeniden çizim; sınırsız bağlam; API anahtarları localStorage'da açık metin; CORS `*`; CONTENT_POLICY.md yok.
+> **Kalan borç:** 2-8 sandalye esnekliği ✅ Faz 4; K5→sentez bağlama adımı (borç); K7 operatör kör oyu + kazanan/kaybeden diff (borç); K6 süre kısıtı (borç); O(n²) markdown yeniden çizim (borç); sınırsız bağlam (borç); API anahtarları localStorage'da açık metin (borç); CORS `*` (borç); CONTENT_POLICY.md yok (borç).
+>
+> ### ✅ FAZ 4 YÜRÜTME NOTU (17.11.2026 — dinamik masa: 2-8 koltuk)
+>
+> Ürünün son büyük yapısal kalemi kuruldu: masa artık sabit 5 koltuk değil, **operatörün seçtiği 2-8 koltuk** (A-H). Doğrulama: `py_compile` + `node --check` temiz, **38/38 jsdom runtime testi** (aktif koltuk seti, chip/delege/zarf/jüri DOM üretimi, nextSpeaker döngüsü + sessiz/ihraç atlama, sınır yuvarlama, oturma butonları, v3→v4 göç) + **26/26 canlı e2e** (marker'lar, F sandalyesi mesaj kaydı, N=3 yakınsama, rivalries regresyonu) yeşil.
+> * **Çekirdek soyutlama:** `SEAT_POOL = A..H` + `activeSeats()` (slice 0..N) + `jurySeats()` (ilk 5, üst sınır 5). Kod tabanındaki 37 adet sabit `["A","B","C","D","E"]` dizisi bu yardımcılara çevrildi; jüri bağlamları `jurySeats()` ile ayrıldı.
+> * **Hakem H→K:** 8. koltuğu açmak için hakem anahtarı H'den K'ya taşındı (state, 12 call site, pitch/rate haritaları, demo motoru, "OP/H" korumaları). Eski localStorage `konsul_seats_v3` otomatik göçer: v3'teki H (hakem) → K; H koltuğu Mandela varsayılanını alır; göç sonrası `konsul_seats_v4` yazılır.
+> * **Yeni koltuk karakterleri:** F = Frank Abagnale Jr. (Pembe), G = Prof. Dr. İlber Ortaylı (Çivit), H = Nelson Mandela (Deniz) — renk CSS değişkenleri eklendi (`--pink/--indigo/--teal`).
+> * **Uyumsuzluk taraması (N'ye uyarlanan her şey):** söz sırası ve tur hesabı (tur = N söz; otomatik paslaşma `autoRounds × N`; yakınsama tetimi `% N`), zorunlu oylama (N paralel izole oy, N/N şerit), mühürlü zarf (N zarf, N/N durum metinleri), karar raporu mührleri (N mühür), sesli tanıtım, zaman makinesi tur ayraçları, yakınsama radarı (engine.py promptu da N'e parametrik), holografik masa + delege barı (sütun sayısı dinamik), deck başlığı ("N YAPAY ZEKA + 1 OPERATÖR"), karakter kütüphanesi oturma butonları (aktif koltuklar + Hakem K), arena sandalye seçimi, küskünlük haritası (aktif havuz), film şeridi (genel).
+> * **UI:** Gündem panelinde **MASA KOLTUKLARI** seçici (2-8); değişiklik `applySeatCount()` ile anında tüm odalara yayılır + `konsul_seatcount` anahtarında kalıcı; sınır dışı değerler yuvarlanır (0→2, 99→8).
+> * **Demo motoru:** bilinmeyen koltuklar (F-H) genel demo metnine düşer; hakem metni K anahtarında.
 
 
 ### Faz 1 — "Önce Kanı Durdur" (P0, ~1 gün)
@@ -249,7 +259,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 - İkna Deltası + Mühürlü Zarf (taç) → İç Ses (K1) → İddia Defteri (K5) → Arşiv Odası (K4) → Gerilim Metresi (K2) → Başkan kontrolleri (K6) → Jüri 2.0 (K7) → Hafıza döngüsü (K8) → Yakınsama Radarı (K3)
 
 ### Faz 3 — "Efsane" (P2, ürün sonrası)
-- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği (Faz 4)
+- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği ✅ Faz 4
 
 ---
 

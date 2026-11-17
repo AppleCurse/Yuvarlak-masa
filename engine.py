@@ -772,7 +772,7 @@ async def compute_persuasion_delta(
     return {"ok": True, "report": _mechanical_delta(envelopes, final_positions)}
 
 
-# ── Yakınsama Radarı (Faz 2 — K3): 5 sandalyenin semantik yakınlığı ─────
+# ── Yakınsama Radarı (Faz 2 — K3): masadaki sandalyelerin semantik yakınlığı (Faz 4: 2-8) ─────
 def _mechanical_convergence(positions: Dict[str, str]) -> Dict[str, Any]:
     """LLM yoksa: her çift arasındaki dizel benzerliği ortalamala (0-100)."""
     texts = {k: (v or "").strip() for k, v in positions.items() if (v or "").strip()}
@@ -803,10 +803,11 @@ async def compute_convergence(
     pos_block = "\n\n".join(
         f"--- SANDALYE {k.upper()} ---\n{(v or '(boş)')[:1500]}" for k, v in positions.items()
     )
+    n_pos = len(positions)
     sys_msg = (
         "Sen KONSÜL Masası'nın YAKINSAMA RADARI analistisin. Sana aynı konsey oturumunun "
-        "biten bir turunda 5 delegenin pozisyonu verilir. Görevin SOĞUK BİR ÖLÇÜM yapmaktır: "
-        "Bu 5 pozisyon birbirine ne kadar yakınsadı? 100 = tam konsensüs, 0 = tamamen savrulma. "
+        f"biten bir turunda {n_pos} delegenin pozisyonu verilir. Görevin SOĞUK BİR ÖLÇÜM yapmaktır: "
+        f"Bu {n_pos} pozisyon birbirine ne kadar yakınsadı? 100 = tam konsensüs, 0 = tamamen savrulma. "
         "YANITIN SADECE VE SADECE GEÇERLİ BİR JSON NESNESİ OLMALIDIR."
     )
     user_msg = (
