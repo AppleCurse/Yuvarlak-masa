@@ -195,7 +195,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > | 6 | README ↔ gerçeklik | README yeniden yazıldı: 4 oda, gerçek uç tablosu, görünür API yüzeyi, SSRF kilidi, Faz 2/3 yol haritası. React ağacı `legacy-react/` altına izole edildi |
 > | + | Ek düzeltmeler | `overrideNextSpeaker` sessiz yutma (B5), modal otomatik-istem ezme (B7), `esc` tırnak (B8), karakter→sandalye DNA transferi + toast (B6), `verifyClaimWithAgent` sessionId (B3), gerçek telemetri (fake %99.8), paylaşımlı httpx istemcisi + lifespan, SQLite WAL + indeksler + `list_sessions` rotaları, research 8sn→60sn, rebuttal 15sn→45sn, verdict sütunu düzeltmesi, **f-string backslash (Py 3.10/3.11 crash — yeni bulgu),** `KONSUL_HOST/PORT` env |
 >
-> **Kalan (Faz 2/3):** K6'nin geniş kontrol seti (Sözü Kes ✅ Faz 3b, Sessize Al ✅ Faz 3b, İhraç & Yeniden Oturttur ✅ Faz 3b, Süre Kısıtı — hâlâ borç), K1'in iç/dış çelişki "GÜVENİRLİK" skoru ✅ Faz 3b, K5'in sentez-raporu-bağlama adımı (borç), K7'nin operatör kör oyu + kazanan/kaybeden diff'i (borç), K8'in `rivalries` küskünlük döngüsü ✅ Faz 3b + görünür zaman çizelgesi ✅ Faz 3b (Zaman Makinesi); Faz 3'te 1v1 Arena ✅ Faz 3b, Zaman Makinesi ✅ Faz 3b, film şeridi dışa aktarma ✅ Faz 3b, 2-8 sandalye esnekliği (borç).
+> **Kalan (Faz 2/3):** K6'nin geniş kontrol seti (Sözü Kes ✅ Faz 3b, Sessize Al ✅ Faz 3b, İhraç & Yeniden Oturttur ✅ Faz 3b, Süre Kısıtı — hâlâ borç), K1'in iç/dış çelişki "GÜVENİRLİK" skoru ✅ Faz 3b, K5'in sentez-raporu-bağlama adımı (borç), K7'nin operatör kör oyu + kazanan/kaybeden diff'i ✅ Faz 5, K8'in `rivalries` küskünlük döngüsü ✅ Faz 3b + görünür zaman çizelgesi ✅ Faz 3b (Zaman Makinesi); Faz 3'te 1v1 Arena ✅ Faz 3b, Zaman Makinesi ✅ Faz 3b, film şeridi dışa aktarma ✅ Faz 3b, 2-8 sandalye esnekliği ✅ Faz 4.
 >
 > ### ✅ FAZ 2a YÜRÜTME NOTU (17.11.2026 — taç tamamlandı)
 >
@@ -234,7 +234,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > * **Küskünlük Haritası (K8 `rivalries` döngüsü):** Oturum kapatılırken Başhakem tutanağı JSON olarak tarar (30 sn zaman aşımı, hata toleranslı): `{grudges:[{a,b,why,intensity}]}`. Her çiftin iki tarafına da *kendi karakterinin* defterine `POST /api/memory/add` ile girdi damıtılır. `get_character_memory_text` (engine.py) rivalries satırlarını "KİŞİSEL HESAPLARIN" bloğu olarak kişisel hafıza metnine ekliyor — karakter bir sonraki oturumda bu kişileri nezaket kurallarıyla birlikte hatırlıyor.
 > * **Film Şeridi (Arşiv):** `🎬 FİLM ŞERİDİ (.html)` — seçili oturumun (arşiv) mesajları + iç ses + karar raporu, tek dosyalık bağımsız `.html` filme dökülür: açılış kartı, söz başına tam ekran sayfa (dev sandalye harfi, konuşmacı şeridi, iç ses bloğu), resmî belge sayfası (SHA-256 bandı), jenerik. Sayfa içi `mdToHtml` yeniden kullanılıyor; ölü kopya butonları statik belgeden soğruluyor.
 >
-> **Kalan borç:** 2-8 sandalye esnekliği ✅ Faz 4; K5→sentez bağlama adımı (borç); K7 operatör kör oyu + kazanan/kaybeden diff (borç); K6 süre kısıtı (borç); O(n²) markdown yeniden çizim (borç); sınırsız bağlam (borç); API anahtarları localStorage'da açık metin (borç); CORS `*` (borç); CONTENT_POLICY.md yok (borç).
+> **Kalan borç:** 2-8 sandalye esnekliği ✅ Faz 4; K7 operatör kör oyu + kazanan/kaybeden diff ✅ Faz 5; O(n²) markdown yeniden çizim ✅ Faz 5 (140 ms sönümleyici); CORS `*` ✅ Faz 5 (env beyaz listesi); CONTENT_POLICY.md ✅ Faz 5; K5→sentez bağlama adımı (borç); K6 süre kısıtı (borç); sınırsız bağlam (borç); API anahtarları localStorage'da açık metin (borç — S2).
 >
 > ### ✅ FAZ 4 YÜRÜTME NOTU (17.11.2026 — dinamik masa: 2-8 koltuk)
 >
@@ -245,6 +245,15 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 > * **Uyumsuzluk taraması (N'ye uyarlanan her şey):** söz sırası ve tur hesabı (tur = N söz; otomatik paslaşma `autoRounds × N`; yakınsama tetimi `% N`), zorunlu oylama (N paralel izole oy, N/N şerit), mühürlü zarf (N zarf, N/N durum metinleri), karar raporu mührleri (N mühür), sesli tanıtım, zaman makinesi tur ayraçları, yakınsama radarı (engine.py promptu da N'e parametrik), holografik masa + delege barı (sütun sayısı dinamik), deck başlığı ("N YAPAY ZEKA + 1 OPERATÖR"), karakter kütüphanesi oturma butonları (aktif koltuklar + Hakem K), arena sandalye seçimi, küskünlük haritası (aktif havuz), film şeridi (genel).
 > * **UI:** Gündem panelinde **MASA KOLTUKLARI** seçici (2-8); değişiklik `applySeatCount()` ile anında tüm odalara yayılır + `konsul_seatcount` anahtarında kalıcı; sınır dışı değerler yuvarlanır (0→2, 99→8).
 > * **Demo motoru:** bilinmeyen koltuklar (F-H) genel demo metnine düşer; hakem metni K anahtarında.
+>
+> ### ✅ FAZ 5 YÜRÜTME NOTU (17.11.2026 — operatörün kör oyu + kazanan/kaybeden diff)
+>
+> K7'nin kalan iki kalesi (operatör kör oyu, kazanan/kaybeden diff) + kısa borç süpürmesi (mountMd throttling, CORS, içerik politikası dosyası). Doğrulama: `py_compile` + `node --check` temiz, **27/27 jsdom runtime testi** (mühürleme ≥30 karakter, 64-hex SHA-256, TAM KÖR vs GEÇ OY damgası, soru değişince reddedilme, 4 katılımcılı karışımda operatör + kimlik açılışı 👑 çipi, op oyu yoksa 3 katılımcı, `parseBlindRanking` sağlam/bozuk girdiler, diff 4 bölümü, `resetOpVote`, `applySeatCount(7)` regresyonu).
+> * **Operatörün Kör Oyu (K7):** Jüri panelinde yeni **OPERATÖRÜN KÖR OYU (JÜRİ N+1)** kutusu: operatör kendi konumunu (≥30 karakter) yazar, `✉ MÜHÜRLE` ile tarayıcıda `SHA-256` parmak izi alır ve mühürler (`localStorage`'da metin + hash + mühürlendiği soru saklanır). Çalıştırmada karışım havuzuna `"OP"` girdisi eklenir → operatör de *JÜRİ 1..N+1* etiketlerinden birini çeker; model adı ve "operatör/insan iradesi" kelimeleri metinden soyulur — hakem insan oyu olduğunu bilemez. Yanıtlar dökülmüşse mühür **GEÇ OY** (dürüstlük etiketi, yine karışıma girer); mühürlendiği soru bu soruyla uymuyorsa çalıştırmaya girmez + panelde ⚠ uyarısı. `↻ YENİDEN MÜHÜRLE` mühürü kırar. Kimlik açılışında insan koltuğu `👑 OPERATÖR (İNSAN KOLTUĞU)` + gerekirse `GEÇ OY` çipiyle işaretlenir; `resetJuryBlind` oy durumunu da temizler.
+> * **Kazanan/Kaybeden Diff (K7):** Jüri raporu dökülünce `parseBlindRanking` `## SIRALAMA` bölümünden sıra dizisini ayıklar (bozuk/eksik sıralamada `null` → "ilk/son listede" güvenle geri düşer, diff hep dökülür). Başhakem iki tarafın TAM metnini okuyup dört bölümlü **KAZANAN/KAYBEDEN DIFF** dökümler: EN BÜYÜK FARK / KAZANANIN YAPTIĞI / KAYBEDENİN EKSİĞİ / DÖNÜŞÜM ÖNERİSİ. Operatör kazandıysa `👑 Operatörün kör oyu kazandı`, kaybettiyse *hangi argümanların geride bıraktığı* toast ile vurgulanır; bölüm "Yapay Zeka Jürisi (Kör)" kartının altında `KAZANAN / KAYBEDEN — KARŞILAŞTIRMALI FARK ANALİZİ` bandıyla açılır.
+> * **Kısa borç süpürmesi:** (1) **mountMd O(n²) sönümleyici:** streaming sırasında uzun gövdede (>800 karakter) 140 ms'den kısa aralıklı delta'lar yeniden render'ı atlar — son delta `onDone`'da tam render'la daima yakalanır; (2) **CORS:** `allow_origins=["*"]` kaldırıldı — artık yalnızca `KONSUL_CORS_ORIGINS` (virgülle ayrılmış env) verilirse o origin'lerle CORSMiddleware kurulur; env yoksa CORS tamamen kapalı (aynı-origin varsayılan); (3) **`CONTENT_POLICY.md`** kuruldu (§3.6'nın ürün içi hali: birinci şahıs bedenleme yasağı, analitik mesafe arketipi, operatör sorumluluğu, muafiyetler, şeffaflık; persona guard v2 ve mimar istem kurallarıyla tutarlı).
+>
+> **Kalan borç:** K5→sentez bağlama adımı (borç); K6 süre kısıtı (borç); sınırsız bağlam (borç); API anahtarları localStorage'da açık metin (borç — S2).
 
 
 ### Faz 1 — "Önce Kanı Durdur" (P0, ~1 gün)
@@ -259,7 +268,7 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 - İkna Deltası + Mühürlü Zarf (taç) → İç Ses (K1) → İddia Defteri (K5) → Arşiv Odası (K4) → Gerilim Metresi (K2) → Başkan kontrolleri (K6) → Jüri 2.0 (K7) → Hafıza döngüsü (K8) → Yakınsama Radarı (K3)
 
 ### Faz 3 — "Efsane" (P2, ürün sonrası)
-- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği ✅ Faz 4
+- Sesli masa (edge-tts + STT) ✅ 3a (Web Speech ile) → Hukuki Karar Protokolü + muhalefet şerhi ✅ 3a → Arena ✅ 3b → Zaman Makinesi ✅ 3b → film şeridi dışa aktarma ✅ 3b → 2-8 sandalye esnekliği ✅ Faz 4 → Operatör kör oyu + kazanan/kaybeden diff (K7 tamamlama) ✅ Faz 5
 
 ---
 

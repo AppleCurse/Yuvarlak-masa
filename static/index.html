@@ -1424,12 +1424,30 @@ body.inner-off .inner-note{display:none}
           <button class="btn danger" id="btnJuryStop" disabled>■ Tümünü Durdur</button>
           <button class="btn small" id="btnJuryBlind" disabled style="border-color:rgba(139,92,246,.6);color:#a78bfa" title="Başhakem, cevapları adlandırılmış halde (JÜRİ 1..5) okur; kimlikler rapordan sonra açılır.">⚖ KÖR DEĞERLENDİRME (HAKEM)</button>
         </div>
+        <!-- Faz 5 (K7): Operatör Kör Oyu — insan iradesi de karışımın içine adlandırmadan girer -->
+        <div class="hud" id="opVotePanel" style="margin:0 0 12px">
+          <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+          <div class="t" style="padding:10px 14px 0;color:var(--crimson)">👤 OPERATÖR KÖR OYU <span style="color:var(--faint);font-size:8.5px;letter-spacing:.14em">— İNSAN İRADESİ DE RİNGDE</span></div>
+          <div style="padding:8px 14px 12px">
+            <textarea id="opVoteText" rows="2" placeholder="Kendi pozisyonunu yazıp mühürle. Mühürlenen oy, jüri yanıtlarıyla birlikte karılır ve hakeme JÜRİ N+1 olarak sunulur — kimliğini hakem bilmez, kimlik açılışında sen görürsün. (En az 30 karakter; yanıtlar dökülmeden mühürlemek tam kör oy sayılır)" style="width:100%;background:#0a0f18;border:1px solid var(--line);color:var(--text);font-family:'IBM Plex Sans',system-ui;font-size:12.5px;padding:8px 10px;border-radius:3px;resize:vertical;min-height:44px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+              <button class="btn small" id="btnOpVoteSeal" style="border-color:rgba(244,63,94,.55);color:var(--crimson)">✉ MÜHÜRLE → JÜRİ N+1</button>
+              <button class="ghostbtn" id="btnOpVoteReset" style="display:none;font-size:9.5px;padding:3px 8px">↻ YENİDEN MÜHÜRLE</button>
+              <span id="opVoteStatus" style="font-family:'IBM Plex Mono';font-size:9px;color:var(--faint);letter-spacing:.08em">OY YOK — değerlendirmede yalnız jüri yanıtları tartılır</span>
+            </div>
+          </div>
+        </div>
         <div class="jurygrid" id="juryGrid"></div>
         <div class="hud" id="blindPanel" style="display:none;margin:14px 0 4px">
           <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
           <div class="t" style="padding:12px 14px 0;color:#a78bfa">KÖR JÜRİ RAPORU · HAKEM YÜZLERİ GÖRMEDİ</div>
           <div class="md" id="blindBody" style="padding:12px 14px;max-height:420px;overflow-y:auto"></div>
-          <div id="blindReveal" style="padding:0 14px 14px"></div>
+          <div id="blindReveal" style="padding:0 14px 0"></div>
+          <!-- Faz 5 (K7): Kazanan/Kaybeden Diff -->
+          <div id="blindDiffWrap" style="display:none;padding:0 14px 14px">
+            <div style="font-family:'IBM Plex Mono';font-size:9px;letter-spacing:.16em;color:var(--gold);margin:10px 0 8px">⚡ KAZANAN / KAYBEDEN DIFF — 1. ve sonuncu ne kadar ve neden farklıydı?</div>
+            <div class="md" id="blindDiff" style="max-height:300px;overflow-y:auto;border-top:1px solid var(--line);padding-top:10px"></div>
+          </div>
         </div>
       </section>
 
@@ -1970,7 +1988,9 @@ const state = {
       D: { text: "", state: "idle", ac: null },
       E: { text: "", state: "idle", ac: null }
     },
-    running: false
+    running: false,
+    opVote: { text: "", hash: "", sealed: false, late: false, prompt: "" },
+    blindDiffAc: null
   },
   synth: { material:"", source:"", running:false, ac:null },
   arena: { claim:"", rounds:2, running:false, round:0, turn:null, acs:{A:null,B:null}, cols:{A:"",B:""}, verdict:"", winner:null },
@@ -2084,6 +2104,14 @@ function mdToHtml(src){
   return out.join("\n");
 }
 function mountMd(container, text, streaming){
+  // Faz 5: uzun akışlarda her delta'da tam markdown parse etmek O(n²) CPU yakıyordu.
+  // Streaming'de 140ms'de bir parse; final çağrı (streaming=false) daima anında ve tam.
+  if(streaming && text.length > 800){
+    const st = container._mdSt || (container._mdSt = { last: 0 });
+    if(Date.now() - st.last < 140) return;
+    st.last = Date.now();
+  }
+  if(container._mdSt) container._mdSt.last = Date.now();
   container.innerHTML = mdToHtml(text) + (streaming ? '<span class="caret" style="display:inline-block;width:8px;height:15px;background:var(--cyan);vertical-align:-2px;animation:breathe .8s infinite"></span>' : "");
   container.querySelectorAll("[data-copy]").forEach(b=>{
     b.onclick = () => { const el = document.getElementById(b.dataset.copy);
@@ -2891,10 +2919,70 @@ async function buildFilmstrip(sid){
 if($("#btnArchFilm")) $("#btnArchFilm").addEventListener("click", ()=>buildFilmstrip());
 
 /* ── K7 · Körlü Jüri 2.0: adlandırmasız değerlendirme + kimlik açılışı ── */
+/* ── Faz 5 (K7) · Operatör Kör Oyu ── */
+function opVoteLabel(){
+  return "JÜRİ " + (readyJuryCount() + 1);
+}
+function opVoteValid(){
+  const v = state.jury.opVote;
+  return !!(v && v.sealed && v.text.trim().length >= 30 && v.prompt === state.jury.prompt);
+}
+async function sealOpVote(){
+  const J = state.jury;
+  if(J.opVote.sealed){ toast("Oy zaten mühürlü — değiştirmek için 'YENİDEN MÜHÜRLE'."); return; }
+  const v = $("#opVoteText").value.trim();
+  if(v.length < 30){ toast("Kör oy en az 30 karakter olmalı — ciddi bir pozisyon yaz."); $("#opVoteText").focus(); return; }
+  // yanıt kolonları doluyken mühürlemek = yanıtlar görülmüş olabilir → "geç oy" damgası
+  J.opVote.late = jurySeats().some(k=>J.cols[k].text && J.cols[k].text.trim().length > 0);
+  J.opVote.text = v;
+  J.opVote.prompt = J.prompt || $("#juryPrompt").value.trim();
+  J.opVote.hash = await sha256Hex(v);
+  J.opVote.sealed = true;
+  renderOpVotePanel();
+  toast("👑 Operatör oyunu mühürlendi — " + opVoteLabel() + " olarak karışıma girecek" + (J.opVote.late ? " (yanıtlar dökülmüştü: GEÇ OY)" : " (tam kör)"));
+}
+function resetOpVote(){
+  const J = state.jury;
+  if(J.blindRunning) return;
+  J.opVote = { text: "", hash: "", sealed: false, late: false, prompt: "" };
+  const ta = $("#opVoteText"); if(ta) ta.value = "";
+  renderOpVotePanel();
+  toast("Kör oy açıldı — yeniden yazılabilir.");
+}
+function renderOpVotePanel(){
+  const v = state.jury.opVote;
+  const status = $("#opVoteStatus");
+  const ta = $("#opVoteText");
+  const bSeal = $("#btnOpVoteSeal"), bReset = $("#btnOpVoteReset");
+  if(!status) return;
+  if(v.sealed){
+    ta.disabled = true;
+    ta.style.borderColor = "rgba(244,63,94,.4)";
+    bSeal.style.display = "none";
+    bReset.style.display = "";
+    status.style.color = "var(--crimson)";
+    status.textContent = "OY MÜHÜRLENDİ · " + opVoteLabel() + " · SHA-256 " + v.hash.slice(0, 16) + "…" + (v.late ? " · GEÇ OY (yanıtlar dökülmüştü)" : " · TAM KÖR") + (v.prompt !== state.jury.prompt ? " · ⚠ farklı soru için mühürlenmişti — bu değerlendirmeye GİRMİYOR" : "");
+  } else {
+    ta.disabled = false;
+    ta.style.borderColor = "var(--line)";
+    bSeal.style.display = "";
+    bReset.style.display = "none";
+    status.style.color = "var(--faint)";
+    status.textContent = "OY YOK — değerlendirmede yalnız jüri yanıtları tartılır (mühürleme " + opVoteLabel() + " numarası açar)";
+  }
+}
+$("#btnOpVoteSeal").addEventListener("click", sealOpVote);
+$("#btnOpVoteReset").addEventListener("click", resetOpVote);
+
 function resetJuryBlind(){
-  if(state.jury) { state.jury.blindReport = null; state.jury.blindRunning = false; }
+  if(state.jury) {
+    state.jury.blindReport = null; state.jury.blindRunning = false;
+    if(state.jury.blindDiffAc){ try{ state.jury.blindDiffAc.abort(); }catch(e){} state.jury.blindDiffAc = null; }
+  }
   const p = $("#blindPanel"); if(p) p.style.display = "none";
   const b = $("#btnJuryBlind"); if(b){ b.disabled = true; b.textContent = "⚖ KÖR DEĞERLENDİRME (HAKEM)"; }
+  const dw = $("#blindDiffWrap"); if(dw) dw.style.display = "none";
+  const dd = $("#blindDiff"); if(dd) dd.innerHTML = "";
 }
 function readyJuryCount(){ return jurySeats().filter(k=>state.jury.cols[k].text && state.jury.cols[k].text.trim().length > 40).length; }
 async function runBlindJury(){
@@ -2910,15 +2998,20 @@ async function runBlindJury(){
   const body = $("#blindBody");
   body.innerHTML = '<div class="claim-empty">Başhakem cevapları ADLANDIRMASIz okuyor — kimin ne dediği bilinmiyor; yalnız argüman tartılıyor…</div>';
   const reveal = $("#blindReveal"); reveal.innerHTML = "";
-  // Tesadüfi kör eşleme: JÜRİ 1..5 → sandalye (her çalıştırmada karılır)
-  const order = jurySeats().filter(k=>state.jury.cols[k].text.trim().length > 40);
-  const shuffled = [...order];
+  // Faz 5 (K7): tesadüfi kör eşleme — jüri sandalyeleri (+ mühürlenmiş operatör oyu) birlikte karılır
+  const pool = jurySeats().filter(k=>state.jury.cols[k].text.trim().length > 40);
+  const opIn = opVoteValid();
+  const shuffled = [...pool];
+  if(opIn) shuffled.push("OP");
   for(let i = shuffled.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]] = [shuffled[j],shuffled[i]]; }
-  const mapping = shuffled.map((k, i)=>({ label: "JÜRİ " + (i+1), seat: k, name: state.seats[k].charName || state.seats[k].name, hex: state.seats[k].hex }));
+  const mapping = shuffled.map((k, i)=> k === "OP"
+    ? { label: "JÜRİ " + (i+1), seat: "OP", name: "OPERATÖR (İNSAN İRADESİ)", hex: "#f43f5e", isOp: true }
+    : { label: "JÜRİ " + (i+1), seat: k, name: state.seats[k].charName || state.seats[k].name, hex: state.seats[k].hex });
   const anon = mapping.map(m=>{
-    let t = state.jury.cols[m.seat].text.trim();
-    // bariz öz-adlandırma temizliği: ismi metinden at (kimlik sızıntısını daralt)
-    t = t.replace(new RegExp(m.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "[YANIT SAHİBİ]");
+    let t = m.isOp ? state.jury.opVote.text.trim() : state.jury.cols[m.seat].text.trim();
+    // bariz öz-adlandırma temizliği: kimlik sızıntısını daralt
+    const pat = m.isOp ? "operatör|insan iradesi" : m.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    t = t.replace(new RegExp(pat, "gi"), "[YANIT SAHİBİ]");
     return "=== " + m.label + " (bağımsız yanıt) ===\n" + t.slice(0, 4000);
   }).join("\n\n");
   const H = state.seats.K;
@@ -2938,10 +3031,68 @@ async function runBlindJury(){
       J.blindRunning = false;
       J.blindReport = { text: acc + (stopped ? " (yarıda kesildi)" : ""), mapping };
       mountMd(body, J.blindReport.text, false);
+      // Faz 5 (K7): kimlik açılışında operatör oyu 👑 ile, geç oy ise damgasıyla görünür
       reveal.innerHTML = '<div style="font-family:\'IBM Plex Mono\';font-size:9px;letter-spacing:.16em;color:var(--faint);margin:14px 0 8px">◉ KİMLİK AÇILIŞI — hakem bunları bilmiyordu</div>' +
-        mapping.map(m=>'<span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:3px;padding:4px 9px;margin:0 8px 8px 0;font-family:\'Space Grotesk\';font-size:11px"><b style="color:' + m.hex + '">' + m.label + '</b> = ' + esc(m.name) + ' <span style="color:var(--faint)">(Sandalye ' + m.seat + ')</span></span>').join("");
+        mapping.map(m=>'<span style="display:inline-flex;align-items:center;gap:6px;border:1px solid ' + (m.isOp ? "rgba(244,63,94,.5)" : "var(--line)") + ';border-radius:3px;padding:4px 9px;margin:0 8px 8px 0;font-family:\'Space Grotesk\';font-size:11px"><b style="color:' + m.hex + '">' + (m.isOp ? "👑 " : "") + m.label + '</b> = ' + esc(m.name) + ' <span style="color:var(--faint)">(' + (m.isOp ? "İNSAN KOLTUĞU" : "Sandalye " + m.seat) + (m.isOp && J.opVote.late ? " · GEÇ OY" : "") + ')</span></span>').join("");
       $("#btnJuryBlind").textContent = "⚖ KÖR DEĞERLENDİRMEYİ TEKRARLA (YENİ KARIŞIM)";
-      toast("Kör değerlendirme tamam — kimlikler açıldı");
+      if(!stopped){
+        toast("Kör değerlendirme tamam — kimlikler açıldı; diff hesaplanıyor…");
+        runBlindDiff(acc, mapping, anon);
+      }
+    },
+  });
+}
+
+/* ── Faz 5 (K7) · Kazanan/Kaybeden Diff ── */
+// SIRALAMA bölümünden sıralı JÜRİ numaralarını ayıklar; çökerse null
+function parseBlindRanking(reportText){
+  const txt = String(reportText);
+  const parts = txt.split(/##\s*SIRALAMA/i);
+  const sec = parts.length > 1 ? parts[1].split(/##\s/)[0] : txt;
+  const found = [...sec.matchAll(/(\d+)\s*[.)\-]?\s*JÜRİ\s*(\d+)/gi)].map(x=>parseInt(x[2], 10));
+  const uniq = [...new Set(found)].sort((a,b)=>a-b);
+  return uniq.length >= 2 ? uniq : null;
+}
+async function runBlindDiff(reportText, mapping, anon){
+  const J = state.jury;
+  const wrap = $("#blindDiffWrap"), diff = $("#blindDiff");
+  wrap.style.display = "";
+  diff.innerHTML = '<div class="claim-empty">Hakem, birincinin ve sonuncunun yanıtlarını yüz yüze koyuyor…</div>';
+  const fallback = mapping.map(m=>parseInt(m.label.replace(/\D/g,""), 10));
+  const ranked = parseBlindRanking(reportText) || fallback;
+  const winLbl = "JÜRİ " + ranked[0];
+  const loseLbl = "JÜRİ " + ranked[ranked.length - 1];
+  const win = mapping.find(m=>m.label === winLbl);
+  const lose = mapping.find(m=>m.label === loseLbl);
+  if(!win || !lose || win.label === lose.label){ wrap.style.display = "none"; return; }
+  const H = state.seats.K;
+  const sys = (H && H.system) || "Sen tarafsız bir başhakemsin.";
+  const pick = (lbl) => {
+    const part = anon.split("=== ").find(p=>p.startsWith(lbl));
+    return part ? part : "";
+  };
+  const user = "KÖR JÜRİ DIFF PROTOKOLÜ: Kör jüri raporunun SIRALAMA bölümüne göre birincisi " + winLbl + ", sonuncusu " + loseLbl + ". Bu İKİ yanıtın metni aşağıda — yalnız bunları karşılaştır, diğerlerini dikkate alma. Soğuk bir taktik analiz yap: aradaki farkı abartma ya da yumuşatma.\n\nSORU: " + (J.prompt || "") + "\n\n" +
+    "=== " + winLbl + " (1. — KAZANAN) ===\n" + pick(winLbl) + "\n\n" +
+    "=== " + loseLbl + " (SONUNCU — KAYBEDEN) ===\n" + pick(loseLbl) + "\n\n" +
+    "RAPORUN BAŞLIKLARI:\n## EN BÜYÜK FARK\n(1. ile sonuncuyu en çok ayıran TEK eksen — kanıt sıklığı, mantık yapısı, derinlik, doğrudanlık, uygulanabilirlik, tutarlılık… 2-3 cümle)\n## KAZANANIN YAPTIĞI\n(3 madde; her maddede metinden kısa somut iz)\n## KAYBEDENİN EKSİĞİ\n(3 madde; her maddede metinden kısa somut iz)\n## DÖNÜŞÜM ÖNERİSİ\n(sonuncunun 1. olabilmesi için gereken 2-3 somut değişiklik)";
+  const ac = new AbortController();
+  J.blindDiffAc = ac;
+  let acc2 = "";
+  await streamChat(H || { system: sys, baseUrl:"https://text.pollinations.ai/openai", model:"openai" }, [
+    { role:"system", content: sys },
+    { role:"user", content: user },
+  ], {
+    signal: ac.signal,
+    onDelta: (t)=>{ acc2 = t; mountMd(diff, t, true); },
+    onError: (e)=>{ diff.innerHTML = '<div class="errnote">⚠ Diff alınamadı: ' + esc(e) + '</div>'; J.blindDiffAc = null; },
+    onDone: (stopped)=>{
+      J.blindDiffAc = null;
+      if(acc2) mountMd(diff, acc2 + (stopped ? " (yarıda kesildi)" : ""), false);
+      if(!stopped){
+        if(win.isOp) toast("⚡ DIFF hazır — bu turda İNSAN İRADESİ 1. oldu");
+        else if(lose.isOp) toast("⚡ DIFF hazır — operatör bu turda sonuncu kaldı");
+        else toast("⚡ DIFF hazır — " + (win.name || winLbl) + " / " + (lose.name || loseLbl));
+      }
     },
   });
 }
