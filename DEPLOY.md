@@ -30,7 +30,14 @@ fly deploy
 
 - **URL:** `https://yuvarlak-masa.fly.dev` — anında, otomatik HTTPS. Paylaş.
 - **Not:** App adları global benzersizdir; `yuvarlak-masa` alınmışsa Fly bir varyasyon önerir — seçtiğini `fly.toml`'daki `app =` satırına yazıp devam et.
-- **Kendi domain'in varsa:** `fly domains add senin-domain.com` → DNS panelinde CNAME yaz: `senin-domain.com → yuvarlak-masa.fly.dev` (Fly sertifika otomatik alır).
+**Domain planı: `yuvarlakmasa.com.tr`** (IHS'te müsait — 0,95 $)
+1. [IHS](https://ihs.com.tr/edestek/whois.html) → `yuvarlakmasa.com.tr` → **Sepete At** → satın al.
+2. Deploy'dan sonra: `fly domains add yuvarlakmasa.com.tr`
+3. IHS DNS paneline kayıtlar:
+   - CNAME `www` → `yuvarlak-masa.fly.dev`
+   - CNAME `@` (kök) → `yuvarlak-masa.fly.dev` — kökte CNAME vermezse A kayıtları: `216.24.57.253` + `216.24.57.254`
+4. Dakikalar içinde (en geç birkaç saat) Fly sertifika otomatik alır → `https://yuvarlakmasa.com.tr`.
+   Bu arada ve sonrasında da `https://yuvarlak-masa.fly.dev` çalışmaya devam eder.
 - **Kullanlılar:** `fly logs` (log) · `fly scale memory 512` (RAM büyütme) · `fly ssh console` (makineye shell).
 - **Yedek:** `fly ssh console -C "cat /data/konsul.db" > yedek.db`
 - `fly.toml` hazır: DB `/data` volume'una yazılır (`KONSUL_DB_PATH=/data/konsul.db`), `/api/health` health-check'i tanımlı (bozulursa otomatik yeniden başlatır), makine 7/24 açık.
