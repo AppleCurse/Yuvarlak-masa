@@ -1,0 +1,37 @@
+# VPS deploy — tek komut: docker compose up -d --build
+# Caddy (otomatik HTTPS) → app (yalnız 127.0.0.1'de dinler, public yüz Caddy'dir)
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      KONSUL_HOST: 0.0.0.0
+      KONSUL_PORT: "8888"
+      KONSUL_DB_PATH: /data/konsul.db
+      # CORS kapalı kalsın (frontend aynı origin). Farklı origin gerekirse:
+      # KONSUL_CORS_ORIGINS: "https://ornek.com"
+    volumes:
+      - konsul_data:/data
+    ports:
+      - "127.0.0.1:8888:8888"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8888/api/health', timeout=4)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+volumes:
+  consul_data:
+  caddy_data:

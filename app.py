@@ -53,7 +53,8 @@ import engine
 
 # ── Sabitler ────────────────────────────────────────────────────────────
 HOST = os.environ.get("KONSUL_HOST", "127.0.0.1")
-PORT = int(os.environ.get("KONSUL_PORT", "8888"))
+# Deploy (Senaryo A): KONSUL_PORT > standart PORT (PaaS) > 8888
+PORT = int(os.environ.get("KONSUL_PORT") or os.environ.get("PORT") or "8888")
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 CLIENT_TIMEOUT = httpx.Timeout(300.0, connect=8.0)

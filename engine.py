@@ -8,6 +8,7 @@ import difflib
 import hashlib
 import html
 import json
+import os
 import re
 import sqlite3
 import urllib.parse
@@ -18,7 +19,9 @@ import httpx
 from persona_guard import PersonaGuard
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "konsul.db"
+# Deploy (Senaryo A): DB yolu env ile değiştirilebilir — PaaS/VPS'te kalıcı volume'a yazılır
+# (varsayılan: repo dizini içi konsul.db). Örn. KONSUL_DB_PATH=/data/konsul.db
+DB_PATH = Path(os.environ.get("KONSUL_DB_PATH") or (BASE_DIR / "konsul.db"))
 CHARS_JSON = BASE_DIR / "characters.json"
 
 def get_db():

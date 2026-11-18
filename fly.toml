@@ -1,0 +1,22 @@
+# Fly.io — KONSÜL AI
+# Kurulum:  fly launch (bu dosyayı alır) → fly volumes create data -s 1 -r <region>
+#           fly deploy
+# Not: app adını kendi seçtiğinle değiştir; primary_region "ist" = İstanbul.
+app = "konsul-ai"
+primary_region = "ist"
+
+[build]
+
+[http_service]
+  internal_port = 8888
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[mounts]]
+  source = "data"
+  destination = "/data"
+
+[env]
+  KONSUL_DB_PATH = "/data/konsul.db"

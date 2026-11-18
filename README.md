@@ -133,6 +133,8 @@ Windows için `baslat.bat` mevcut. Farklı host/port:
 ```bash
 KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
 ```
+**Deploy (harici kullanıcılara servis):** [`DEPLOY.md`](DEPLOY.md) — Dockerfile + `fly.toml` + `docker-compose.yml` (Caddy/otomatik HTTPS) + `deploy.sh` ile tek komut VPS kurulumu, Fly.io ve Railway/Render adımları, yedek/güncelleme prosedürü.
+**Test paketi (regresyon):** `bash tests/run_all.sh` — tek komutla tam paket: `tests/dom/test6.js` (Faz 6: pencere/sentez/süre/kasa, 35) + `tests/dom/test7.js` (Faz 7: kâsa rozeti, 8) + `tests/e2e_vault.py` (canlı uvicorn + mock OpenAI, 17). e2e izole geçici DB kullanır (`KONSUL_DB_PATH`) — çalışan sunucunun veritabanına dokunmaz. Gerekli tek bağımlılık: `npm install jsdom --prefix tests` (otomatik de kurulur).
 **CORS (Faz 5):** Varsayılan olarak CORS tamamen kapalıdır (aynı-origin). Tarayıcıdan farklı bir origin'in API'yi kullanması gerekiyorsa beyaz listeyi env ile ver:
 ```bash
 KONSUL_CORS_ORIGINS="http://localhost:3000,https://apam-domaini.example" python app.py
