@@ -274,6 +274,17 @@ Bu özellik bugün hiçbir çoklu-ajan ürününde yok. Ürünün adını **yuva
 >
 > **Proje durumu:** Denetim raporundaki tüm P0/P1 kalemleri + Faz 1–6 yol haritası tamam. Bilinçli bırakılan tek P2: kâsadaki anahtarın at-rest şifrelemesi.
 
+> ### ✅ DEPLOY DALGASI YÜRÜTME NOTU (17.11.2026 — Senaryo A: mevcut ortak tek kuruluşa canlı yayın)
+>
+> Öznitelik projesi (Faz 1–7) tamamlandıktan sonra, ürünün **dış kullanıcılara açılması** için en kısa yol — mevcut ortak tek kuruluma (tek URL + paylaşımlı anahtar kasası) dokunmadan, yalnız **yayına elverişlilik** eklenerek — çalışıldı. Davranışsal hiçbir öznitelik değişmedi; tek değişen, veritabanı yolu ve port artık ortam değişkeninden okunur.
+> * **Kod (minimal, deploy için):** `engine.py` → `DB_PATH = Path(os.environ.get("KONSUL_DB_PATH") or (BASE_DIR/"konsul.db"))` (kalıcı diske/volume'a taşınabilir). `app.py` → `PORT = int(os.environ.get("KONSUL_PORT") or os.environ.get("PORT") or "8888")`.
+> * **Yeni dosyalar:** `run.py` (headless uvicorn, 0.0.0.0), `Dockerfile` (python:3.11-slim, EXPOSE 8888), `.dockerignore`, `fly.toml` (bölge ist, `/data` volume), `docker-compose.yml` (app + caddy otomatik-HTTPS), `Caddyfile` (DOMAIN placeholder), `.env.example`, `deploy.sh` (tek komut VPS), `DEPLOY.md` (VPS/Fly/Railway-Render rehber + env tablosu + yedekleme/güncelleme). README'e deploy bölümü eklendi.
+> * **Test altyapısı kalıcılaştırıldı:** `/tmp` sınamaları workspace sıfırlanmalarında iki kez silindiğinden, tüm paket depo içinde **`tests/`** dizinine taşındı (`tests/dom/test6.js`, `tests/dom/test7.js`, `tests/e2e_vault.py`, tek komut `tests/run_all.sh`). e2e artık **izole geçici DB** (`KONSUL_DB_PATH`) kullanır — bu, deploy ortam değişkenini de canlı doğrular ve çalışan sunucunun DB'sine dokunmaz.
+> * **Doğrulama:** `py_compile` (app/engine/persona_guard/run) + `node --check` temiz; Docker/YAML/TOML/bash sözdizimi geçerli; **60/60** (35 Faz 6 + 8 Faz 7 jsdom + 17 e2e, gerçek uvicorn + mock OpenAI) yeşil.
+> * **Kapsam kararı (kullanıcı onaylı, "Önce 1 sonra 2"):** **Senaryo A** = mevcut ortak tek kuruluşa aynen yayın (bu dalga). **Senaryo B** = çok kullanıcılı ürün (kimlik doğrulama + kullanıcı başına kasa, "Faz 8") bilinçli ertelendi, başlanmadı.
+>
+> **Proje durumu:** Faz 1–7 + Senaryo A deploy paketi hazır (kendi dalında, PR bekliyor). Sonraki yol: canlıya alma → sonra Faz 8 (çok kullanıcılı). Tek bilinçli P2 hâlâ geçerli: kâsadaki anahtarın at-rest şifrelemesi.
+
 
 ### Faz 1 — "Önce Kanı Durdur" (P0, ~1 gün)
 1. `insertTactic`, `toggleHoloTable` tanımla (B1, B2)

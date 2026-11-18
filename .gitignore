@@ -7,6 +7,10 @@ __pycache__/
 venv/
 ENV/
 
+# Test altyapısı (jsdom)
+tests/node_modules/
+tests/package-lock.json
+
 # Node
 node_modules/
 dist/
