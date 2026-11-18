@@ -35,9 +35,10 @@ import asyncio
 import ipaddress
 import json
 import os
+import re
 import threading
 import webbrowser
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -51,6 +52,7 @@ from pydantic import BaseModel, Field
 
 # Yerel motor: karakter kütüphanesi, hafıza, araştırma, itiraz hakemi
 import engine
+import neuro_bridge
 
 # ── Sabitler ────────────────────────────────────────────────────────────
 HOST = os.environ.get("KONSUL_HOST", "127.0.0.1")
@@ -194,6 +196,54 @@ def _resolve_endpoint(base_url: str, api_key: str, model: str, seat: str):
     return b, k, m, None
 
 
+_POLLINATIONS_LOCK = asyncio.Lock()
+
+
+def _extract_retry_seconds(status_code: int, body_text: str) -> int:
+    """HTTP 402/429 yanıtındaki 'Retry after Xs' bilgisinden güvenli bekleme süresini çıkarır."""
+    m = re.search(r"Retry after\s+(\d+)\s*s", body_text or "", re.IGNORECASE)
+    if m:
+        return min(50, int(m.group(1)) + 2)
+    return 20 if status_code == 402 else 3
+
+
+def _pollinations_guard(base_url: str):
+    """Pollinations tek-IP eşzamanlılık sınırını aşmamak için istekleri sıraya koyar."""
+    if "pollinations.ai" in (base_url or "").lower():
+        return _POLLINATIONS_LOCK
+    return nullcontext()
+
+
+def _prepare_cognitive_messages(messages: list[dict], seat: str) -> list[dict]:
+    """A..H koltukları için neuro_bridge bilişsel direktifini sistem istemine enjekte eder."""
+    s = (seat or "").strip().upper()
+    if s not in neuro_bridge.VALID_SEATS or not messages:
+        return messages
+
+    for msg in messages:
+        if msg.get("role") == "system" and "İÇ SES PROTOKOLÜ" in str(msg.get("content", "")):
+            return messages
+
+    last_user_text = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            last_user_text = str(msg.get("content", ""))
+            break
+
+    snap = neuro_bridge.step_seat(s, last_user_text)
+    directive = snap.get("directive", "")
+    if not directive:
+        return messages
+
+    out = [dict(m) for m in messages]
+    for m in out:
+        if m.get("role") == "system":
+            m["content"] = str(m.get("content", "")) + directive
+            return out
+    out.insert(0, {"role": "system", "content": directive.strip()})
+    return out
+
+
 # ── Paylaşımlı istem şeması (Pydantic) ─────────────────────────────────
 class ChatPayload(BaseModel):
     base_url: str = ""
@@ -282,18 +332,27 @@ async def chat(payload: ChatPayload):
     err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
+    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat)
     body = {
         "model": model,
-        "messages": payload.messages,
+        "messages": prepared_messages,
         "temperature": payload.temperature,
         "stream": False,
     }
     try:
-        resp = await _get_http().post(
-            _clean_base(base) + "/chat/completions",
-            json=body,
-            headers=_auth_headers(api_key),
-        )
+        resp = None
+        async with _pollinations_guard(base):
+            for attempt in range(5):
+                resp = await _get_http().post(
+                    _clean_base(base) + "/chat/completions",
+                    json=body,
+                    headers=_auth_headers(api_key),
+                )
+                if resp.status_code in (429, 402) and attempt < 4:
+                    wait_s = _extract_retry_seconds(resp.status_code, resp.text)
+                    await asyncio.sleep(wait_s)
+                    continue
+                break
         if resp.status_code != 200:
             detail = resp.text[:300].replace("\n", " ")
             return JSONResponse(
@@ -301,7 +360,8 @@ async def chat(payload: ChatPayload):
                 status_code=502,
             )
         data = resp.json()
-        content = engine.filter_persona_text(data["choices"][0]["message"]["content"])
+        raw_content = data["choices"][0]["message"]["content"]
+        content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
         return {"ok": True, "content": content}
     except KeyError:
         return JSONResponse({"ok": False, "error": "Uç sunucu beklenmeyen biçimde yanıt verdi."}, status_code=502)
@@ -321,9 +381,10 @@ async def chat_stream(payload: ChatPayload, request: Request):
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
 
+    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat)
     body = {
         "model": model,
-        "messages": payload.messages,
+        "messages": prepared_messages,
         "temperature": payload.temperature,
         "stream": True,
     }
@@ -332,32 +393,47 @@ async def chat_stream(payload: ChatPayload, request: Request):
 
     async def event_generator():
         resp = None
+        acc_chunks: list[str] = []
         try:
-            for attempt in range(4):
-                req = _get_http().build_request(
-                    "POST", base + "/chat/completions", json=body, headers=headers, timeout=60.0
-                )
-                resp = await _get_http().send(req, stream=True)
-                if resp.status_code == 429 and attempt < 3:
-                    await resp.aclose()
-                    await asyncio.sleep(2.5)
-                    continue
-                break
+            async with _pollinations_guard(base):
+                for attempt in range(5):
+                    req = _get_http().build_request(
+                        "POST", base + "/chat/completions", json=body, headers=headers, timeout=60.0
+                    )
+                    resp = await _get_http().send(req, stream=True)
+                    if resp.status_code in (429, 402) and attempt < 4:
+                        code = resp.status_code
+                        err_text = (await resp.aread()).decode("utf-8", "ignore")
+                        await resp.aclose()
+                        resp = None
+                        wait_s = _extract_retry_seconds(code, err_text)
+                        for _ in range(wait_s):
+                            if await request.is_disconnected():
+                                return
+                            await asyncio.sleep(1.0)
+                        continue
+                    break
 
-            if resp.status_code != 200:
-                detail = (await resp.aread()).decode("utf-8", "ignore")[:300]
-                await resp.aclose()
-                err = f"Uç sunucu HTTP {resp.status_code}: {detail}"
-                yield "data: " + json.dumps({"error": err}, ensure_ascii=False) + "\n\n"
-                return
+                if resp is None or resp.status_code != 200:
+                    code = resp.status_code if resp is not None else 502
+                    detail = (await resp.aread()).decode("utf-8", "ignore")[:300] if resp is not None else "Yanıt alınamadı"
+                    if resp is not None:
+                        await resp.aclose()
+                        resp = None
+                    err_msg = f"Uç sunucu HTTP {code}: {detail}"
+                    yield "data: " + json.dumps({"error": err_msg}, ensure_ascii=False) + "\n\n"
+                    return
 
                 ctype = resp.headers.get("content-type", "")
 
                 # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
                 if "application/json" in ctype:
                     raw = (await resp.aread()).decode("utf-8", "ignore")
+                    await resp.aclose()
+                    resp = None
                     try:
-                        content = json.loads(raw)["choices"][0]["message"]["content"]
+                        raw_content = json.loads(raw)["choices"][0]["message"]["content"]
+                        content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
                         yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
                     except Exception:  # noqa: BLE001
                         yield "data: " + json.dumps({"error": "Uç sunucu geçersiz JSON döndürdü."}, ensure_ascii=False) + "\n\n"
@@ -365,8 +441,11 @@ async def chat_stream(payload: ChatPayload, request: Request):
                     return
 
                 buffer = ""
+                done_seen = False
                 async for chunk in resp.aiter_text():
                     if await request.is_disconnected():
+                        await resp.aclose()
+                        resp = None
                         return  # Operatör "Durdur"a bastı → upstream de kesilir
                     buffer += chunk
                     while "\n" in buffer:
@@ -376,9 +455,8 @@ async def chat_stream(payload: ChatPayload, request: Request):
                             continue
                         data = line[5:].strip()
                         if data == "[DONE]":
-                            yield "data: [DONE]\n\n"
-                            await resp.aclose()
-                            return
+                            done_seen = True
+                            break
                         try:
                             obj = json.loads(data)
                         except json.JSONDecodeError:
@@ -387,17 +465,30 @@ async def chat_stream(payload: ChatPayload, request: Request):
                             msg = obj["error"].get("message", str(obj["error"]))
                             yield "data: " + json.dumps({"error": msg}, ensure_ascii=False) + "\n\n"
                             await resp.aclose()
+                            resp = None
                             return
                         try:
                             delta = obj["choices"][0]["delta"].get("content")
                         except (KeyError, IndexError, AttributeError):
                             delta = None
                         if delta:
+                            acc_chunks.append(delta)
                             yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
-            await resp.aclose()
+                    if done_seen:
+                        break
+
+                if resp is not None:
+                    await resp.aclose()
+                    resp = None
+
+            full_raw = "".join(acc_chunks)
+            if full_raw:
+                cleaned = neuro_bridge.clean_human_speech(engine.filter_persona_text(full_raw))
+                if cleaned != full_raw:
+                    yield "data: " + json.dumps({"replace": cleaned}, ensure_ascii=False) + "\n\n"
             yield "data: [DONE]\n\n"
         except Exception as exc:  # noqa: BLE001 — terminal çöpü asla UI'a sızmasın
-            if resp:
+            if resp is not None:
                 try:
                     await resp.aclose()
                 except Exception:
@@ -503,11 +594,18 @@ async def character_architect(payload: dict):
 
     raw_text = ""
     try:
-        resp = await _get_http().post(
-            base + "/chat/completions",
-            json=body,
-            headers=_auth_headers(api_key),
-        )
+        resp = None
+        async with _pollinations_guard(base):
+            for attempt in range(5):
+                resp = await _get_http().post(
+                    base + "/chat/completions",
+                    json=body,
+                    headers=_auth_headers(api_key),
+                )
+                if resp.status_code == 429 and attempt < 4:
+                    await asyncio.sleep(3.0)
+                    continue
+                break
         if resp.status_code != 200:
             return JSONResponse(
                 {"ok": False, "error": f"Model sunucusu HTTP {resp.status_code} döndürdü: {resp.text[:200]}"},
@@ -539,6 +637,7 @@ async def session_start(payload: dict):
     if not sid:
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
     engine.create_session(sid, topic)
+    neuro_bridge.reset_all_seats()
     return {"ok": True, "session_id": sid}
 
 
@@ -674,14 +773,15 @@ async def delta_compute(payload: dict):
     err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    res = await engine.compute_persuasion_delta(
-        sid,
-        base,
-        api_key,
-        model or "openai",
-        (payload.get("transcript") or "").strip(),
-        payload.get("final_positions", {}) or {},
-    )
+    async with _pollinations_guard(base):
+        res = await engine.compute_persuasion_delta(
+            sid,
+            base,
+            api_key,
+            model or "openai",
+            (payload.get("transcript") or "").strip(),
+            payload.get("final_positions", {}) or {},
+        )
     return res
 
 
@@ -726,7 +826,8 @@ async def convergence_route(payload: dict):
     err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    res = await engine.compute_convergence(positions, base, api_key, model or "openai")
+    async with _pollinations_guard(base):
+        res = await engine.compute_convergence(positions, base, api_key, model or "openai")
     return res
 
 
@@ -745,7 +846,8 @@ async def research_verify(payload: dict):
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
     session_id = payload.get("session_id", "")
-    res = await engine.research_fact_check(claim, base, api_key, model or "openai", session_id=session_id)
+    async with _pollinations_guard(base):
+        res = await engine.research_fact_check(claim, base, api_key, model or "openai", session_id=session_id)
     return res
 
 
@@ -764,15 +866,32 @@ async def evaluate_rebuttal_route(payload: dict):
     err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base, api_key, model or "openai")
+    async with _pollinations_guard(base):
+        res = await engine.evaluate_rebuttals(last_speaker, last_text, candidates, base, api_key, model or "openai")
     return res
+
+
+# ── Nörodinamik Bilişsel Durum Uçları ───────────────────────────────────
+@app.get("/api/neuro/state")
+async def neuro_state_endpoint():
+    return {"ok": True, "seats": neuro_bridge.get_all_states()}
+
+
+@app.post("/api/neuro/reset")
+async def neuro_reset_endpoint():
+    neuro_bridge.reset_all_seats()
+    return {"ok": True, "seats": neuro_bridge.get_all_states()}
 
 
 # ── Persona Guard Uç Noktası ───────────────────────────────────────────
 @app.post("/api/persona/clean")
 async def persona_clean_endpoint(payload: dict):
     raw_text = payload.get("text", "")
-    cleaned = engine.filter_persona_text(raw_text)
+    speaker_name = payload.get("speaker_name", "")
+    cleaned = neuro_bridge.clean_human_speech(
+        engine.filter_persona_text(raw_text),
+        speaker_name=speaker_name,
+    )
     report = engine.check_persona_violations(raw_text)
     return {"ok": True, "cleaned": cleaned, "report": report}
 

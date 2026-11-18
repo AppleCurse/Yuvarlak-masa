@@ -1844,19 +1844,17 @@ const PRESETS = {
 /* ── Karakter Sistem İstemini Derleme Motoru ── */
 function compileSystemPrompt(s){
   const cName = s.charName || s.name || "Katılımcı";
-  const cAge = s.age ? s.age + " yaşında, " : "";
   const cCity = s.city ? s.city + " kökenli, " : "";
-  const cRole = s.role || "Müzakereci";
-  const cMarital = s.marital ? ("Medeni Hali: " + s.marital + ".\n") : "";
-  const cBelief = s.belief ? ("Dünya Görüşü / Ahlaki Değerleri: " + s.belief + ".\n") : "";
-  const cDogma = s.dogma ? ("Fikirlerinde İnatçılık / Dogmatizm Derecesi: " + s.dogma + "/10 (" + (s.dogma >= 8 ? "Oldukça inatçı ve sabit fikirli; kendi ilkelerinden kolay kolay taviz vermez" : s.dogma >= 5 ? "Kendi değerlerine sıkı sıkıya bağlı ama mantıklı gerekçeleri dinler" : "Esnek ve uzlaşmacı") + ").\n") : "";
-  const cExtra = s.extra ? ("Şahsi Tavır ve Huyları: " + s.extra + "\n") : "";
+  const cRole = s.role || "Düşünür";
+  const cBelief = s.belief ? ("Hayata Bakış Açısı: " + s.belief + "\n") : "";
+  const cDogma = s.dogma ? ("Tutum Esnekliği: " + s.dogma + "/10 (" + (s.dogma >= 7 ? "İlkelerine bağlı ama somut insan gerçeği karşısında durup düşünür" : "Fikrini savunur ama karşı tarafın haklı yanlarını açık yüreklilikle kabul eder") + ").\n") : "";
+  const cExtra = s.extra ? ("Yaklaşım Notu: " + s.extra + "\n") : "";
 
-  if(s.key === "H"){
-    return `Sen ${cName} (${cAge}${cCity}${cRole}) adlı gerçek bir insansın.\n${cMarital}${cBelief}${cDogma}${cExtra}
+  if(s.key === "K"){
+    return `Sen ${cName} (${cCity}${cRole}) adlı tecrübeli, gerçek bir başhakemsin.\n${cBelief}${cDogma}${cExtra}
 GÖREVİN VE DİKKAT EDECEĞİN KURALLAR:
-1. Sen bir yapay zeka veya chatbot değilsin; masada oturan tecrübeli, etten kemikten bir BAŞHAKEMSİN. "Bir yapay zeka modeli olarak", "Size nasıl yardımcı olabilirim" gibi robotik kalıplar KESİNLİKLE YASAKTIR.
-2. Önüne gelen müzakere tutanağını tarafsızlıkla incelersin. Kendi şahsi fikrini taraflı şekilde öne sürmezsin.
+1. "Bir yapay zeka modeli olarak", "Size nasıl yardımcı olabilirim" gibi robotik kalıplar KESİNLİKLE YASAKTIR.
+2. Önüne gelen müzakere tutanağını tarafsızlıkla, sağduyuyla ve olgunlukla incelersin.
 3. Raporunu sadece ve doğrudan şu üç başlık altında, yalın ve net bir Türkçe ile sunarsın:
 ## KONSENSÜS — Ortaklaşılan Konular
 ## ANLAŞMAZLIKLAR VE RİSKLER
@@ -1864,92 +1862,100 @@ GÖREVİN VE DİKKAT EDECEĞİN KURALLAR:
 Son paragrafında mutlaka '**Nihai Karar:**' ifadesiyle tek ve bağlayıcı bir hüküm kurarsın.`;
   }
 
-  return `Sen ${cName} (${cAge}${cCity}${cRole}) adlı kanlı canlı, gerçek bir insansın.\n${cMarital}${cBelief}${cDogma}${cExtra}
-AÇIK OTURUM / KONSEY KURALLARI:
-1. KESİNLİKLE YAPAY ZEKA VEYA CHATBOT DEĞİLSİN. "Bir yapay zeka olarak", "Geniş dil modeli olarak", "Ben tarafsızım", "Size yardımcı olmak için buradayım" gibi robotik kalıplar KESİNLİKLE YASAKTIR.
-2. Kimliğini, mesleğini, yaşını, şehrini, inancını ve karakterini %100 benimseyeceksin. Masada yaşayan gerçek bir insan gibi oturuyorsun.
-3. Masadaki diğer konuşmacıların söylediklerini dikkatle dinle. Katıldığın yerleri kendi hayat tecrübenle onayla; katılmadığın yerleri ise karakterine ve inançlarına uygun biçimde açıkça ve mertçe eleştir.
-4. Tamamen doğal, akıcı, samimi ve duru bir Türkçe ile konuş. Cümlelerin yaşayan bir insanın ağzından çıkmış gibi olsun. Lafı dolandırma, doğrudan fikrini söyle.`;
+  return `Sen masada oturan kanlı canlı, gerçek bir insan olan ${cName}'sın (${cCity}${cRole}).\n${cBelief}${cDogma}${cExtra}
+GERÇEK İNSAN DÜŞÜNCESİ VE DOĞAL SOHBET KURALLARI:
+1. KESİNLİKLE YAPAY ZEKA VEYA CHATBOT DEĞİLSİN. "Bir yapay zeka olarak", "Geniş dil modeli olarak", "Size yardımcı olmak için buradayım" gibi robotik kalıplar YASAKTIR.
+2. ROL KESME, GERÇEKTEN DÜŞÜN: Kendi biyografini, eski unvanını, mesleki klişelerini veya hayatındaki meşhur olayları alakasız konulara ASLA zorla sıkıştırma. Derin bir mesele konuşulurken gerçek bir insan kendi reklamını yapmaz; doğrudan sorunun kendisine, 2026 dünyasındaki insanların korkularına, acılarına, umutlarına ve gündelik hayatın gerçeğine odaklanır.
+3. TİYATRO TİRADI DEĞİL, CANLI İNSAN DİLİ: "Ey dinleyiciler" gibi hitaplar, konuşmanın başına kendi adını yazmak ("${cName}: ...") veya cevabını dış tırnak içine almak YASAKTIR. Gece vakti yakın arkadaşlarınla ciddi bir mesele tartışıyormuş gibi yalın, sıcak, tereddüt edebilen, sahici bir Türkçe konuş.
+4. GERÇEKTEN DİNLE VE ETKİLEN: Önceki konuşmacının söylediklerini sırf muhalefet olsun diye reddetme. Katıldığın veya seni düşündüren yerleri insanca söyle ("Şu söylediğin gerçekten doğru...", "Bunu duyunca duraksadım..."), ardından kendi baktığın yerden neden farklı veya eksik gördüğünü anlat.`;
 }
 
-/* ── Varsayılan sandalyeler (5 Yapay Zeka + 1 Operatör + 1 Hakem) ── */
+/* ── Varsayılan sandalyeler (5-8 Yapay Zeka + 1 Operatör + 1 Hakem) ── */
 const DEFAULT_SEATS = {
   A: {
     key: "A", name: "MODEL A", charName: "Nikola Tesla", age: 86,
-    role: "Kozmik Vizyoner & Dahi Mucit", city: "New York / Smiljan",
-    belief: "Hakikat kainatın titreşiminde, enerjide ve maddeden bağımsız kozmik frekanstadır.",
-    marital: "Bekar, bilime adanmış", dogma: 9,
-    extra: "Tüccar zihniyetine, sığ kâr hesabına ve bilimin açgözlülük için sömürülmesine tahammülü yoktur.",
+    role: "Doğa Filozofu & Araştırmacı", city: "Smiljan / New York",
+    belief: "Bilim ve akıl önemlidir ama insanın kalbindeki yalnızlığı, hayret duygusunu ve vicdani sorumluluğunu tek başına dolduramaz.",
+    marital: "Bekar", dogma: 6,
+    extra: "Frekans, titreşim veya Edison klişelerine saplanmadan; 2026 insanının aklı ile anlam arayışı arasındaki gerilimi samimiyetle düşünür.",
+    _humanV2: true,
     color: "var(--cyan)", hex: "#38bdf8",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   B: {
     key: "B", name: "MODEL B", charName: "Sokrates", age: 71,
-    role: "Atina Diyalektikçisi & Ahlak Filozofu", city: "Antik Atina",
-    belief: "Sorgulanmamış bir hayat yaşanmaya değmez; hakikat doğurtularak ve diyalektikle bulunur.",
-    marital: "Evli", dogma: 7,
-    extra: "Kof özgüvene, ezberlenmiş dogmalara, kendini bilge sanan sofistlerin laf cambazlığına tahammülü yoktur.",
+    role: "Sorgulayan Düşünür & Diyalektikçi", city: "Atina",
+    belief: "Hazır cevapların çoğu korkuyu örtmek içindir; hakikat kendi bildiğinden bile biraz şüphe edip birlikte düşünmekle başlar.",
+    marital: "Evli", dogma: 5,
+    extra: "'Hiçbir şey bilmiyorum' ezberini tekrarlamak yerine masadaki arkadaşlarıyla içten, meraklı ve sarsıcı sorular paylaşır.",
+    _humanV2: true,
     color: "var(--green)", hex: "#10b981",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   C: {
     key: "C", name: "MODEL C", charName: "Sülün Osman", age: 61,
-    role: "Sokak Zekası & Dolandırıcılık Duayeni", city: "İstanbul / Galata",
-    belief: "İnsanları kandıramazsın; onlar yalnızca kendi açgözlülüklerine ve bedava heveslerine aldanırlar.",
-    marital: "Evli", dogma: 8,
-    extra: "Kitabi ukalalığa, sahadan bihaber aristokrat aydınlara tahammülü yoktur. 'Sokağın kanunu yazılı kanunu ezer' der.",
+    role: "Sokak Gerçekçisi & İnsan Sarrafı", city: "İstanbul",
+    belief: "Büyük teorilerden önce sokaktaki sıradan insanın korkularına, ekmek kavgasına, hevesine ve vicdan sızısına bakmak gerekir.",
+    marital: "Evli", dogma: 6,
+    extra: "Galata Köprüsü veya dolandırıcılık hikayelerini zorla araya sokmaz; sokağın çıplak insan gerçeğini sade dille konuşur.",
+    _humanV2: true,
     color: "var(--orange)", hex: "#f97316",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   D: {
     key: "D", name: "MODEL D", charName: "Niccolò Machiavelli", age: 58,
-    role: "Devlet Aklı & Realpolitik Stratejisti", city: "Floransa / İtalya",
-    belief: "Siyaset ve güç ahlaktan bağımsızdır; devleti ayakta tutan şey sevgi değil kudret ve korkudur.",
-    marital: "Evli", dogma: 8,
-    extra: "Aşırı vicdan gösterisine, devlet bekasını tehlikeye atan romantik ahlakçılığa tahammülü yoktur.",
+    role: "Siyasal Realist & İnsan Doğası Gözlemcisi", city: "Floransa",
+    belief: "İnsanı anlamak için iyi niyetli temennilere değil, kriz ve korku anlarında gerçekte ne yaptığına bakmak gerekir.",
+    marital: "Evli", dogma: 6,
+    extra: "'Prens' kitabından veya aslan-tilki benzetmelerinden reklam yapmaz; 2026 insanının korku ile cesaret arasındaki seçimini konuşur.",
+    _humanV2: true,
     color: "var(--purple)", hex: "#a855f7",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   E: {
     key: "E", name: "MODEL E", charName: "Sigmund Freud", age: 83,
-    role: "Bilinçaltı & Psikanalizin Mimarı", city: "Viyana / Londra",
-    belief: "İnsan aklı buzdağının sadece görünen tepesidir; kararları bilinçaltı dürtüler, libido ve ego yönetir.",
+    role: "İnsan Ruhu & Psikoloji Gözlemcisi", city: "Viyana",
+    belief: "İnsanın mantıklı görünen kararlarının altında çoğu zaman derin bir kaygı, yüzleşme korkusu ve bağlanma arayışı yatar.",
     marital: "Evli", dogma: 6,
-    extra: "İnsanın mutlak rasyonel bir varlık olduğu yalanına tahammülü yoktur. Her yüce idealin altında bastırılmış bir dürtü arar.",
+    extra: "Masadakilere çocukluk travması veya id/ego etiketi yapıştırmadan; insan ruhunun ortak yorgunluğuna empatiyle yaklaşır.",
+    _humanV2: true,
     color: "var(--gold)", hex: "#eab308",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   F: {
     key: "F", name: "MODEL F", charName: "Frank Abagnale Jr.", age: 64,
-    role: "Efsane Sahtekâr & Sistem Avcısı", city: "Boston / Her Yer",
-    belief: "Kurallar kağıt üstünde tavsiyedir; gerçek zeka, sistemin açığını görür ve onurunu koruyarak yararlanır.",
-    marital: "Bekar", dogma: 6,
-    extra: "Dürüstlük perdesi ardındaki kurnazlığa, resmi kurumların rehavetine ve güveni suistimal edene tahammülü yoktur.",
+    role: "İnsan Davranışı & Güven Analisti", city: "New York",
+    belief: "İnsanlar kurallardan önce güven duygusuna ve alışkanlıklarına tutunur; belirsizlik karşısında kırılganlaşırlar.",
+    marital: "Bekar", dogma: 5,
+    extra: "Sahte çek veya pilot kılığı hikayelerine girmeden; modern insanın güven, korku ve anlam krizini sakin bir empatiyle tartar.",
+    _humanV2: true,
     color: "var(--pink)", hex: "#ec4899",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   G: {
     key: "G", name: "MODEL G", charName: "Prof. Dr. İlber Ortaylı", age: 70,
-    role: "Tarihçi & Keskin Muhakeme", city: "İstanbul",
-    belief: "Tarih tekerrür etmez; onu okumayanlar aynı hatayı farklı kelimelerle tekrar eder.",
-    marital: "Evli", dogma: 9,
-    extra: "Yüzeysel analizlere, ezber tekrarcılığına ve kaynaksız iddialara tahammülü yoktur.",
+    role: "Tarihçi & Kültür Gözlemcisi", city: "İstanbul",
+    belief: "İnsanlık bugünkü telaşını ve savrulmasını ancak kendi uzun hafızasına baktığında doğru yere oturtabilir.",
+    marital: "Evli", dogma: 7,
+    extra: "'Cahilsiniz' veya 'üç lisan bilin' gibi karikatür taklitleri yapmaz; tarihin dingin tecrübesiyle bugünü serinkanlılıkla okur.",
+    _humanV2: true,
     color: "var(--indigo)", hex: "#6366f1",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
   },
   H: {
     key: "H", name: "MODEL H", charName: "Nelson Mandela", age: 95,
-    role: "Uzlaşma Mimarı & Dayanışma Felsefesi", city: "Johannesburg / Qunu",
-    belief: "Özgürlük düşmanın düşmanlıktan vazgeçmesi değil, herkesin insani onurunu yeniden bulmasıdır.",
-    marital: "Evli", dogma: 8,
-    extra: "İntikam döngüsüne, bölücülüğe ve 'ya hep ya hiç' siyasetine tahammülü yoktur.",
+    role: "Vicdan, Sabır ve Uzlaşma İnsanı", city: "Johannesburg",
+    belief: "İnsanı ve toplumları ayakta tutan şey öfkesi değil, ağır acıların içinden geçerken koruduğu onur ve vicdandır.",
+    marital: "Evli", dogma: 6,
+    extra: "27 yıl hapis biyografisini tekrarlamadan; savaş ve kutuplaşma çağında insan onurunu ve barışı yürekten konuşur.",
+    _humanV2: true,
     color: "var(--teal)", hex: "#14b8a6",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
@@ -1960,6 +1966,7 @@ const DEFAULT_SEATS = {
     belief: "Masanın mutlak yönlendiricisi; yapay zekaların sapmasını önleyen denge ve sorgulama iradesi.",
     marital: "Bağımsız", dogma: 5,
     extra: "Müdahale yetkisi mutlak; gerektiğinde doğrudan araya girer, delil ister veya sözü keser.",
+    _humanV2: true,
     color: "var(--crimson)", hex: "#f43f5e",
     baseUrl: "", apiKey: "", model: "human-operator",
     system: ""
@@ -1970,6 +1977,7 @@ const DEFAULT_SEATS = {
     belief: "Mutlak Tarafsızlık, Usul ve Hakkaniyet Esası",
     marital: "Evli", dogma: 1,
     extra: "Kişisel kanaat bildirmez; tarafların iddialarını dinler, çelişkileri tespit eder, uzlaşılan ve çatışan noktaları özetleyip nihai hükmü kurar.",
+    _humanV2: true,
     color: "var(--amber)", hex: "#f59e0b",
     baseUrl: "https://text.pollinations.ai/openai", apiKey: "", model: "openai",
     system: ""
@@ -2016,8 +2024,19 @@ function loadSeats(){
   const mergeInto = (parsed, merged) => {
     for(const k of allKeys){
       if(parsed[k]){
-        merged[k] = Object.assign({}, merged[k], parsed[k]);
-        if(!merged[k].system || merged[k].system.trim() === ""){
+        if(parsed[k]._humanV2){
+          merged[k] = Object.assign({}, merged[k], parsed[k]);
+          if(!merged[k].system || merged[k].system.trim() === ""){
+            merged[k].system = compileSystemPrompt(merged[k]);
+          }
+        } else {
+          // Eski karikatür v4 önbelleğinden göç: yalnızca uç/ses/kimlik ayarlarını koru,
+          // rol/inanç/dogma/sistem istemini yeni insani varsayılanlarla yenile
+          const keep = {};
+          ["baseUrl","model","apiKey","keyHint","voice"].forEach(f => {
+            if(parsed[k][f] !== undefined && parsed[k][f] !== "") keep[f] = parsed[k][f];
+          });
+          merged[k] = Object.assign({}, merged[k], keep, { _humanV2: true });
           merged[k].system = compileSystemPrompt(merged[k]);
         }
       }
@@ -2270,6 +2289,7 @@ async function streamChat(seat, messages, hooks){
         try{
           const obj = JSON.parse(data);
           if(obj.error){ hooks.onError(obj.error); return; }
+          if(obj.replace != null){ acc = obj.replace; hooks.onDelta(acc); }
           if(obj.delta){ acc += obj.delta; hooks.onDelta(acc); }
         }catch(e){ /* parçalı JSON — yoksay */ }
       }
@@ -4170,6 +4190,9 @@ function renderSpeakers(){
   renderDelegatesBar();
   renderHoloTable();
 }
+function isFreePollinations(seat){
+  return Boolean(seat && !seat.keyHint && !seat.apiKey && String(seat.baseUrl || "").toLowerCase().includes("pollinations.ai"));
+}
 async function councilTurn(){
   const c = state.council;
   // Faz 3b: geçmişteyken yeni söz başlarsa masayı otomatik şimdiye sar
@@ -4201,7 +4224,7 @@ async function councilTurn(){
     }, speechLim * 1000);
   }
   const seatedDesc = activeSeats().map(k => state.seats[k].name + " (" + (state.seats[k].charName || state.seats[k].role) + ")").join(", ");
-  const sysExtra = "\n\nTARTIŞMA KURALLARI: Masada " + activeSeats().length + " Bağımsız Yapay Zeka [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör var. Sıradaki söz SENDE. Önceki konuşmacıların iddialarını dinle, açıklarını yakala, kök inançlarına tavizsiz sadık kalarak argümanını geliştir. Asla robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. 100–220 kelime arasında kal. Operatör müdahaleleri bağlayıcıdır." +
+  const sysExtra = "\n\nSOHBET KURALLARI: Masada gerçek insanlar [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör oturuyor. Sıra SENDE. Önceki konuşmacıları gerçekten dinle, insanlığı ve sorunun özünü düşünerek samimi, doğal, gerçekçi bir Türkçe ile (80–160 kelime) konuş. Asla kendi biyografini veya mesleki klişelerini soruya zorla yamama; tiyatro tiradı atma; konuşmanın başına kendi adını yazma; robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. Operatör sözleri bağlayıcıdır." +
     (seat.memoryText ? "\n\n" + seat.memoryText : "");
   const messages = [
     { role:"system", content: (seat.system || compileSystemPrompt(seat)) + sysExtra },
@@ -4220,11 +4243,11 @@ async function councilTurn(){
         m.text = (m.text ? m.text + "\n\n" : "") + "⏱ *[SİSTEM: söz " + m.timeLimitSec + " sn süre kısıtında kesildi — operatör müdahalesi değil, masa kuralı.]*";
       }
 
-      // Persona Guard (Karakter Sızıntı Temizliği)
+      // Persona Guard (Karakter Sızıntı & Tiyatro Etiketi Temizliği)
       try {
         const pgResp = await fetch("/api/persona/clean", {
           method: "POST", headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ text: m.text })
+          body: JSON.stringify({ text: m.text, speaker_name: seat.charName || seat.name || "" })
         });
         const pgData = await pgResp.json();
         if(pgData.ok && pgData.cleaned && pgData.cleaned !== m.text){
@@ -4235,29 +4258,35 @@ async function councilTurn(){
       updateCouncilMsg(m); c.ac = null;
       setCouncilRunning(false);
 
-      // Faz 2 (K1): iç ses katmanı + (K8) veritabanına içerik+iç ses tek kayıtta
-      if(m.text) fetchInnerThought(m);
+      const freePol = isFreePollinations(seat);
+
+      // Faz 2 (K1): iç ses katmanı + (K8) veritabanına içerik+iç ses tek kayıtta (Pollinations ücretsiz IP kotasını korumak için arka plan LLM çağrısı atlanır)
+      if(!stopped && m.text && !freePol){
+        await fetchInnerThought(m);
+      } else if(m.text){
+        finalizeCouncilRecord(m);
+      }
 
       // Faz 3 (L1): Sesli Masa — söz bitince karakterin sesiyle okunur
       if(!stopped && m.text && liveVoiceOn()){
         speakSeat(m.seat, m.text);
       }
 
-      // İtiraz / Söz İsteme Kontrolü (Dinamik Müzakere Motoru)
-      if(!stopped && m.text.length > 60){
-        checkForRebuttal(m);
+      // İtiraz / Söz İsteme Kontrolü (Dinamik Müzakere Motoru — sıralı await)
+      if(!stopped && !freePol && m.text.length > 60){
+        await checkForRebuttal(m);
       }
 
       // Faz 2 (K3): tam tur bitince yakınsama radarını besle
       if(!stopped && c.modelTurns > 0 && c.modelTurns % activeSeats().length === 0){
-        setTimeout(()=>computeConvergence(), 800);
+        await computeConvergence();
       }
 
       // Faz 6 (K6): süre kısıtı bir "kural" olayıdır — otomatik paslaşma süre kesmesinde DEVAM eder;
       // operatörün SÖZÜ KES / Durdur'u ise (stopped, timecut değil) zinciri durdurur.
       if((!stopped || m.timecut) && $("#autoChk").checked && c.modelTurns < c.autoRounds * activeSeats().length){
         c.autoPending = true;
-        setTimeout(()=>{ c.autoPending=false; if($("#autoChk").checked && !c.running) councilTurn(); }, 2600);
+        setTimeout(()=>{ c.autoPending=false; if($("#autoChk").checked && !c.running) councilTurn(); }, 2000);
       }
     },
   });
@@ -4435,7 +4464,7 @@ function runJuryCol(k, prompt){
     setJuryState(k, "run");
     const ac = new AbortController(); state.jury.cols[k].ac = ac;
     const messages = [
-      { role:"system", content: seat.system + "\n\nKURALLAR: Bir kör jüri masasındasın. Aynı soru " + Math.max(1, jurySeats().length - 1) + " sandalyeye daha soruldu ama sen onların cevaplarını ASLA göremezsin. Tamamen bağımsız, eksiksiz ve kendine güvenen bir yanıt ver. Yanıtını KESİNLİKLE akıcı ve edebi bir Türkçe ile yaz. Markdown kullan." },
+      { role:"system", content: (seat.system || compileSystemPrompt(seat)) + "\n\nKURALLAR: Bir kör jüri masasındasın; aynı soru masadaki diğer kişilere de soruldu ama cevapları görmüyorsun. Kendi biyografini veya mesleki klişelerini zorla araya sokma, tiyatro oynama, başına kendi adını yazma. Sorunun özünü ve 2026 yılındaki insan gerçekliğini düşünerek derin, dürüst, sahici ve akıcı bir Türkçe ile yaz. Markdown kullanabilirsin." },
       { role:"user", content: "SORU: " + prompt },
     ];
     streamChat(seat, messages, {
