@@ -1,7 +1,6 @@
-# Fly.io — KONSÜL AI
-# Kurulum:  fly launch (bu dosyayı alır) → fly volumes create data -s 1 -r <region>
-#           fly deploy
-# Not: app adını kendi seçtiğinle değiştir; primary_region "ist" = İstanbul.
+# Fly.io — KONSÜL AI  (önerilen hedef — DEPLOY.md "Seçenek 1")
+# Kurulum:  fly login → fly launch --no-deploy → fly volumes create data -s 1 -r ist → fly deploy
+# Not: app adı yalnız a-z, 0-9 ve "-"; region "ist" = İstanbul (düşük gecikme).
 app = "konsul-ai"
 primary_region = "ist"
 
@@ -13,6 +12,15 @@ primary_region = "ist"
   auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
+
+# Uygulama sağlığı — bozulursa Fly kendiliğinden yeniden başlatır
+[[checks]]
+  interval = "30s"
+  timeout = "5s"
+  method = "GET"
+  path = "/api/health"
+  port = 8888
+  retries = 3
 
 [[mounts]]
   source = "data"

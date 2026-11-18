@@ -3,14 +3,38 @@
 KONSÜL AI **tek process + tek URL** servistir: frontend ve API aynı adresten gelir.
 Deploy = **kalıcı diski olan bir makine + HTTPS**. Bu rehber **Senaryo A**'yı (güvenli grup / paylaşılan tek konsey) hedefler — çok kullanıcılı ürün planı için denetim raporundaki P2 notlarına bak.
 
+**Öneri:** İlk canlıya alma için **Fly.io** (Seçenek 1) — ~5 dakikada, sunucu yönetimi olmadan, otomatik HTTPS + kalıcı volume + İstanbul bölgesi (`ist`, düşük gecikme). Kendi domain'in varsa ve ayda minimum maliyet istiyorsan VPS (Seçenek 2).
+
 ## Gerekenler
-- Bir domain (A kaydı sunucu IP'ni gösterecek) — veya PaaS'ın verdiği URL
 - Model ucu + API anahtarı (OpenAI / DeepSeek / Groq / 9Router / Ollama…)
-- ~512 MB RAM yeterli (varsayılan makine tipi her yerde yeter)
+- ~512 MB RAM yeterli (Fly varsayılan 256 MB makine de yeter; gerekirse büyüt)
+- Domain: Fly'da **gerekmez** (ücretsiz `*.fly.dev`); istersen sonradan eklersin
 
 ---
 
-## Seçenek 1 — VPS (Hetzner / DigitalOcean / Lightsail) ⭐ önerilen
+## Seçenek 1 — Fly.io ⭐ önerilen (en hızlı yol)
+
+**Neden bu uygulama için en iyi:** KONSÜL'ün tüm durumu (oturumlar, arşiv, karakterler, **API anahtarı kasası**) tek bir SQLite dosyasında (`konsul.db`). Fly **kalıcı volume** ile bunu hazır çözer; makine silinse bile veri durur. `ist` (İstanbul) bölgesi düşük gecikme verir. HTTPS, sertifika, firewall, sunucu güncellemesi — hepsi platformda, sende SSH yok. Küçük makine ayda birkaç $'a mal olur ve 7/24 açık kalır.
+
+```bash
+# 0) Fly CLI kur (bir kez) — https://fly.io/download   (macOS: brew install flyctl)
+fly login                        # tarayıcı açılır, giriş yapılır
+
+# 1) Repo kökünde çalıştır (root'taki Dockerfile otomatik bulunur):
+fly launch --no-deploy           # app adı sorulur → varsayılan: konsul-ai
+fly volumes create data -s 1 -r ist
+fly deploy
+```
+
+- **URL:** `https://<app>.fly.dev` — anında, otomatik HTTPS. Paylaş.
+- **Kendi domain'in varsa:** `fly domains add senin-domain.com` → DNS panelinde CNAME yaz: `senin-domain.com → <app>.fly.dev` (Fly sertifika otomatik alır).
+- **Kullanlılar:** `fly logs` (log) · `fly scale memory 512` (RAM büyütme) · `fly ssh console` (makineye shell).
+- **Yedek:** `fly ssh console -C "cat /data/konsul.db" > yedek.db`
+- `fly.toml` hazır: DB `/data` volume'una yazılır (`KONSUL_DB_PATH=/data/konsul.db`), `/api/health` health-check'i tanımlı (bozulursa otomatik yeniden başlatır), makine 7/24 açık.
+
+## Seçenek 2 — VPS (Hetzner / DigitalOcean / Lightsail)
+
+Uzun vadede en ucuzu; karşılığında domain + sunucu bakımı sende.
 
 ```bash
 # 1) Sunucuya gir, depoyu çek
@@ -28,23 +52,14 @@ Güncelleme: `git pull && docker compose up -d --build` · Yedek: `docker compos
 
 **Mimari:** `internet → Caddy (443, TLS) → app (yalnız 127.0.0.1:8888)`. Uygulama portu doğrudan internete açık DEĞİL.
 
-## Seçenek 2 — Fly.io
-
-```bash
-fly launch          # fly.toml'ü okur; app adı/region ister (region: ist)
-fly volumes create data -s 1 -r ist
-fly deploy
-```
-
-`fly.toml` hazır: DB `/data` volume'una yazılır (`KONSUL_DB_PATH=/data/konsul.db`), HTTPS otomatik.
-URL: `https://<app>.fly.dev`.
-
 ## Seçenek 3 — Railway / Render
 
 1. GitHub repo'sunu projeye bağla (root'taki **Dockerfile** otomatik bulunur).
 2. Projeye **disk/volume** ekle (`/data` mount'ı).
 3. Environment: `KONSUL_DB_PATH=/data/konsul.db` (`PORT` otomatik okunur).
 4. Deploy → platformun verdiği `https://...` URL'i paylaş.
+
+Not: Render'ın ücretsiz katmanı uykuya yatar (paylaşılan araç için istikrarsız) — ücretli "always on" gerektirir. Her ikisi de ABD/Avrupa bölgesinde; Fly'ın `ist` bölgesine kıyasla gecikme biraz daha yüksek.
 
 ---
 
@@ -65,8 +80,8 @@ Her koltuk farklı bir modele gidebilir (8 koltuk = 8 farklı model karışımı
 | `KONSUL_LOCAL_PORTS` | `1234,11434,20128` | Aynı makinedeki lokal LLM portları (SSRF kilidi) |
 
 ## Bakım
-- **Yedek:** `konsul.db` tek dosyadır — oturumlar, arşiv, karakterler, kâsa hepsi içinde. Haftalık kopyası yeterli.
-- **Güncelleme:** `git pull` + yeniden `up -d --build` (Fly/Railway: otomatik).
+- **Yedek:** `konsul.db` tek dosyadır — oturumlar, arşiv, karakterler, kâsa hepsi içinde. Haftalık kopyası yeterli (Fly: `fly ssh console -C "cat /data/konsul.db" > yedek.db` · VPS: `docker compose cp app:/data/konsul.db ./yedek.db`).
+- **Güncelleme:** `git pull` + yeniden `up -d --build` (Fly: `fly deploy` — main'e merge olunca tek komut).
 - **Güvenlik:** Uygulama portunu doğrudan internete açma (VPS'te compose bunu yapar: `127.0.0.1` bind). CORS kapalı kalsın. API anahtarını kasaya (UI'dan) yaz — `.env`'e veya tarayıcıya yazma.
 
 ## ⚠️ Senaryo A gerçeği (okuyun)
