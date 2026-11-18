@@ -4427,40 +4427,47 @@ function setJuryState(k, st){
   $("#btnJury").disabled = anyRun;
 }
 function runJuryCol(k, prompt){
-  const seat = state.seats[k];
-  const body = $("#jbody-"+k);
-  state.jury.cols[k].text = "";
-  body.innerHTML = "";
-  setJuryState(k, "run");
-  const ac = new AbortController(); state.jury.cols[k].ac = ac;
-  const messages = [
-    { role:"system", content: seat.system + "\n\nKURALLAR: Bir kör jüri masasındasın. Aynı soru " + Math.max(1, jurySeats().length - 1) + " sandalyeye daha soruldu ama sen onların cevaplarını ASLA göremezsin. Tamamen bağımsız, eksiksiz ve kendine güvenen bir yanıt ver. Markdown kullan." },
-    { role:"user", content: "SORU: " + prompt },
-  ];
-  streamChat(seat, messages, {
-    signal: ac.signal,
-    onDelta: (t)=>{
-      state.jury.cols[k].text = t;
-      mountMd(body, t, true);
-      $("#jwc-"+k).textContent = t.length + " KARAKTER";
-      body.scrollTop = body.scrollHeight;
-    },
-    onError: (e)=>{
-      setJuryState(k, "err");
-      body.insertAdjacentHTML("beforeend", '<div class="errnote" style="border:1px solid rgba(248,81,73,.25);border-radius:3px;margin-top:8px">⚠ '+esc(e)+'</div>');
-    },
-    onDone: async (stopped)=>{
-      mountMd(body, state.jury.cols[k].text + (stopped ? "\n\n> ■ *operatör tarafından durduruldu*" : ""), false);
-      setJuryState(k, stopped ? "err" : "done");
-      updatePullMeta();
-    },
+  return new Promise((resolve) => {
+    const seat = state.seats[k];
+    const body = $("#jbody-"+k);
+    state.jury.cols[k].text = "";
+    body.innerHTML = "";
+    setJuryState(k, "run");
+    const ac = new AbortController(); state.jury.cols[k].ac = ac;
+    const messages = [
+      { role:"system", content: seat.system + "\n\nKURALLAR: Bir kör jüri masasındasın. Aynı soru " + Math.max(1, jurySeats().length - 1) + " sandalyeye daha soruldu ama sen onların cevaplarını ASLA göremezsin. Tamamen bağımsız, eksiksiz ve kendine güvenen bir yanıt ver. Yanıtını KESİNLİKLE akıcı ve edebi bir Türkçe ile yaz. Markdown kullan." },
+      { role:"user", content: "SORU: " + prompt },
+    ];
+    streamChat(seat, messages, {
+      signal: ac.signal,
+      onDelta: (t)=>{
+        state.jury.cols[k].text = t;
+        mountMd(body, t, true);
+        $("#jwc-"+k).textContent = t.length + " KARAKTER";
+        body.scrollTop = body.scrollHeight;
+      },
+      onError: (e)=>{
+        setJuryState(k, "err");
+        body.insertAdjacentHTML("beforeend", '<div class="errnote" style="border:1px solid rgba(248,81,73,.25);border-radius:3px;margin-top:8px">⚠ '+esc(e)+'</div>');
+        resolve();
+      },
+      onDone: async (stopped)=>{
+        mountMd(body, state.jury.cols[k].text + (stopped ? "\n\n> ■ *operatör tarafından durduruldu*" : ""), false);
+        setJuryState(k, stopped ? "err" : "done");
+        updatePullMeta();
+        resolve();
+      },
+    });
   });
 }
-$("#btnJury").onclick = ()=>{
+$("#btnJury").onclick = async ()=>{
   const p = $("#juryPrompt").value.trim();
   if(!p){ $("#juryPrompt").focus(); return; }
   state.jury.prompt = p;
-  jurySeats().forEach(k=>runJuryCol(k, p));
+  const seats = jurySeats();
+  for(const k of seats){
+    await runJuryCol(k, p);
+  }
 };
 $("#juryPrompt").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#btnJury").click(); });
 $("#btnJuryStop").onclick = ()=>jurySeats().forEach(k=>state.jury.cols[k].ac && state.jury.cols[k].ac.abort());
