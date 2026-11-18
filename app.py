@@ -31,6 +31,7 @@
 ════════════════════════════════════════════════════════════════════════
 """
 
+import asyncio
 import ipaddress
 import json
 import os
@@ -330,15 +331,25 @@ async def chat_stream(payload: ChatPayload, request: Request):
     headers = _auth_headers(api_key)
 
     async def event_generator():
+        resp = None
         try:
-            async with _get_http().stream(
-                "POST", base + "/chat/completions", json=body, headers=headers
-            ) as resp:
-                if resp.status_code != 200:
-                    detail = (await resp.aread()).decode("utf-8", "ignore")[:300]
-                    err = f"Uç sunucu HTTP {resp.status_code}: {detail}"
-                    yield "data: " + json.dumps({"error": err}, ensure_ascii=False) + "\n\n"
-                    return
+            for attempt in range(4):
+                req = _get_http().build_request(
+                    "POST", base + "/chat/completions", json=body, headers=headers, timeout=60.0
+                )
+                resp = await _get_http().send(req, stream=True)
+                if resp.status_code == 429 and attempt < 3:
+                    await resp.aclose()
+                    await asyncio.sleep(2.5)
+                    continue
+                break
+
+            if resp.status_code != 200:
+                detail = (await resp.aread()).decode("utf-8", "ignore")[:300]
+                await resp.aclose()
+                err = f"Uç sunucu HTTP {resp.status_code}: {detail}"
+                yield "data: " + json.dumps({"error": err}, ensure_ascii=False) + "\n\n"
+                return
 
                 ctype = resp.headers.get("content-type", "")
 
@@ -366,6 +377,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
                         data = line[5:].strip()
                         if data == "[DONE]":
                             yield "data: [DONE]\n\n"
+                            await resp.aclose()
                             return
                         try:
                             obj = json.loads(data)
@@ -374,6 +386,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
                         if obj.get("error"):
                             msg = obj["error"].get("message", str(obj["error"]))
                             yield "data: " + json.dumps({"error": msg}, ensure_ascii=False) + "\n\n"
+                            await resp.aclose()
                             return
                         try:
                             delta = obj["choices"][0]["delta"].get("content")
@@ -381,8 +394,14 @@ async def chat_stream(payload: ChatPayload, request: Request):
                             delta = None
                         if delta:
                             yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
+            await resp.aclose()
             yield "data: [DONE]\n\n"
         except Exception as exc:  # noqa: BLE001 — terminal çöpü asla UI'a sızmasın
+            if resp:
+                try:
+                    await resp.aclose()
+                except Exception:
+                    pass
             yield "data: " + json.dumps({"error": _friendly_error(exc)}, ensure_ascii=False) + "\n\n"
 
     return StreamingResponse(

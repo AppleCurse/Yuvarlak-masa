@@ -4257,7 +4257,7 @@ async function councilTurn(){
       // operatörün SÖZÜ KES / Durdur'u ise (stopped, timecut değil) zinciri durdurur.
       if((!stopped || m.timecut) && $("#autoChk").checked && c.modelTurns < c.autoRounds * activeSeats().length){
         c.autoPending = true;
-        setTimeout(()=>{ c.autoPending=false; if($("#autoChk").checked && !c.running) councilTurn(); }, 1200);
+        setTimeout(()=>{ c.autoPending=false; if($("#autoChk").checked && !c.running) councilTurn(); }, 2600);
       }
     },
   });
