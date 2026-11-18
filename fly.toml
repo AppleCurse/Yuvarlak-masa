@@ -1,7 +1,8 @@
 # Fly.io — KONSÜL AI  (önerilen hedef — DEPLOY.md "Seçenek 1")
 # Kurulum:  fly login → fly launch --no-deploy → fly volumes create data -s 1 -r ist → fly deploy
 # Not: app adı yalnız a-z, 0-9 ve "-"; region "ist" = İstanbul (düşük gecikme).
-app = "konsul-ai"
+# App adı: yuvarlak-masa → URL: https://yuvarlak-masa.fly.dev
+app = "yuvarlak-masa"
 primary_region = "ist"
 
 [build]

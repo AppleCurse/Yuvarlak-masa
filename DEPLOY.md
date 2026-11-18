@@ -16,18 +16,21 @@ Deploy = **kalıcı diski olan bir makine + HTTPS**. Bu rehber **Senaryo A**'yı
 
 **Neden bu uygulama için en iyi:** KONSÜL'ün tüm durumu (oturumlar, arşiv, karakterler, **API anahtarı kasası**) tek bir SQLite dosyasında (`konsul.db`). Fly **kalıcı volume** ile bunu hazır çözer; makine silinse bile veri durur. `ist` (İstanbul) bölgesi düşük gecikme verir. HTTPS, sertifika, firewall, sunucu güncellemesi — hepsi platformda, sende SSH yok. Küçük makine ayda birkaç $'a mal olur ve 7/24 açık kalır.
 
-```bash
-# 0) Fly CLI kur (bir kez) — https://fly.io/download   (macOS: brew install flyctl)
-fly login                        # tarayıcı açılır, giriş yapılır
+**İlk kez Fly.io mu? (hesap + CLI, ~3 dakika)**
+1. [fly.io](https://fly.io) → **Sign up** → **GitHub ile giriş** (e-posta onayı ister; kart bilgisi ekletebilir — küçük makine ayda birkaç $).
+2. CLI kur (bir kez): https://fly.io/download · macOS: `brew install flyctl` · Linux: `curl -L https://fly.io/install.sh | sh`
+3. `fly login` → tarayıcı açılır, giriş yapılır.
 
-# 1) Repo kökünde çalıştır (root'taki Dockerfile otomatik bulunur):
-fly launch --no-deploy           # app adı sorulur → varsayılan: konsul-ai
+```bash
+# 0) Repo kökünde çalıştır (root'taki Dockerfile otomatik bulunur):
+fly launch --no-deploy           # app adı/region sorar → fly.toml'deki yuvarlak-masa + ist kabul et
 fly volumes create data -s 1 -r ist
 fly deploy
 ```
 
-- **URL:** `https://<app>.fly.dev` — anında, otomatik HTTPS. Paylaş.
-- **Kendi domain'in varsa:** `fly domains add senin-domain.com` → DNS panelinde CNAME yaz: `senin-domain.com → <app>.fly.dev` (Fly sertifika otomatik alır).
+- **URL:** `https://yuvarlak-masa.fly.dev` — anında, otomatik HTTPS. Paylaş.
+- **Not:** App adları global benzersizdir; `yuvarlak-masa` alınmışsa Fly bir varyasyon önerir — seçtiğini `fly.toml`'daki `app =` satırına yazıp devam et.
+- **Kendi domain'in varsa:** `fly domains add senin-domain.com` → DNS panelinde CNAME yaz: `senin-domain.com → yuvarlak-masa.fly.dev` (Fly sertifika otomatik alır).
 - **Kullanlılar:** `fly logs` (log) · `fly scale memory 512` (RAM büyütme) · `fly ssh console` (makineye shell).
 - **Yedek:** `fly ssh console -C "cat /data/konsul.db" > yedek.db`
 - `fly.toml` hazır: DB `/data` volume'una yazılır (`KONSUL_DB_PATH=/data/konsul.db`), `/api/health` health-check'i tanımlı (bozulursa otomatik yeniden başlatır), makine 7/24 açık.
