@@ -2290,7 +2290,7 @@ async function streamChat(seat, messages, hooks){
     const resp = await fetch("/api/chat/stream", {
       method:"POST", headers:{"Content-Type":"application/json"}, signal,
       // Faz 6 (S2): gövdeye anahtar gitmez — koltuk anahtarı (seat) gider, anahtarı sunucu kâsası çözer
-      body: JSON.stringify({ base_url: seat.baseUrl, api_key: "", model: seat.model, seat: seat.key || "", messages, temperature: 0.7 }),
+      body: JSON.stringify({ base_url: seat.baseUrl, api_key: "", model: seat.model, seat: seat.key || "", cognitive_character_id: hooks.cognitiveCharacterId || "", cognitive_session_id: hooks.cognitiveSessionId || "", messages, temperature: 0.7 }),
     });
     if(!resp.ok || !resp.body){ hooks.onError("Proxy HTTP "+resp.status+" döndürdü."); return; }
     const reader = resp.body.getReader();
@@ -4252,6 +4252,8 @@ async function councilTurn(){
   ];
   await streamChat(seat, messages, {
     signal: ac.signal,
+    cognitiveCharacterId: seat.id ? "character:" + seat.id : "name:" + (seat.charName || seat.name || key).trim().toLocaleLowerCase("tr-TR"),
+    cognitiveSessionId: c.sessionId,
     onDelta: (t)=>{ m.text = t; updateCouncilMsg(m); },
     onError: (e)=>{ if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; } m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); },
     onDone: async (stopped)=>{
@@ -4327,8 +4329,8 @@ $("#btnStart").onclick = ()=>{
     fetch("/api/memory/" + encodeURIComponent(seat.id))
       .then(r=>r.json())
       .then(d=>{
-        if(d.ok && d.text){
-          state.seats[k].memoryText = d.text;
+        if(d.ok && d.text && state.seats[k] === seat && seat.id === d.character_id){
+          seat.memoryText = d.text;
         }
       }).catch(()=>{});
   });
@@ -4962,6 +4964,7 @@ function seatAssignButtons(charId){
 function assignCharacterToSeat(c, seatKey){
   if(!state.seats[seatKey]) return;
   const target = state.seats[seatKey];
+  target.memoryText = null; // Önceki karakterin anısı yeni üyeye taşınmasın.
   target.id = c.id || null; // Faz 2 (K8): Yaşanan Hafıza'nın karakter anahtarı
   target.name = c.name;
   target.charName = c.name;

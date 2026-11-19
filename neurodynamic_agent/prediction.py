@@ -89,6 +89,23 @@ class PredictionCore:
             curiosity_drive=self.curiosity_gain * uncertainty,
         )
 
+    def export_observations(self) -> dict:
+        """Serializable aggregate estimates; does not include conversation text."""
+        return {key: {"expectation": value, "count": self._counts[key]}
+                for key, value in self._expectations.items()}
+
+    def import_observations(self, data: dict) -> None:
+        """Replace aggregates after validating the stored data."""
+        expectations, counts = {}, {}
+        for key, entry in data.items():
+            self._validate_key(key)
+            self._validate_unit_interval("expectation", entry["expectation"])
+            count = entry["count"]
+            if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+                raise ValueError("invalid observation count")
+            expectations[key], counts[key] = float(entry["expectation"]), count
+        self._expectations, self._counts = expectations, counts
+
     def observe(self, key: str, reward: float) -> PredictionEvent:
         """Update one key and return the complete, auditable learning event."""
         self._validate_key(key)

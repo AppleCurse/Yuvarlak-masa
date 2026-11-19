@@ -2,7 +2,7 @@
 """
 KONSÜL 2.0 — Nörodinamik Bilişsel Köprü (neuro_bridge)
 
-`neurodynamic_agent` (v0.7.4) çekirdeğini Yuvarlak Masa koltuklarına (A..H) bağlar.
+`neurodynamic_agent` (v0.7.4) çekirdeğini konsey konuşmalarında karakterlere bağlar.
 Her sandalye için enerji, yorgunluk, tahmin hatası, epistemik merak,
 duygulanım düzenlemesi (valans/uyarılma/frustrasyon) ve yeniden değerlendirme (reassess)
 durumunu izler; sistem istemine insani konuşma ve düşünme direktifi üretir.
@@ -11,16 +11,16 @@ durumunu izler; sistem istemine insani konuşma ve düşünme direktifi üretir.
 from __future__ import annotations
 
 import re
+import json
+from collections import OrderedDict
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from neurodynamic_agent.affect import AffectModel
 from neurodynamic_agent.homeostasis import HomeostasisModel
 from neurodynamic_agent.memory import WorkingMemory
 from neurodynamic_agent.policy import ActionCandidate, CuriosityPolicy
 from neurodynamic_agent.prediction import PredictionCore
-
-VALID_SEATS = ("A", "B", "C", "D", "E", "F", "G", "H")
 
 STANCE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
     "empatik_insani_bakis": {
@@ -230,40 +230,61 @@ class SeatCognitiveAgent:
         return snap
 
 
+# Session-specific transient energy/affect and character-specific persisted estimates.
 _LOCK = threading.Lock()
-_AGENTS: Dict[str, SeatCognitiveAgent] = {s: SeatCognitiveAgent(s) for s in VALID_SEATS}
+_AGENTS = OrderedDict()
+_MAX_AGENTS = 512
 
 
-def _get_agent(seat: str) -> Optional[SeatCognitiveAgent]:
-    key = (seat or "").strip().upper()
-    if key not in VALID_SEATS:
-        return None
-    with _LOCK:
-        if key not in _AGENTS:
-            _AGENTS[key] = SeatCognitiveAgent(key)
-        return _AGENTS[key]
+def step_character(seat: str, character_id: str, session_id: str, last_text: str = "") -> Dict[str, Any]:
+    """Update an approximate context-signal model, never storing conversation text.
 
-
-def step_seat(seat: str, last_text: str = "") -> Dict[str, Any]:
-    """İlgili koltuk için nörodinamik adım çalıştırır ve direktif sözlüğünü döndürür."""
-    agent = _get_agent(seat)
-    if agent is None:
+    Aggregates are keyed by character; energy and affect are isolated per session.
+    A DB transaction prevents lost estimate updates from separate server workers.
+    """
+    import engine
+    seat = (seat or "").strip().upper()
+    character_id = (character_id or "").strip()
+    session_id = (session_id or "").strip()
+    if not seat or seat == "OP" or not character_id or not session_id:
         return {"seat": seat, "directive": "", "status": "bypass"}
+    if len(seat) > 32 or len(character_id) > 200 or len(session_id) > 200:
+        return {"seat": seat, "directive": "", "status": "bypass"}
+    key = (session_id, character_id)
     with _LOCK:
-        return agent.step(last_text)
+        agent = _AGENTS.get(key)
+        if agent is None:
+            agent = SeatCognitiveAgent(seat)
+            _AGENTS[key] = agent
+            if len(_AGENTS) > _MAX_AGENTS:
+                _AGENTS.popitem(last=False)
+        _AGENTS.move_to_end(key)
+        agent.seat = seat
+        with engine.get_db() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("CREATE TABLE IF NOT EXISTS neuro_estimates (character_id TEXT PRIMARY KEY, estimates TEXT NOT NULL)")
+            row = conn.execute("SELECT estimates FROM neuro_estimates WHERE character_id=?", (character_id,)).fetchone()
+            if row:
+                agent.predictor.import_observations(json.loads(row[0]))
+            else:
+                agent.predictor.import_observations({})
+            snap = agent.step(last_text)
+            conn.execute("INSERT INTO neuro_estimates(character_id, estimates) VALUES (?, ?) "
+                         "ON CONFLICT(character_id) DO UPDATE SET estimates=excluded.estimates",
+                         (character_id, json.dumps(agent.predictor.export_observations())))
+        return snap
 
 
 def get_all_states() -> Dict[str, Dict[str, Any]]:
-    """Tüm koltukların güncel nörodinamik bilişsel özetini döndürür."""
     with _LOCK:
-        return {k: _AGENTS[k].snapshot() for k in VALID_SEATS}
+        return {f"{session}:{character}": agent.snapshot()
+                for (session, character), agent in _AGENTS.items()}
 
 
 def reset_all_seats() -> None:
-    """Yeni oturum başlatıldığında tüm koltukların bilişsel durumunu sıfırlar."""
+    """Clear transient state only; stored estimates are not deleted."""
     with _LOCK:
-        for ag in _AGENTS.values():
-            ag.reset()
+        _AGENTS.clear()
 
 
 _KNOWN_PREFIXES = (

@@ -30,6 +30,7 @@ class Up(BaseHTTPRequestHandler):
         if self.path.endswith("/chat/completions"):
             UPSTREAM_AUTH["auth"] = self.headers.get("Authorization", "")
             UPSTREAM_AUTH["model"] = body.get("model")
+            UPSTREAM_AUTH["messages"] = body.get("messages", [])
             if body.get("stream"):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/event-stream")
@@ -126,8 +127,9 @@ def main():
     check("upstream: model kâsadan", UPSTREAM_AUTH.get("model") == "testm", UPSTREAM_AUTH.get("model"))
 
     s, b = req("POST", "/api/chat/stream",
-               {"seat": "A", "messages": [{"role": "user", "content": "merhaba"}]}, raw=True)
+               {"seat": "A", "cognitive_character_id": "character:test", "cognitive_session_id": "test-session", "messages": [{"role": "user", "content": "merhaba"}]}, raw=True)
     check("chat/stream(seat): SSE akışı", s == 200 and "KASA-DENEME" in b, b[:120])
+    check("chat/stream: bilişsel direktif upstream içinde", "İNSANİ BİLİŞSEL DURUM" in json.dumps(UPSTREAM_AUTH.get("messages", []), ensure_ascii=False))
 
     UPSTREAM_AUTH.clear()
     s, j = req("POST", "/api/chat",
