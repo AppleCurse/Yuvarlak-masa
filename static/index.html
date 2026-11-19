@@ -870,23 +870,6 @@ body::before {
   color: var(--faint);
 }
 
-/* ── Kısa dikey pencere koruması (kaydırma kilidi) ──
-   ~700px'den alçak pencerelerde hologram güvertesi + delege kartları (salt
-   gösterimsel — bilgiler sağ paneldeki konuşmacı listesinde zaten durur)
-   alttaki operatör çubuğunu kare dışı iterdi ve body overflow:hidden yüzünden
-   hiçbir şey kaydırmıyordu. Pencere alçaldıkça önce güverte, sonra delege
-   çubuğu kapanır; normal boyutta düzen DEĞİŞMEZ. */
-@media (max-height: 860px){
-  .hologram-table-deck{display:none}
-}
-@media (max-width: 900px){
-  /* dar pencerede güverte dikey dizilir (~570px) — alt barı keser */
-  .hologram-table-deck{display:none}
-}
-@media (max-height: 700px){
-  .council-delegates-bar{display:none}
-}
-
 /* Operatör Konsolu Geliştirmeleri */
 .op-tactics-bar {
   display: flex;
@@ -1166,6 +1149,53 @@ body.inner-off .inner-note{display:none}
 .trustbadge.mid{color:var(--amber);border-color:rgba(227,179,65,.45)}
 .trustbadge.hi{color:var(--green);border-color:rgba(61,220,132,.45)}
 .mutedtag{font-family:"IBM Plex Mono";font-size:8px;color:var(--faint);border:1px dashed var(--line2);padding:2px 6px;border-radius:2px;letter-spacing:.12em}
+
+
+/* Konseyde oda, içerik ekrana sığmadığında ana kaydırma alanıdır.
+   Sabit alt sınır olmadan grid sıfıra sıkışıp operatör alanını kesiyordu. */
+#room-council > .roomhead,
+#room-council > .hologram-table-deck,
+#room-council > .council-delegates-bar { flex-shrink: 0; }
+#room-council > .council { flex: 1 0 440px; min-height: 440px; }
+.council { grid-template-columns: minmax(0, 1fr) 300px; }
+.transcript, .ctrlcol { min-width: 0; }
+.opbar input { min-width: 0; }
+.app { height: 100vh; height: 100dvh; }
+
+/* Dar ekranda odalar kaybolmasın: yan ray yatay, kaydırılabilir menü olur. */
+@media (max-width: 1100px) {
+  .bodywrap { flex-direction: column; }
+  .rail { display: flex; flex: 0 0 auto; width: 100%; max-width: 100%;
+    flex-direction: row; align-items: center; overflow-x: auto; overflow-y: hidden;
+    padding: 6px 8px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .rail .lbl, .rail .foot { display: none; }
+  .roomnav { flex: 0 0 auto; width: auto; padding: 7px 10px; white-space: nowrap; }
+  .roomnav .num { width: auto; font-size: 14px; }
+  .roomnav .sub { display: none; }
+  .roomnav.active::before { left: 6px; right: 6px; top: auto; bottom: 0; width: auto; height: 2px; }
+  .seatchips { flex: 0 0 auto; flex-direction: row; }
+  .seatchip { width: auto; white-space: nowrap; }
+  .stage { width: 100%; }
+  #room-council > .council { flex: 0 0 auto; min-height: 0; grid-template-columns: minmax(0, 1fr); }
+  #room-council .transcript { min-height: 380px; }
+  #room-council .ctrlcol { overflow: visible; }
+  .roomhead { flex-wrap: wrap; align-items: flex-start; }
+  .roomhead .desc { text-align: left; margin-left: 0; }
+}
+@media (max-width: 640px) {
+  .topbar { height: auto; min-height: 60px; flex: 0 0 auto; padding: 8px 10px; gap: 8px; flex-wrap: wrap; }
+  .topbar .tagline, .topbar .clock { display: none; }
+  .topbar .statuspill { font-size: 9px; letter-spacing: 0; padding: 5px; }
+  .topbar .ghostbtn { font-size: 10px; padding: 6px; }
+  .roomhead { padding: 16px; }
+  .roomhead h1 { font-size: 21px; }
+  #room-council > .council { padding: 10px; }
+  .opbar { flex-wrap: wrap; }
+  .opbar input { flex: 1 1 100%; order: -1; }
+  .table-deck-header { flex-wrap: wrap; gap: 10px; }
+  .holo-pod-grid, .council-delegates-bar { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .char-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
+}
 
 </style>
 </head>
