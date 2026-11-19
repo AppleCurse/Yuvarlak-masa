@@ -214,10 +214,10 @@ def _pollinations_guard(base_url: str):
     return nullcontext()
 
 
-def _prepare_cognitive_messages(messages: list[dict], seat: str) -> list[dict]:
-    """A..H koltukları için neuro_bridge bilişsel direktifini sistem istemine enjekte eder."""
+def _prepare_cognitive_messages(messages: list[dict], seat: str, character_id: str = "", session_id: str = "") -> list[dict]:
+    """Kimliği ve oturumu verilmiş model konuşmalarına bilişsel direktif ekler."""
     s = (seat or "").strip().upper()
-    if s not in neuro_bridge.VALID_SEATS or not messages:
+    if not s or s == "OP" or not character_id or not session_id or not messages:
         return messages
 
     for msg in messages:
@@ -230,7 +230,7 @@ def _prepare_cognitive_messages(messages: list[dict], seat: str) -> list[dict]:
             last_user_text = str(msg.get("content", ""))
             break
 
-    snap = neuro_bridge.step_seat(s, last_user_text)
+    snap = neuro_bridge.step_character(s, character_id, session_id, last_user_text)
     directive = snap.get("directive", "")
     if not directive:
         return messages
@@ -251,6 +251,8 @@ class ChatPayload(BaseModel):
     model: str = ""
     seat: str = ""
     messages: list[dict] = Field(default_factory=list)
+    cognitive_character_id: str = Field(default="", max_length=200)
+    cognitive_session_id: str = Field(default="", max_length=200)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
 
@@ -332,7 +334,7 @@ async def chat(payload: ChatPayload):
     err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat)
+    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
     body = {
         "model": model,
         "messages": prepared_messages,
@@ -381,7 +383,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
 
-    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat)
+    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
     body = {
         "model": model,
         "messages": prepared_messages,
@@ -637,7 +639,6 @@ async def session_start(payload: dict):
     if not sid:
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
     engine.create_session(sid, topic)
-    neuro_bridge.reset_all_seats()
     return {"ok": True, "session_id": sid}
 
 

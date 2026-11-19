@@ -25,6 +25,7 @@ run "jsdom: Faz 7 (kâsa rozeti)"             node dom/test7.js
 
 PY="$REPO/.venv/bin/python"
 [ -x "$PY" ] || PY="$(command -v python3)"
+run "nörodinamik: karakter ve oturum izolasyonu" "$PY" test_neuro_integration.py
 run "e2e: kâsa (gerçek uvicorn + mock upstream)" "$PY" e2e_vault.py
 
 echo
