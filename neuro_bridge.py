@@ -14,6 +14,7 @@ import re
 import json
 from collections import OrderedDict
 import threading
+from contextlib import closing
 from typing import Any, Dict, List
 
 from neurodynamic_agent.affect import AffectModel
@@ -36,7 +37,7 @@ STANCE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
     "oz_elestiri_ve_esneklik": {
         "energy_cost": 0.10,
         "label": "Öz Eleştiri ve Esneklik",
-        "prompt": "Önceki konuşmacının haklı olduğu noktayı samimiyetle teslim et ve kendi ilk düşünceni de sorgula.",
+        "prompt": "Önceki konuşmacının iddialarını kanıtlarıyla değerlendir; haklı bulduğun nokta varsa açıkla, yoksa sırf uzlaşmak için katılma. Kendi varsayımlarını da sorgula.",
     },
     "yalin_gercekci_cozumleme": {
         "energy_cost": 0.08,
@@ -233,12 +234,11 @@ _MAX_AGENTS = 512
 
 def step_character(
     seat: str, character_id: str, session_id: str, last_text: str = "",
-    *, observed_reward: float | None = None,
 ) -> Dict[str, Any]:
-    """Update an approximate context-signal model, never storing conversation text.
+    """Run a council step without training on unverified or subjective feedback.
 
-    Aggregates are keyed by character; energy and affect are isolated per session.
-    A DB transaction prevents lost estimate updates from separate server workers.
+    Only the separate evidence namespace is read. Legacy estimates are preserved
+    but never imported: they may have been learned from agreement or ratings.
     """
     import engine
     seat = (seat or "").strip().upper()
@@ -258,16 +258,16 @@ def step_character(
                 _AGENTS.popitem(last=False)
         _AGENTS.move_to_end(key)
         agent.seat = seat
-        with engine.get_db() as conn:
+        with closing(engine.get_db()) as conn, conn:
             conn.execute("BEGIN IMMEDIATE")
-            conn.execute("CREATE TABLE IF NOT EXISTS neuro_estimates (character_id TEXT PRIMARY KEY, estimates TEXT NOT NULL)")
-            row = conn.execute("SELECT estimates FROM neuro_estimates WHERE character_id=?", (character_id,)).fetchone()
+            conn.execute("CREATE TABLE IF NOT EXISTS neuro_evidence_estimates_v1 (character_id TEXT PRIMARY KEY, estimates TEXT NOT NULL)")
+            row = conn.execute("SELECT estimates FROM neuro_evidence_estimates_v1 WHERE character_id=?", (character_id,)).fetchone()
             if row:
                 agent.predictor.import_observations(json.loads(row[0]))
             else:
                 agent.predictor.import_observations({})
-            snap = agent.step(last_text, observed_reward=observed_reward)
-            conn.execute("INSERT INTO neuro_estimates(character_id, estimates) VALUES (?, ?) "
+            snap = agent.step(last_text)
+            conn.execute("INSERT INTO neuro_evidence_estimates_v1(character_id, estimates) VALUES (?, ?) "
                          "ON CONFLICT(character_id) DO UPDATE SET estimates=excluded.estimates",
                          (character_id, json.dumps(agent.predictor.export_observations())))
         return snap
@@ -275,89 +275,51 @@ def step_character(
 
 
 def enqueue_feedback(
-    feedback_id: str, character_id: str, session_id: str, reward: Any
+    feedback_id: str, character_id: str, session_id: str, reward: Any,
+    message_id: str = "",
 ) -> bool:
-    """Queue one explicit outcome rating for the next cognitive step.
+    """Store an explicitly subjective rating; it never trains the predictor.
 
-    Returns False for an already-seen feedback_id. Conversation text is never stored.
+    Old feedback queues remain untouched. Message association is client supplied,
+    not independently authenticated or verified against the session archive.
     """
     import engine
-    if not all(isinstance(item, str) for item in (feedback_id, character_id, session_id)):
-        raise ValueError("feedback_id, character_id and session_id must be strings")
-    feedback_id = feedback_id.strip()
-    character_id = character_id.strip()
-    session_id = session_id.strip()
+    values = (feedback_id, character_id, session_id, message_id)
+    if not all(isinstance(item, str) for item in values):
+        raise ValueError("identifiers must be strings")
+    feedback_id, character_id, session_id, message_id = (x.strip() for x in values)
     if not feedback_id or len(feedback_id) > 128:
         raise ValueError("feedback_id must contain 1-128 characters")
     if not character_id or len(character_id) > 200:
         raise ValueError("character_id must contain 1-200 characters")
     if not session_id or len(session_id) > 200:
         raise ValueError("session_id must contain 1-200 characters")
+    if len(message_id) > 128:
+        raise ValueError("message_id must contain at most 128 characters")
     value = _validate_observed_reward(reward)
     if value is None:
         raise ValueError("reward is required")
-    with engine.get_db() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS neuro_feedback_queue (
-                feedback_id TEXT PRIMARY KEY,
-                character_id TEXT NOT NULL,
-                session_id TEXT NOT NULL,
-                reward REAL NOT NULL CHECK(reward >= 0 AND reward <= 1),
-                status TEXT NOT NULL DEFAULT 'pending'
-                    CHECK(status IN ('pending', 'consumed')),
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                consumed_at TEXT
-            )
-        """)
+    with closing(engine.get_db()) as conn, conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS neuro_subjective_ratings (
+            feedback_id TEXT PRIMARY KEY, character_id TEXT NOT NULL,
+            session_id TEXT NOT NULL, message_id TEXT NOT NULL,
+            rating REAL NOT NULL CHECK(rating >= 0 AND rating <= 1),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )""")
         cursor = conn.execute(
-            "INSERT OR IGNORE INTO neuro_feedback_queue "
-            "(feedback_id, character_id, session_id, reward) VALUES (?, ?, ?, ?)",
-            (feedback_id, character_id, session_id, value),
+            "INSERT OR IGNORE INTO neuro_subjective_ratings "
+            "(feedback_id, character_id, session_id, message_id, rating) VALUES (?, ?, ?, ?, ?)",
+            (feedback_id, character_id, session_id, message_id, value),
         )
         if cursor.rowcount == 1:
             return True
-        existing = conn.execute(
-            "SELECT character_id, session_id FROM neuro_feedback_queue WHERE feedback_id=?",
+        row = conn.execute(
+            "SELECT character_id, session_id, message_id, rating FROM neuro_subjective_ratings WHERE feedback_id=?",
             (feedback_id,),
         ).fetchone()
-        if not existing or existing["character_id"] != character_id or existing["session_id"] != session_id:
-            raise ValueError("feedback_id is already used by a different character/session")
+        if not row or tuple(row) != (character_id, session_id, message_id, value):
+            raise ValueError("feedback_id is already used with different data")
         return False
-
-
-def consume_feedback(character_id: str, session_id: str) -> float | None:
-    """Atomically consume pending feedback for this exact character/session pair."""
-    import engine
-    with engine.get_db() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS neuro_feedback_queue (
-                feedback_id TEXT PRIMARY KEY,
-                character_id TEXT NOT NULL,
-                session_id TEXT NOT NULL,
-                reward REAL NOT NULL CHECK(reward >= 0 AND reward <= 1),
-                status TEXT NOT NULL DEFAULT 'pending'
-                    CHECK(status IN ('pending', 'consumed')),
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                consumed_at TEXT
-            )
-        """)
-        conn.execute("BEGIN IMMEDIATE")
-        rows = conn.execute(
-            "SELECT feedback_id, reward FROM neuro_feedback_queue "
-            "WHERE character_id=? AND session_id=? AND status='pending' "
-            "ORDER BY created_at, feedback_id",
-            (character_id, session_id),
-        ).fetchall()
-        if not rows:
-            return None
-        ids = [row["feedback_id"] for row in rows]
-        placeholders = ",".join("?" for _ in ids)
-        conn.execute(
-            f"UPDATE neuro_feedback_queue SET status='consumed', consumed_at=CURRENT_TIMESTAMP "
-            f"WHERE feedback_id IN ({placeholders}) AND status='pending'",
-            ids,
-        )
-        return sum(float(row["reward"]) for row in rows) / len(rows)
 
 
 def get_all_states() -> Dict[str, Dict[str, Any]]:
