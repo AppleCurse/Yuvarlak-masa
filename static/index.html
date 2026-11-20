@@ -2626,7 +2626,54 @@ function finalizeCouncilRecord(m){
       })
     }).catch(()=>{});
   }
+  mountNeuroFeedback(m);
   if(innerThoughtEnabled() && m.inner) paintInnerNote(m);
+}
+function submitNeuroFeedback(m, reward, button){
+  if(!state.council.sessionId || !m || !m.seat) return;
+  const seat = state.seats[m.seat];
+  const characterId = seat && seat.id
+    ? "character:" + seat.id
+    : "name:" + ((seat && (seat.charName || seat.name)) || m.seat).trim().toLocaleLowerCase("tr-TR");
+  const row = button.closest(".neuro-feedback");
+  if(row) row.querySelectorAll("button").forEach(b=>b.disabled=true);
+  fetch("/api/neuro/feedback", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      feedback_id: uid(),
+      character_id: characterId,
+      session_id: state.council.sessionId,
+      reward
+    })
+  }).then(async response=>{
+    const data = await response.json().catch(()=>({}));
+    if(!response.ok || !data.ok) throw new Error(data.error || ("HTTP "+response.status));
+    if(row){
+      row.dataset.submitted = "1";
+      row.querySelectorAll("button").forEach(b=>b.classList.toggle("on", Number(b.dataset.reward)===reward));
+      const note = row.querySelector(".feedback-status");
+      if(note) note.textContent = data.duplicate ? "Geri bildirim zaten kayıtlı" : "Sonraki turda öğrenilecek";
+    }
+  }).catch(err=>{
+    if(row) row.querySelectorAll("button").forEach(b=>b.disabled=false);
+    toast("Geri bildirim kaydedilemedi: "+(err.message || "Bağlantı hatası"));
+  });
+}
+function mountNeuroFeedback(m){
+  if(state.demo || !state.backend || !state.council.sessionId || !m || m.kind==="op" || m.streaming || m.error) return;
+  const bubble = document.querySelector("#msg-"+m.id+" .bubble");
+  if(!bubble || bubble.querySelector(".neuro-feedback")) return;
+  const row = document.createElement("div");
+  row.className = "claimrow neuro-feedback";
+  row.innerHTML = '<span class="rl">BU YANITIN SONUCU</span>' +
+    '<button class="claimbtn" data-reward="1">Faydalı</button>' +
+    '<button class="claimbtn" data-reward="0.5">Kısmen</button>' +
+    '<button class="claimbtn" data-reward="0">Faydasız</button>' +
+    '<span class="feedback-status" aria-live="polite"></span>';
+  row.querySelectorAll("button[data-reward]").forEach(button=>{
+    button.onclick = ()=>submitNeuroFeedback(m, Number(button.dataset.reward), button);
+  });
+  bubble.appendChild(row);
 }
 function paintInnerNote(m){
   const el = document.getElementById("msg-" + m.id);

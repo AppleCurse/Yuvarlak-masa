@@ -51,36 +51,26 @@ ACTION_CANDIDATES = tuple(
 )
 
 
-def _evaluate_context_signal(last_text: str) -> tuple[float, float]:
-    """Son bağlam metninden gözlenen ödül [0,1] ve bilişsel yük [0,1] kestirimi çıkarır."""
+def _estimate_cognitive_load(last_text: str) -> float:
+    """Estimate attention demand from text shape; never infer reward from wording."""
     text = (last_text or "").strip()
     if not text:
-        return 0.62, 0.25
-
+        return 0.25
     length = len(text)
-    lower = text.lower()
     questions = text.count("?")
-    challenge_words = (
-        "yanlış", "saçma", "hile", "hayır", "katılmıyorum", "imkansız",
-        "tehlike", "kriz", "çelişki", "yalan", "korku", "savaş",
-    )
-    agreement_words = (
-        "haklı", "katılıyorum", "doğru", "gerçekten", "evet", "insan",
-        "vicdan", "umut", "anlam", "hakikat",
-    )
+    return min(0.95, 0.20 + (length / 1800.0) * 0.45 + min(3, questions) * 0.10)
 
-    challenges = sum(1 for w in challenge_words if w in lower)
-    agreements = sum(1 for w in agreement_words if w in lower)
 
-    # Uzunluk ve soru yoğunluğuna göre bilişsel yük
-    cognitive_load = min(0.95, 0.20 + (length / 1800.0) * 0.45 + min(3, questions) * 0.10)
-
-    # Tartışma çok çatışmalı/provokatif ise ödül biraz düşer -> tahmin hatası ve dikkat yükselir
-    base_reward = 0.60 + min(0.20, agreements * 0.05) - min(0.32, challenges * 0.08)
-    if length < 60:
-        base_reward -= 0.10
-    observed_reward = max(0.10, min(0.95, base_reward))
-    return observed_reward, cognitive_load
+def _validate_observed_reward(value: Any) -> float | None:
+    """Accept only explicit, finite [0, 1] outcome feedback."""
+    if value is None:
+        return None
+    import math
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("observed_reward must be None or a finite number in [0, 1]")
+    if not math.isfinite(value) or value < 0 or value > 1:
+        raise ValueError("observed_reward must be None or a finite number in [0, 1]")
+    return float(value)
 
 
 class SeatCognitiveAgent:
@@ -137,6 +127,7 @@ class SeatCognitiveAgent:
             "frustration": round(a.frustration, 3),
             "affect_mode": a.mode,
             "epistemic_uncertainty": round(p.epistemic_uncertainty, 3),
+            "prediction_observations": p.observations,
             "working_memory_size": len(self.working_memory),
             "directive": directive,
         }
@@ -144,20 +135,22 @@ class SeatCognitiveAgent:
     def snapshot(self) -> Dict[str, Any]:
         return dict(self._last_snapshot)
 
-    def step(self, last_text: str = "") -> Dict[str, Any]:
+    def step(
+        self, last_text: str = "", *, observed_reward: float | None = None
+    ) -> Dict[str, Any]:
         self._step_count += 1
-        reward, cognitive_load = _evaluate_context_signal(last_text)
+        reward = _validate_observed_reward(observed_reward)
+        cognitive_load = _estimate_cognitive_load(last_text)
 
-        # 1. Tahmin ve sürpriz güncellemesi
-        pred_evt = self.predictor.observe(self._last_stance, reward)
-
-        # 2. Duygulanım (valans/uyarılma/frustrasyon) güncellemesi
+        # Metnin onay/itiraz tonu sonuç değildir. Yalnızca açık sonuç geri bildirimi öğrenir.
         h_before = self.homeostasis.state()
-        self.affect.update(
-            pred_evt.prediction_error,
-            significance=min(1.0, max(0.30, cognitive_load)),
-            homeostasis=h_before,
-        )
+        if reward is not None:
+            pred_evt = self.predictor.observe(self._last_stance, reward)
+            self.affect.update(
+                pred_evt.prediction_error,
+                significance=min(1.0, max(0.30, cognitive_load)),
+                homeostasis=h_before,
+            )
         a_state = self.affect.state()
 
         # 3. Politika kararı
@@ -222,7 +215,9 @@ class SeatCognitiveAgent:
             "step": self._step_count,
             "status": decision.status,
             "stance": chosen_stance,
-            "reward": round(reward, 2),
+            "reward": round(reward, 4) if reward is not None else None,
+            "feedback_received": reward is not None,
+            "cognitive_load": round(cognitive_load, 4),
         })
 
         snap = self._build_snapshot(decision.status, chosen_stance, directive)
@@ -236,7 +231,10 @@ _AGENTS = OrderedDict()
 _MAX_AGENTS = 512
 
 
-def step_character(seat: str, character_id: str, session_id: str, last_text: str = "") -> Dict[str, Any]:
+def step_character(
+    seat: str, character_id: str, session_id: str, last_text: str = "",
+    *, observed_reward: float | None = None,
+) -> Dict[str, Any]:
     """Update an approximate context-signal model, never storing conversation text.
 
     Aggregates are keyed by character; energy and affect are isolated per session.
@@ -268,11 +266,98 @@ def step_character(seat: str, character_id: str, session_id: str, last_text: str
                 agent.predictor.import_observations(json.loads(row[0]))
             else:
                 agent.predictor.import_observations({})
-            snap = agent.step(last_text)
+            snap = agent.step(last_text, observed_reward=observed_reward)
             conn.execute("INSERT INTO neuro_estimates(character_id, estimates) VALUES (?, ?) "
                          "ON CONFLICT(character_id) DO UPDATE SET estimates=excluded.estimates",
                          (character_id, json.dumps(agent.predictor.export_observations())))
         return snap
+
+
+
+def enqueue_feedback(
+    feedback_id: str, character_id: str, session_id: str, reward: Any
+) -> bool:
+    """Queue one explicit outcome rating for the next cognitive step.
+
+    Returns False for an already-seen feedback_id. Conversation text is never stored.
+    """
+    import engine
+    if not all(isinstance(item, str) for item in (feedback_id, character_id, session_id)):
+        raise ValueError("feedback_id, character_id and session_id must be strings")
+    feedback_id = feedback_id.strip()
+    character_id = character_id.strip()
+    session_id = session_id.strip()
+    if not feedback_id or len(feedback_id) > 128:
+        raise ValueError("feedback_id must contain 1-128 characters")
+    if not character_id or len(character_id) > 200:
+        raise ValueError("character_id must contain 1-200 characters")
+    if not session_id or len(session_id) > 200:
+        raise ValueError("session_id must contain 1-200 characters")
+    value = _validate_observed_reward(reward)
+    if value is None:
+        raise ValueError("reward is required")
+    with engine.get_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS neuro_feedback_queue (
+                feedback_id TEXT PRIMARY KEY,
+                character_id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                reward REAL NOT NULL CHECK(reward >= 0 AND reward <= 1),
+                status TEXT NOT NULL DEFAULT 'pending'
+                    CHECK(status IN ('pending', 'consumed')),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                consumed_at TEXT
+            )
+        """)
+        cursor = conn.execute(
+            "INSERT OR IGNORE INTO neuro_feedback_queue "
+            "(feedback_id, character_id, session_id, reward) VALUES (?, ?, ?, ?)",
+            (feedback_id, character_id, session_id, value),
+        )
+        if cursor.rowcount == 1:
+            return True
+        existing = conn.execute(
+            "SELECT character_id, session_id FROM neuro_feedback_queue WHERE feedback_id=?",
+            (feedback_id,),
+        ).fetchone()
+        if not existing or existing["character_id"] != character_id or existing["session_id"] != session_id:
+            raise ValueError("feedback_id is already used by a different character/session")
+        return False
+
+
+def consume_feedback(character_id: str, session_id: str) -> float | None:
+    """Atomically consume pending feedback for this exact character/session pair."""
+    import engine
+    with engine.get_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS neuro_feedback_queue (
+                feedback_id TEXT PRIMARY KEY,
+                character_id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                reward REAL NOT NULL CHECK(reward >= 0 AND reward <= 1),
+                status TEXT NOT NULL DEFAULT 'pending'
+                    CHECK(status IN ('pending', 'consumed')),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                consumed_at TEXT
+            )
+        """)
+        conn.execute("BEGIN IMMEDIATE")
+        rows = conn.execute(
+            "SELECT feedback_id, reward FROM neuro_feedback_queue "
+            "WHERE character_id=? AND session_id=? AND status='pending' "
+            "ORDER BY created_at, feedback_id",
+            (character_id, session_id),
+        ).fetchall()
+        if not rows:
+            return None
+        ids = [row["feedback_id"] for row in rows]
+        placeholders = ",".join("?" for _ in ids)
+        conn.execute(
+            f"UPDATE neuro_feedback_queue SET status='consumed', consumed_at=CURRENT_TIMESTAMP "
+            f"WHERE feedback_id IN ({placeholders}) AND status='pending'",
+            ids,
+        )
+        return sum(float(row["reward"]) for row in rows) / len(rows)
 
 
 def get_all_states() -> Dict[str, Dict[str, Any]]:

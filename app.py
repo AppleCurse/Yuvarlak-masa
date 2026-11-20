@@ -230,7 +230,11 @@ def _prepare_cognitive_messages(messages: list[dict], seat: str, character_id: s
             last_user_text = str(msg.get("content", ""))
             break
 
-    snap = neuro_bridge.step_character(s, character_id, session_id, last_user_text)
+    observed_reward = neuro_bridge.consume_feedback(character_id, session_id)
+    snap = neuro_bridge.step_character(
+        s, character_id, session_id, last_user_text,
+        observed_reward=observed_reward,
+    )
     directive = snap.get("directive", "")
     if not directive:
         return messages
@@ -873,6 +877,28 @@ async def evaluate_rebuttal_route(payload: dict):
 
 
 # ── Nörodinamik Bilişsel Durum Uçları ───────────────────────────────────
+
+
+@app.post("/api/neuro/feedback")
+async def neuro_feedback(payload: dict):
+    """Submit an explicit outcome rating; it is learned on the next matching chat step."""
+    feedback_id = payload.get("feedback_id")
+    character_id = payload.get("character_id")
+    session_id = payload.get("session_id")
+    reward = payload.get("reward")
+    try:
+        accepted = neuro_bridge.enqueue_feedback(
+            feedback_id, character_id, session_id, reward
+        )
+    except (TypeError, ValueError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    return {
+        "ok": True,
+        "accepted": accepted,
+        "duplicate": not accepted,
+        "applies_on": "next_matching_chat_step",
+    }
+
 @app.get("/api/neuro/state")
 async def neuro_state_endpoint():
     return {"ok": True, "seats": neuro_bridge.get_all_states()}
