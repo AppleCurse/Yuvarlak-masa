@@ -19,9 +19,11 @@ class CognitiveIntegration(unittest.TestCase):
         bridge.reset_all_seats()
         with engine.get_db() as conn:
             conn.execute('CREATE TABLE IF NOT EXISTS neuro_estimates (character_id TEXT PRIMARY KEY, estimates TEXT NOT NULL)')
+            conn.execute('CREATE TABLE IF NOT EXISTS neuro_evidence_estimates_v1 (character_id TEXT PRIMARY KEY, estimates TEXT NOT NULL)')
+            conn.execute('CREATE TABLE IF NOT EXISTS neuro_subjective_ratings (feedback_id TEXT PRIMARY KEY, character_id TEXT NOT NULL, session_id TEXT NOT NULL, message_id TEXT NOT NULL, rating REAL NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)')
             conn.execute('DELETE FROM neuro_estimates')
-            conn.execute('CREATE TABLE IF NOT EXISTS neuro_feedback_queue (feedback_id TEXT PRIMARY KEY, character_id TEXT NOT NULL, session_id TEXT NOT NULL, reward REAL NOT NULL CHECK(reward >= 0 AND reward <= 1), status TEXT NOT NULL DEFAULT \'pending\' CHECK(status IN (\'pending\', \'consumed\')), created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, consumed_at TEXT)')
-            conn.execute('DELETE FROM neuro_feedback_queue')
+            conn.execute('DELETE FROM neuro_evidence_estimates_v1')
+            conn.execute('DELETE FROM neuro_subjective_ratings')
 
     def test_character_and_session_isolation_and_persistence(self):
         first = bridge.step_character('A', 'character:alice', 'session:1', 'Özel metin: merak ve soru?')
@@ -32,7 +34,7 @@ class CognitiveIntegration(unittest.TestCase):
         new_session = bridge.step_character('C', 'character:alice', 'session:2', 'Tekrar?')
         self.assertEqual(new_session['step_count'], 1)
         with engine.get_db() as conn:
-            rows = dict(conn.execute('SELECT character_id, estimates FROM neuro_estimates').fetchall())
+            rows = dict(conn.execute('SELECT character_id, estimates FROM neuro_evidence_estimates_v1').fetchall())
         self.assertEqual(sum(v['count'] for v in json.loads(rows['character:alice']).values()), 0)
         self.assertEqual(sum(v['count'] for v in json.loads(rows['character:bob']).values()), 0)
         self.assertNotIn('Özel metin', str(rows))
@@ -67,78 +69,61 @@ class CognitiveIntegration(unittest.TestCase):
                     agent.step("Metin", observed_reward=value)
         self.assertEqual(agent.predictor.state("yalin_gercekci_cozumleme").observations, 0)
 
-    def test_explicit_feedback_is_persisted(self):
-        bridge.step_character(
-            'A', 'character:feedback', 'session:feedback',
-            'Kullanıcı metni tek başına ödül değildir.',
-            observed_reward=0.8,
-        )
-        bridge.reset_all_seats()
-        bridge.step_character('A', 'character:feedback', 'session:after-restart', 'Yeni metin')
+    def test_legacy_estimates_are_preserved_but_not_used(self):
+        legacy = json.dumps({"yalin_gercekci_cozumleme": {"expectation": 0.99, "count": 100}})
         with engine.get_db() as conn:
-            row = conn.execute(
-                'SELECT estimates FROM neuro_estimates WHERE character_id=?',
-                ('character:feedback',),
-            ).fetchone()
-        estimates = json.loads(row[0])
-        self.assertEqual(sum(item['count'] for item in estimates.values()), 1)
+            conn.execute("INSERT INTO neuro_estimates VALUES (?, ?)", ("alice", legacy))
+        bridge.step_character('A', 'alice', 's', 'Haklısın')
+        with engine.get_db() as conn:
+            old = conn.execute("SELECT estimates FROM neuro_estimates WHERE character_id='alice'").fetchone()[0]
+            new = conn.execute("SELECT estimates FROM neuro_evidence_estimates_v1 WHERE character_id='alice'").fetchone()[0]
+        self.assertEqual(old, legacy)
+        self.assertEqual(json.loads(new), {})
 
+    def test_feedback_is_idempotent_and_bound_to_submitted_message(self):
+        self.assertTrue(bridge.enqueue_feedback("fb-1", "alice", "session-a", 1.0, "turn-1"))
+        self.assertFalse(bridge.enqueue_feedback("fb-1", "alice", "session-a", 1.0, "turn-1"))
+        with self.assertRaises(ValueError):
+            bridge.enqueue_feedback("fb-1", "alice", "session-a", 0.0, "turn-1")
+        with self.assertRaises(ValueError):
+            bridge.enqueue_feedback("fb-1", "alice", "session-a", 1.0, "turn-2")
+        with engine.get_db() as conn:
+            row = conn.execute("SELECT character_id, session_id, message_id, rating FROM neuro_subjective_ratings").fetchone()
+        self.assertEqual(tuple(row), ("alice", "session-a", "turn-1", 1.0))
 
-    def test_feedback_queue_is_idempotent_and_scoped_to_character_session(self):
-        self.assertTrue(bridge.enqueue_feedback("fb-1", "alice", "session-a", 1.0))
-        self.assertFalse(bridge.enqueue_feedback("fb-1", "alice", "session-a", 0.0))
-        self.assertIsNone(bridge.consume_feedback("bob", "session-a"))
-        self.assertIsNone(bridge.consume_feedback("alice", "session-b"))
-        self.assertEqual(bridge.consume_feedback("alice", "session-a"), 1.0)
-        self.assertIsNone(bridge.consume_feedback("alice", "session-a"))
-
-    def test_feedback_api_accepts_and_deduplicates_explicit_rating(self):
+    def test_feedback_api_records_but_does_not_train(self):
         from fastapi.testclient import TestClient
-        payload = {"feedback_id": "api-fb-1", "character_id": "alice",
+        payload = {"feedback_id": "api-fb-1", "character_id": "alice", "message_id": "turn-1",
                    "session_id": "api-session", "reward": 0.75}
+        bridge.step_character('A', 'alice', 'api-session', 'Soru')
         with TestClient(app.app) as client:
             first = client.post("/api/neuro/feedback", json=payload)
             duplicate = client.post("/api/neuro/feedback", json=payload)
             invalid = client.post("/api/neuro/feedback", json={**payload, "reward": 1.5})
-        self.assertEqual(first.status_code, 200, first.text)
+            malformed = client.post("/api/neuro/feedback", json={**payload, "reward": True})
+            collision = client.post("/api/neuro/feedback", json={**payload, "character_id": "bob"})
         self.assertTrue(first.json()["accepted"])
+        self.assertFalse(first.json()["learning"])
+        self.assertIsNone(first.json()["applies_on"])
         self.assertTrue(duplicate.json()["duplicate"])
-        self.assertEqual(invalid.status_code, 400)
-        malformed = client.post("/api/neuro/feedback", json={**payload, "reward": True})
-        self.assertEqual(malformed.status_code, 400)
-        collision = client.post("/api/neuro/feedback", json={**payload, "character_id": "bob"})
-        self.assertEqual(collision.status_code, 400)
-        self.assertEqual(bridge.consume_feedback("alice", "api-session"), 0.75)
+        self.assertEqual((invalid.status_code, malformed.status_code, collision.status_code), (400, 400, 400))
+        for _ in range(3):
+            bridge.step_character('A', 'alice', 'api-session', 'Katılıyorum')
+        with engine.get_db() as conn:
+            estimates = conn.execute("SELECT estimates FROM neuro_evidence_estimates_v1 WHERE character_id='alice'").fetchone()[0]
+        self.assertEqual(json.loads(estimates), {})
 
-    def test_queued_feedback_is_applied_to_next_matching_chat_step(self):
-        from unittest.mock import patch
-        from fastapi.testclient import TestClient
-        bridge.enqueue_feedback("fb-next", "alice", "s-next", 0.9)
-        captured = []
-        class Response:
-            status_code = 200
-            def json(self):
-                return {"choices": [{"message": {"content": "Yanıt"}}]}
-        class Upstream:
-            async def post(self, url, json, headers):
-                captured.append(json)
-                return Response()
-        payload = {"base_url": "https://example.com/v1", "model": "test", "seat": "A",
-                   "cognitive_character_id": "alice", "cognitive_session_id": "s-next",
-                   "messages": [{"role": "user", "content": "Soru?"}]}
-        with patch.object(app, "_get_http", return_value=Upstream()), TestClient(app.app) as client:
-            response = client.post("/api/chat", json=payload)
-        self.assertEqual(response.status_code, 200, response.text)
+    def test_legacy_queued_feedback_is_not_consumed(self):
         with engine.get_db() as conn:
-            row = conn.execute(
-                "SELECT status FROM neuro_feedback_queue WHERE feedback_id='fb-next'"
-            ).fetchone()
-        self.assertEqual(row["status"], "consumed")
+            conn.execute("CREATE TABLE IF NOT EXISTS neuro_feedback_queue (feedback_id TEXT PRIMARY KEY, character_id TEXT, session_id TEXT, reward REAL, status TEXT)")
+            conn.execute("DELETE FROM neuro_feedback_queue")
+            conn.execute("INSERT INTO neuro_feedback_queue VALUES ('old', 'alice', 's', 1, 'pending')")
+        bridge.step_character('A', 'alice', 's', 'Katılıyorum')
         with engine.get_db() as conn:
-            estimates_row = conn.execute(
-                "SELECT estimates FROM neuro_estimates WHERE character_id='alice'"
-            ).fetchone()
-        self.assertEqual(sum(item["count"] for item in json.loads(estimates_row["estimates"]).values()), 1)
+            row = conn.execute("SELECT status FROM neuro_feedback_queue WHERE feedback_id='old'").fetchone()
+            estimates = conn.execute("SELECT estimates FROM neuro_evidence_estimates_v1 WHERE character_id='alice'").fetchone()
+        self.assertEqual(row[0], 'pending')
+        self.assertEqual(json.loads(estimates[0]), {})
 
     def test_prompt_injection_is_opt_in_and_does_not_mutate_input(self):
         messages = [{'role': 'system', 'content': 'Sistem'}, {'role': 'user', 'content': 'Soru?'}]

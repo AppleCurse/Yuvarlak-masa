@@ -230,11 +230,8 @@ def _prepare_cognitive_messages(messages: list[dict], seat: str, character_id: s
             last_user_text = str(msg.get("content", ""))
             break
 
-    observed_reward = neuro_bridge.consume_feedback(character_id, session_id)
-    snap = neuro_bridge.step_character(
-        s, character_id, session_id, last_user_text,
-        observed_reward=observed_reward,
-    )
+    # Subjective user ratings are not evidence and must not train the predictor.
+    snap = neuro_bridge.step_character(s, character_id, session_id, last_user_text)
     directive = snap.get("directive", "")
     if not directive:
         return messages
@@ -881,14 +878,14 @@ async def evaluate_rebuttal_route(payload: dict):
 
 @app.post("/api/neuro/feedback")
 async def neuro_feedback(payload: dict):
-    """Submit an explicit outcome rating; it is learned on the next matching chat step."""
+    """Record a subjective rating without treating it as evidence or reward."""
     feedback_id = payload.get("feedback_id")
     character_id = payload.get("character_id")
     session_id = payload.get("session_id")
     reward = payload.get("reward")
     try:
         accepted = neuro_bridge.enqueue_feedback(
-            feedback_id, character_id, session_id, reward
+            feedback_id, character_id, session_id, reward, payload.get("message_id", "")
         )
     except (TypeError, ValueError) as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
@@ -896,7 +893,9 @@ async def neuro_feedback(payload: dict):
         "ok": True,
         "accepted": accepted,
         "duplicate": not accepted,
-        "applies_on": "next_matching_chat_step",
+        "applies_on": None,
+        "learning": False,
+        "note": "Öznel geri bildirim kaydedildi; kanıt olmadığı için öğrenmede kullanılmaz.",
     }
 
 @app.get("/api/neuro/state")

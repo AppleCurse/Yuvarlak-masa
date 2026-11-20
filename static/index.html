@@ -2631,18 +2631,18 @@ function finalizeCouncilRecord(m){
 }
 function submitNeuroFeedback(m, reward, button){
   if(!state.council.sessionId || !m || !m.seat) return;
-  const seat = state.seats[m.seat];
-  const characterId = seat && seat.id
-    ? "character:" + seat.id
-    : "name:" + ((seat && (seat.charName || seat.name)) || m.seat).trim().toLocaleLowerCase("tr-TR");
+  const characterId = m.cognitiveCharacterId;
+  const sessionId = m.cognitiveSessionId;
+  if(!characterId || !sessionId) return;
   const row = button.closest(".neuro-feedback");
   if(row) row.querySelectorAll("button").forEach(b=>b.disabled=true);
   fetch("/api/neuro/feedback", {
     method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({
-      feedback_id: uid(),
+      feedback_id: m.feedbackId || (m.feedbackId = uid()),
       character_id: characterId,
-      session_id: state.council.sessionId,
+      session_id: sessionId,
+      message_id: m.id,
       reward
     })
   }).then(async response=>{
@@ -2652,7 +2652,7 @@ function submitNeuroFeedback(m, reward, button){
       row.dataset.submitted = "1";
       row.querySelectorAll("button").forEach(b=>b.classList.toggle("on", Number(b.dataset.reward)===reward));
       const note = row.querySelector(".feedback-status");
-      if(note) note.textContent = data.duplicate ? "Geri bildirim zaten kayıtlı" : "Sonraki turda öğrenilecek";
+      if(note) note.textContent = data.duplicate ? "Geri bildirim zaten kayıtlı" : "Kaydedildi (öğrenmede kullanılmaz)";
     }
   }).catch(err=>{
     if(row) row.querySelectorAll("button").forEach(b=>b.disabled=false);
@@ -2660,12 +2660,12 @@ function submitNeuroFeedback(m, reward, button){
   });
 }
 function mountNeuroFeedback(m){
-  if(state.demo || !state.backend || !state.council.sessionId || !m || m.kind==="op" || m.streaming || m.error) return;
+  if(state.demo || !state.backend || !state.council.sessionId || !m || m.kind==="op" || m.streaming || m.error || m.stopped || !m.cognitiveCharacterId) return;
   const bubble = document.querySelector("#msg-"+m.id+" .bubble");
   if(!bubble || bubble.querySelector(".neuro-feedback")) return;
   const row = document.createElement("div");
   row.className = "claimrow neuro-feedback";
-  row.innerHTML = '<span class="rl">BU YANITIN SONUCU</span>' +
+  row.innerHTML = '<span class="rl">ÖZNEL DEĞERLENDİRME · ÖĞRENMEDE KULLANILMAZ</span>' +
     '<button class="claimbtn" data-reward="1">Faydalı</button>' +
     '<button class="claimbtn" data-reward="0.5">Kısmen</button>' +
     '<button class="claimbtn" data-reward="0">Faydasız</button>' +
@@ -4304,7 +4304,9 @@ async function councilTurn(){
   c.current = key;
   // Faz 6 (bağlam bütçesi): modele tam tutanak değil, kayan pencere gider (UI hâlâ her şeyi görür)
   const transcriptBefore = councilModelContext();
-  const m = { id: uid(), seat:key, kind:"model", text:"", streaming:true, time: now(), round: Math.ceil(c.modelTurns/activeSeats().length) };
+  const m = { id: uid(), seat:key, kind:"model", text:"", streaming:true, time: now(), round: Math.ceil(c.modelTurns/activeSeats().length),
+    cognitiveCharacterId: seat.id ? "character:" + seat.id : "name:" + (seat.charName || seat.name || key).trim().toLocaleLowerCase("tr-TR"),
+    cognitiveSessionId: c.sessionId };
   c.msgs.push(m);
   pushCouncil(m);
   setCouncilRunning(true);
@@ -4321,7 +4323,7 @@ async function councilTurn(){
     }, speechLim * 1000);
   }
   const seatedDesc = activeSeats().map(k => state.seats[k].name + " (" + (state.seats[k].charName || state.seats[k].role) + ")").join(", ");
-  const sysExtra = "\n\nSOHBET KURALLARI: Masada gerçek insanlar [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör oturuyor. Sıra SENDE. Önceki konuşmacıları gerçekten dinle, insanlığı ve sorunun özünü düşünerek samimi, doğal, gerçekçi bir Türkçe ile (80–160 kelime) konuş. Asla kendi biyografini veya mesleki klişelerini soruya zorla yamama; tiyatro tiradı atma; konuşmanın başına kendi adını yazma; robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. Operatör sözleri bağlayıcıdır." +
+  const sysExtra = "\n\nSOHBET KURALLARI: Masada gerçek insanlar [" + seatedDesc + "] ve Masayı Yöneten İnsan Operatör oturuyor. Sıra SENDE. Önceki konuşmacıları gerçekten dinle, insanlığı ve sorunun özünü düşünerek samimi, doğal, gerçekçi bir Türkçe ile (80–160 kelime) konuş. Asla kendi biyografini veya mesleki klişelerini soruya zorla yamama; tiyatro tiradı atma; konuşmanın başına kendi adını yazma; robotik laflar ('yapay zeka', 'dil modeli', 'tarafsızım') kullanma. Operatör oturumu yönetir; ancak iddiaları kanıt yerine geçmez. Sırf uzlaşmak veya onay almak için görüş değiştirme; belirsizliği ve eksik kanıtı açıkça belirt." +
     (seat.memoryText ? "\n\n" + seat.memoryText : "");
   const messages = [
     { role:"system", content: (seat.system || compileSystemPrompt(seat)) + sysExtra },
@@ -4329,8 +4331,8 @@ async function councilTurn(){
   ];
   await streamChat(seat, messages, {
     signal: ac.signal,
-    cognitiveCharacterId: seat.id ? "character:" + seat.id : "name:" + (seat.charName || seat.name || key).trim().toLocaleLowerCase("tr-TR"),
-    cognitiveSessionId: c.sessionId,
+    cognitiveCharacterId: m.cognitiveCharacterId,
+    cognitiveSessionId: m.cognitiveSessionId,
     onDelta: (t)=>{ m.text = t; updateCouncilMsg(m); },
     onError: (e)=>{ if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; } m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); },
     onDone: async (stopped)=>{

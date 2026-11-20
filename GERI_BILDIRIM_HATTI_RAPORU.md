@@ -1,5 +1,7 @@
 # Yuvarlak-masa — Geri Bildirim Öğrenme Hattı
 
+> Tarihsel rapor: aşağıdaki öğrenme davranışı artık etkin değildir. Öznel puanlar öğrenmeye uygulanmaz; güncel durum için `NEURO_INTEGRATION.md` dosyasına bakın.
+
 ## Bu sürümde yapılanlar
 
 - `POST /api/neuro/feedback` eklendi. `feedback_id`, `character_id`, `session_id` ve 0–1 arası `reward` alır.
