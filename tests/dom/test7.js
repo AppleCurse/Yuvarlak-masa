@@ -14,6 +14,8 @@ const dom = new JSDOM(html, {
   url: "http://localhost:8888/", runScripts: "dangerously", pretendToBeVisual: true,
   beforeParse(w){
     if(!w.crypto.subtle){ const {webcrypto}=require("crypto"); Object.defineProperty(w,"crypto",{value:webcrypto}); }
+    // v1.3: jsdom sürümlerinde TextDecoder/TextEncoder eksik olabilir (test artefaktı)
+    if(!w.TextDecoder){ const {TextDecoder,TextEncoder}=require("util"); w.TextDecoder=TextDecoder; w.TextEncoder=TextEncoder; }
     const json=(o,s=200)=>({ok:s<400,status:s,json:async()=>o,text:async()=>JSON.stringify(o)});
     w.fetch = async (u,opts)=>{
       const s=String(u);

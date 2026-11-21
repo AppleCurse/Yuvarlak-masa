@@ -27,6 +27,11 @@ const dom = new JSDOM(html, {
       const { webcrypto } = require("crypto");
       Object.defineProperty(w, "crypto", { value: webcrypto });
     }
+    // v1.3: jsdom sürümlerinde TextDecoder/TextEncoder eksik olabilir (test artefaktı)
+    if(!w.TextDecoder){
+      const { TextDecoder, TextEncoder } = require("util");
+      w.TextDecoder = TextDecoder; w.TextEncoder = TextEncoder;
+    }
     w.fetch = async (url, opts) => {
       const u = String(url);
       const json = (obj, st = 200) => ({ ok: st < 400, status: st, json: async () => obj, text: async () => JSON.stringify(obj) });
