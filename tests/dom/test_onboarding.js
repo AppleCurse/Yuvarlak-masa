@@ -111,7 +111,7 @@ function makeDom(url){
     // ── 7-10) sözlük + ray ──
     T(`openGlossary("")`);
     assert(doc.getElementById("glossaryModal").classList.contains("on"), "7 sözlük açılır");
-    assert(doc.querySelectorAll("#glossaryBody .glositem").length === 13, "8 sözlükte 13 madde");
+    assert(doc.querySelectorAll("#glossaryBody .glositem").length === 15, "8 sözlükte 15 madde");
     T(`document.getElementById("glosClose").click()`);
     assert(doc.querySelectorAll(".jargonbtn").length === 7, "9 yedi odada ⓘ düğmesi");
     assert(doc.querySelectorAll(".railstep").length === 3, "10 rayda 3 adım başlığı");
@@ -178,7 +178,7 @@ function makeDom(url){
     // ── 31-32) sade dil ──
     const bodyTxt = doc.body.textContent;
     assert(bodyTxt.includes("KAÇ SANDALYE") && bodyTxt.includes("Özeti Oluştur") && bodyTxt.includes("KARAR ÖZETİ"), "31 sade dil etiketleri ekranda");
-    assert(T("GLOSSARY.length") === 13, "32 sözlük verisi 13 maddelik");
+    assert(T("GLOSSARY.length") === 15, "32 sözlük verisi 15 maddelik");
     T(`state.backend = true`);
 
     // ── ?welcome=1 ayrı örnekte ──

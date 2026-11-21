@@ -24,11 +24,13 @@ run "jsdom: Faz 6 (pencere/sentez/süre/kasa)" node dom/test6.js
 run "jsdom: Faz 7 (kâsa rozeti)"             node dom/test7.js
 run "jsdom: öznel geri bildirim kimliği"      node dom/test_neuro_feedback.js
 run "jsdom: ilk kullanım + demo/gerçek ayrımı" node dom/test_onboarding.js
+run "jsdom: BYOK + hız sınırı mesajı"         node dom/test_byok.js
 
 PY="$REPO/.venv/bin/python"
 [ -x "$PY" ] || PY="$(command -v python3)"
 run "nörodinamik: karakter ve oturum izolasyonu" "$PY" test_neuro_integration.py
 run "e2e: kâsa (gerçek uvicorn + mock upstream)" "$PY" e2e_vault.py
+run "hız sınırı (gerçek uvicorn, düşük limit)"  "$PY" test_ratelimit.py
 
 echo
 if [ "$FAILED" -eq 0 ]; then
