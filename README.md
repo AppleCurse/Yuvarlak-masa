@@ -9,6 +9,35 @@ Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chat
 
 ---
 
+## ⏱️ İlk 5 dakika (v1.3)
+
+1. `python app.py` ile sunucuyu başlatın — tarayıcı kendisi açılır.
+2. Açılan **3 adımlı rehber** ne yapmak istediğinizi sorar: tartıştırın, karşılaştırın ya da karar özeti çıkarın.
+3. Bilmediğiniz terim mi var? Üstteki **SÖZLÜK** düğmesi (veya odalardaki ⓘ) 13 terimi sade dille açıklar.
+4. Konuyu yazın, sandalye sayısını seçin (2–8), **Tartışmayı Başlat** deyin. Ne olup bittiğini **işlem günlüğü** satır satır söyler.
+
+### Gerçek mi, demo mu?
+
+| Ekran | Anlamı |
+|---|---|
+| `GERÇEK MODEL · <model> @ <uç>` | Yanıtlar gerçek modelden geliyor, arşive yazılıyor. Her sözün başında `model @ uç` etiketi var. |
+| `DEMO · GERÇEK MODEL YOK` + sarı bant | Yanıtlar **örnek metindir**, arşive **yazılmaz**. Sözlerde `DEMO` rozeti var. |
+| `SUNUCU YOK` | `app.py` çalışmıyor. Sahte yanıt üretilmez; dürüst hata gösterilir. |
+
+### Neyi ciddiye almalı?
+
+| Çıktı | Statüsü |
+|---|---|
+| Konsey sözleri, jüri yanıtları | Gerçek model çıktısı (demo değilse) — ama yine de model sözüdür, kanıt değildir. |
+| Karar özeti, kör değerlendirme, ikna deltası, başhakem hükmü | **Model değerlendirmesi** — bağımsız doğrulama yok; ekranda da böyle yazar. |
+| `KAYNAK YOK — DOĞRULANMADI` hükmü | Araştırma ajanı kaynak bulamadı — iddia doğrulanmış sayılmaz. |
+| Mühürlü zarf SHA-256 mührü | Yalnız **metin bütünlüğü** — kimlik veya doğruluk kanıtı değil. |
+| Demo modundaki her şey | Örnek metin — hiçbir hükmü yok, arşive yazılmaz. |
+
+> Güvenlik notu: API'de giriş koruması yoktur ve anahtarlar düz metin SQLite'ta durur. Ayrıntı: `GUVENLIK_NOTU.md`. Dış ağa açmayın; varsayılan `127.0.0.1` en güvenli seçenektir.
+
+---
+
 ## 🏛️ Çalışma Odaları (7)
 
 ### 1. Ana Müzakere Masası (Konsey Arenası)

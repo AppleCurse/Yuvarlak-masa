@@ -93,7 +93,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="KONSÜL AI", version="1.2.0",
+    title="KONSÜL AI", version="1.3.0",
     docs_url=None, redoc_url=None, lifespan=lifespan,
 )
 
@@ -258,9 +258,19 @@ class ChatPayload(BaseModel):
 
 
 # ── Sağlık / teşhis rotaları ────────────────────────────────────────────
+# v1.3: dürüst teşhis — arayüz "gerçek model mi, demo mu" sorusunu tahminle
+# değil bu uçtan öğrenir. Backend'de simülasyon yoktur (demo yalnız tarayıcıdadır).
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "KONSÜL AI", "mode": "canlı", "version": "1.2.0"}
+    loopback = HOST in ("127.0.0.1", "localhost", "::1")
+    return {
+        "ok": True, "service": "KONSÜL AI", "mode": "canlı", "version": "1.3.0",
+        "ai": "upstream",
+        "simulation_in_backend": False,
+        "auth": "none",
+        "key_storage": "plaintext-sqlite",
+        "exposed": not loopback,
+    }
 
 
 @app.get("/api/ping")
@@ -939,6 +949,12 @@ if __name__ == "__main__":
     print("┌──────────────────────────────────────────────────────────┐")
     print("│  KONSÜL AI — Çoklu Model Konsey & Kör Jüri İstasyonu     │")
     print(f"│  Adres: http://{HOST}:{PORT}")
+    if HOST not in ("127.0.0.1", "localhost", "::1"):
+        # G3-fix: kâsa düz metin anahtar tutar ve API'de auth yok — dışa açık
+        # çalıştırma, erişebilen herkesin kasadaki anahtarla model çağırabilmesi demektir.
+        print("│  ⚠ GÜVENLİK: loopback dışına bağlanıyorsunuz. API'de kimlik")
+        print("│  doğrulama YOK ve anahtarlar düz metin SQLite'ta. Güvenilmeyen")
+        print("│  ağa açmayın; gerekiyorsa önüne auth'lu ters vekil koyun.")
     print("│  Kapatmak için: Ctrl+C                                   │")
     print("└──────────────────────────────────────────────────────────┘")
     threading.Timer(1.1, _open_browser).start()

@@ -23,6 +23,7 @@ fi
 run "jsdom: Faz 6 (pencere/sentez/süre/kasa)" node dom/test6.js
 run "jsdom: Faz 7 (kâsa rozeti)"             node dom/test7.js
 run "jsdom: öznel geri bildirim kimliği"      node dom/test_neuro_feedback.js
+run "jsdom: ilk kullanım + demo/gerçek ayrımı" node dom/test_onboarding.js
 
 PY="$REPO/.venv/bin/python"
 [ -x "$PY" ] || PY="$(command -v python3)"

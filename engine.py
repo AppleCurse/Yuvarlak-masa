@@ -162,6 +162,14 @@ def init_database():
                     c.get("irritants"), c.get("argument_style"), c.get("vocabulary"), c.get("system_prompt")
                 ))
             conn.commit()
+    # G2-fix (v1.3): kâsa düz metin API anahtarı tutar — dosya iznini 0o600 yap
+    # (yalnız sahibi okur/yazar). Şifreleme değildir; aynı makinedeki başka
+    # kullanıcıların okumasını engelleyen sınırlı bir önlemdir.
+    try:
+        if DB_PATH.exists():
+            os.chmod(DB_PATH, 0o600)
+    except OSError:
+        pass
 
 # ── Karakter Fonksiyonları ──────────────────────────────────────────────
 def get_all_characters() -> List[Dict[str, Any]]:

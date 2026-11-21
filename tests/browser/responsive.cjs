@@ -8,6 +8,8 @@ const { chromium } = require('playwright-core');
   try {
     for (const viewport of [{width:1568,height:720}, {width:1000,height:700}, {width:390,height:844}, {width:320,height:568}]) {
       const page = await browser.newPage({viewport});
+      // v1.3: geri dönen kullanıcı senaryosu — rehber modalı ölçümü bozmasın
+      await page.addInitScript(() => { try{ localStorage.setItem('konsul_onboarded','1'); }catch(e){} });
       await page.goto((process.env.BASE_URL || 'http://127.0.0.1:8888') + '/static/index.html', {waitUntil:'domcontentloaded'});
       await page.waitForTimeout(600);
       const data = await page.evaluate(() => {

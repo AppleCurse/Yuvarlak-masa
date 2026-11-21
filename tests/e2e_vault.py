@@ -3,7 +3,7 @@
    - POST/GET/DELETE /api/credentials (maskelenme, SSRF kilidi)
    - /api/chat yalnızca seat ile → anahtar+uç kâsadan çözülür (upstream Bearer'ı görür)
    - geri uyum: gövdede açık anahtar hâlâ çalışır
-   - sürüm 1.2.0
+   - sürüm 1.3.0 + dürüst teşhis (ai/auth/simulation_in_backend)
    Çalıştırma: .venv/bin/python tests/e2e_vault.py  (veya sistemin python'u)"""
 import json, os, shutil, socket, subprocess, sys, tempfile, threading, time, urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -97,7 +97,11 @@ def main():
         print(("  ✅ " if cond else "  ❌ ") + label + ((" — " + str(extra)) if extra and not cond else ""))
 
     s, j = req("GET", "/api/health")
-    check("sürüm 1.2.0", j.get("version") == "1.2.0", j)
+    check("sürüm 1.3.0", j.get("version") == "1.3.0", j)
+    # v1.3: dürüst teşhis alanları — sahte teşhis gerilemesini yakalar
+    check("teşhis ai=upstream", j.get("ai") == "upstream", j)
+    check("teşhis simulation_in_backend=false", j.get("simulation_in_backend") is False, j)
+    check("teşhis auth + key_storage dürüst", j.get("auth") == "none" and j.get("key_storage") == "plaintext-sqlite", j)
 
     s, j = req("POST", "/api/credentials",
                {"seat": "A", "base_url": f"http://127.0.0.1:{PORT_UP}/v1",
