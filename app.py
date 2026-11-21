@@ -93,7 +93,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="KONSÜL AI", version="1.2.0",
+    title="KONSÜL AI", version="1.3.0",
     docs_url=None, redoc_url=None, lifespan=lifespan,
 )
 
