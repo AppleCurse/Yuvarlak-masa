@@ -1197,6 +1197,74 @@ body.inner-off .inner-note{display:none}
   .char-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
 }
 
+/* ═══════════════ v1.3 · İLK KULLANIM + DEMO/GERÇEK DÜRÜSTLÜĞÜ ═══════════════ */
+/* Kalıcı demo bandı (ekranın en görünür yeri) */
+#demoBanner{display:none;background:rgba(227,179,65,.12);border-bottom:1px solid rgba(227,179,65,.55);
+  color:#e8c476;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;
+  padding:7px 16px;text-align:center}
+#demoBanner.on{display:block}
+/* Mesaj başlığı DEMO rozeti */
+.demobadge{display:inline-block;background:rgba(227,179,65,.16);border:1px solid rgba(227,179,65,.6);
+  color:#e8c476;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.14em;
+  padding:1px 7px;border-radius:3px;margin-left:8px;vertical-align:1px}
+/* Söz başlığı model etiketi — NOT: .meter .mtag ile çakışmasın diye .modeltag */
+.modeltag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--dim);
+  border:1px solid var(--line);padding:1px 7px;border-radius:3px;margin-left:8px;vertical-align:1px;
+  max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Ray grupları: 3 adım + katlanır ileri araçlar */
+.railgroup{border:1px solid var(--line);border-radius:6px;margin-bottom:10px;overflow:hidden}
+.railgroup>summary{cursor:pointer;list-style:none;font-family:'IBM Plex Mono',monospace;font-size:9px;
+  letter-spacing:.16em;color:var(--dim);padding:8px 10px;display:flex;align-items:center;gap:8px;user-select:none}
+.railgroup>summary::-webkit-details-marker{display:none}
+.railgroup>summary .tri{transition:transform .2s;color:var(--cyan)}
+.railgroup[open]>summary .tri{transform:rotate(90deg)}
+.railgroup .roomnav{border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--line)}
+.railstep{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;
+  letter-spacing:.14em;color:var(--dim);padding:7px 10px 3px}
+.railstep .n{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;
+  border:1px solid var(--cyan);color:var(--cyan);font-size:9px}
+/* İşlem şeridi (job strip): ne başladı / hangi model / nerede */
+#jobStrip{display:flex;flex-direction:column;gap:4px;margin:8px 0;max-height:118px;overflow-y:auto}
+.jobitem{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);border:1px solid var(--line);
+  border-left:2px solid var(--cyan);border-radius:3px;padding:5px 9px;line-height:1.5;background:rgba(255,255,255,.015)}
+.jobitem b{color:var(--text);font-weight:600}
+.jobitem .jw{color:var(--cyan)}
+.jobitem.ok{border-left-color:var(--green,#3ddc84)}
+.jobitem.err{border-left-color:var(--red);color:#f0a8a8}
+/* Rehber (wizard) */
+#wizardModal .modal{width:640px;max-width:94vw}
+.wizsteps{display:flex;gap:6px;margin-bottom:14px}
+.wizsteps i{flex:1;height:3px;background:#1c2330;border-radius:2px}
+.wizsteps i.on{background:var(--cyan)}
+.goalgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.goalcard{border:1px solid var(--line);border-radius:6px;padding:13px 12px;cursor:pointer;background:rgba(255,255,255,.015)}
+.goalcard:hover{border-color:var(--cyan)}
+.goalcard.sel{border-color:var(--cyan);background:rgba(57,197,207,.07)}
+.goalcard .gt{font-family:'Space Grotesk';font-weight:700;font-size:13px;margin-bottom:4px}
+.goalcard .gd{font-size:11.5px;color:var(--dim);line-height:1.5}
+/* Sözlük */
+#glossaryModal .modal{width:620px;max-width:94vw}
+.glositem{border-bottom:1px solid var(--line);padding:9px 2px}
+.glositem .gk{font-weight:700;font-size:12.5px;color:var(--cyan)}
+.glositem .gd{font-size:12px;color:var(--text);opacity:.85;line-height:1.55;margin-top:2px}
+.jargonbtn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;
+  border:1px solid var(--cyan);color:var(--cyan);font-size:11px;cursor:pointer;background:none;margin-left:8px;
+  vertical-align:2px;padding:0}
+.jargonbtn:hover{background:rgba(57,197,207,.15)}
+/* Güven notları: model değerlendirmesi uyarıları */
+.trustnote{font-size:11px;color:var(--dim);border:1px dashed rgba(227,179,65,.45);border-radius:4px;
+  padding:7px 10px;margin:8px 0;line-height:1.55;background:rgba(227,179,65,.05)}
+.trustnote b{color:#e8c476}
+/* Taşma düzeltmeleri (390px gerçek tarayıcı bulgusu) */
+.autorow{min-width:0}
+.autorow .minilabel{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.autorow select{flex:0 0 auto;max-width:44%}
+@media (max-width:640px){
+  #jobStrip{max-height:88px}
+  .goalgrid{grid-template-columns:1fr}
+  .modeltag{max-width:60vw}
+}
+
 </style>
 </head>
 <body>
@@ -1214,52 +1282,63 @@ body.inner-off .inner-note{display:none}
       </svg>
       <div>
         <div class="wordmark">KONSÜL<em>//</em>AI</div>
-        <div class="tagline">Çoklu Model Konsey · Kör Jüri · Sentez İstasyonu</div>
+        <div class="tagline">Bir konuyu birkaç yapay zekâya tartıştırın, kararı birlikte alın</div>
       </div>
     </div>
     <div class="spacer"></div>
     <div class="clock" id="clock">--:--:--</div>
-    <div class="statuspill"><span class="led" id="ledMain"></span><span id="statusTxt">BAĞLANTI KONTROL…</span></div>
-    <button class="ghostbtn" id="demoToggle" title="Model sunucusu olmadan arayüzü simülasyonla dene">DEMO MOD</button>
-    <button class="ghostbtn" id="newSession">YENİ OTURUM</button>
+    <div class="statuspill" id="statusPill" title="Sunucu teşhisi: bu bilgi /api/health ucundan gelir"><span class="led" id="ledMain"></span><span id="statusTxt">BAĞLANTI KONTROL…</span></div>
+    <button class="ghostbtn" id="btnWizard" title="3 adımlı başlangıç rehberini aç">BAŞLANGIÇ</button>
+    <button class="ghostbtn" id="btnGlossary" title="Terimler sözlüğünü aç">SÖZLÜK</button>
+    <button class="ghostbtn" id="demoToggle" title="Gerçek model olmadan arayüzü örnek metinlerle dene (arşive yazılmaz)">DEMO</button>
+    <button class="ghostbtn" id="newSession">YENİ GÖRÜŞME</button>
   </header>
+  <!-- v1.3: demo modunda kalıcı uyarı bandı -->
+  <div id="demoBanner">⚠ DEMO MODU — ekrandaki yanıtlar örnek metindir, gerçek model yanıtı değildir ve arşive yazılmaz.</div>
 
   <div class="bodywrap">
     <!-- ═══ SOL RAY ═══ -->
     <nav class="rail">
-      <div class="lbl">Çalışma Masaları</div>
+      <div class="lbl">3 adımda karar</div>
+      <div class="railstep"><span class="n">1</span> TARTIŞMA MASASI</div>
       <button class="roomnav active" data-room="council">
         <span class="num">01</span>
         <span><span class="tt">Açık Konsey Odası</span><br><span class="sub">Tartışma · İş Birliği</span></span>
       </button>
+      <div class="railstep"><span class="n">2</span> BAĞIMSIZ YANITLAR</div>
       <button class="roomnav" data-room="jury">
         <span class="num">02</span>
         <span><span class="tt">Kör Jüri Odası</span><br><span class="sub">Bağımsız Yanıt Masası</span></span>
       </button>
+      <div class="railstep"><span class="n">3</span> KARAR ÖZETİ</div>
       <button class="roomnav" data-room="synth">
         <span class="num">03</span>
         <span><span class="tt">Sentez &amp; Hakem</span><br><span class="sub">Nihai Karar Odası</span></span>
       </button>
-      <button class="roomnav" data-room="characters">
-        <span class="num">04</span>
-        <span><span class="tt">Karakter Kütüphanesi</span><br><span class="sub">İkonik Şahsiyetler &amp; Mimar</span></span>
-      </button>
-      <button class="roomnav" data-room="envelope">
-        <span class="num">05</span>
-        <span><span class="tt">Mühürlü Zarf &amp; İkna</span><br><span class="sub">Kararın Oluşum Kanıtı</span></span>
-      </button>
-      <button class="roomnav" data-room="archive">
-        <span class="num">06</span>
-        <span><span class="tt">Arşiv &amp; Tutanak</span><br><span class="sub">Oturum Geçmişi · İndirme</span></span>
-      </button>
-      <button class="roomnav" data-room="arena">
-        <span class="num">07</span>
-        <span><span class="tt">Arena 1v1</span><br><span class="sub">İki Zihin · Tek Kılıç</span></span>
-      </button>
+      <!-- v1.3: 4 ileri araç katlanır grupta — hiçbiri kaldırılmadı, tek tıkla açılır -->
+      <details class="railgroup" id="advTools">
+        <summary><span class="tri">▶</span> İLERİ ARAÇLAR (4)</summary>
+        <button class="roomnav" data-room="characters">
+          <span class="num">04</span>
+          <span><span class="tt">Karakter Kütüphanesi</span><br><span class="sub">İkonik Şahsiyetler &amp; Mimar</span></span>
+        </button>
+        <button class="roomnav" data-room="envelope">
+          <span class="num">05</span>
+          <span><span class="tt">Mühürlü Zarf &amp; İkna</span><br><span class="sub">Kararın Oluşum Kanıtı</span></span>
+        </button>
+        <button class="roomnav" data-room="archive">
+          <span class="num">06</span>
+          <span><span class="tt">Arşiv &amp; Tutanak</span><br><span class="sub">Oturum Geçmişi · İndirme</span></span>
+        </button>
+        <button class="roomnav" data-room="arena">
+          <span class="num">07</span>
+          <span><span class="tt">Arena 1v1</span><br><span class="sub">İki Zihin · Tek Kılıç</span></span>
+        </button>
+      </details>
       <div class="lbl">Sandalyeler</div>
       <div class="seatchips" id="seatChips"></div>
       <div class="foot">
-        KONSÜL AI v1.1<br>
+        KONSÜL AI v1.3<br>
         OpenAI-Uyumlu Evrensel Uç<br>
         9Router · Ollama · LM Studio<br>
         Zarf Mühürlü · Delta Ölçülü
@@ -1274,7 +1353,7 @@ body.inner-off .inner-note{display:none}
                 <div class="roomhead">
           <div>
             <div class="kicker">Masa 01 · Sıralı Argüman Zinciri</div>
-            <h1>AÇIK KONSEY ODASI</h1>
+            <h1>AÇIK KONSEY ODASI <button class="jargonbtn" data-glos="sandalye konsey" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
           <div class="desc">2–8 bağımsız yapay zeka zihni (masa koltuk sayısı sağ panelden ayarlanır, varsayılan 5) ve 1 İnsan Operatör masada sıralı ve çapraz argümanlarla müzakere eder; modeller birbirlerinin açıklarını yakalar, kök inançlarına sadık kalarak tartışır.</div>
         </div>
@@ -1315,6 +1394,9 @@ body.inner-off .inner-note{display:none}
         <div class="council">
           <div class="hud transcript">
             <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+            <!-- v1.3: işlem günlüğü — ne başladı / hangi model / sonuç nerede -->
+            <div class="mono" style="font-size:8.5px;letter-spacing:.16em;color:var(--faint);padding:8px 12px 0">İŞLEM GÜNLÜĞÜ</div>
+            <div id="jobStrip" style="padding:0 12px"></div>
             <div class="tscroll" id="cScroll">
               <div class="empty" id="cEmpty">
                 <svg class="sigil" width="64" height="64" viewBox="0 0 40 40" fill="none">
@@ -1337,7 +1419,7 @@ body.inner-off .inner-note{display:none}
             <div class="votestrip" id="voteStrip"></div>
             <div class="opbar">
               <span class="tag" style="background:var(--crimson);color:#ffffff;font-weight:700">👑 OPERATÖR</span>
-              <input type="text" id="opInput" placeholder="Masaya müdahale edin veya yeni gündem dayatın… (Enter / 🎙 dikte)" />
+              <input type="text" id="opInput" placeholder="Masaya müdahale edin veya yeni konu dayatın… (Enter / 🎙 dikte)" />
               <button class="ghostbtn" id="btnDictate" title="Sesli komut: konuşun, söz metne dökülür (tr-TR)" style="font-size:15px">🎙</button>
               <button class="btn primary" id="opSend" style="background:var(--crimson);border-color:var(--crimson)">Söz Al &amp; Gönder</button>
             </div>
@@ -1352,10 +1434,10 @@ body.inner-off .inner-note{display:none}
           <aside class="ctrlcol">
             <div class="hud ctrl">
               <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-              <div class="t">Gündem</div>
+              <div class="t">Konu</div>
               <input type="text" id="topicInput" placeholder="Konseye atılacak konu / soru…" />
               <div class="autorow" style="margin-top:10px">
-                <span class="minilabel" title="Masadaki yapay zeka koltuğu sayısı (2-8). Değişiklik sonraki sözden itibaren döner; zarf, jüri ve oylama buna uyarlanır.">MASA KOLTUKLARI</span>
+                <span class="minilabel" title="Masadaki yapay zeka koltuğu sayısı (2-8). Değişiklik sonraki sözden itibaren döner; zarf, jüri ve oylama buna uyarlanır.">KAÇ SANDALYE</span>
                 <select id="seatCountSel" style="background:#0a0f18;border:1px solid var(--line);color:var(--text);font-family:'IBM Plex Mono';font-size:11px;padding:3px 8px;border-radius:3px;cursor:pointer" title="2-8 arası koltuk sayısı">
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -1397,7 +1479,7 @@ body.inner-off .inner-note{display:none}
                 Manuel mod: her sözü siz verirsiniz.
               </div>
               <div class="autorow" style="margin-top:8px">
-                <span class="minilabel" title="Delegelerin masaya söylemediği iç sesleri göster/gizle (director's cut)">İÇ SES MODU (Director's Cut)</span>
+                <span class="minilabel" title="Delegelerin masaya söylemediği iç sesleri göster/gizle (director's cut)">İÇ SESİ GÖSTER</span>
                 <label class="switch"><input type="checkbox" id="innerChk" checked><span class="tr"></span></label>
               </div>
               <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
@@ -1412,8 +1494,8 @@ body.inner-off .inner-note{display:none}
             </div>
             <div class="hud ctrl">
               <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-              <div class="t">Gerilim &amp; Yakınsama</div>
-              <div class="mk" style="font-family:'IBM Plex Mono';font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase">Gerilim Metresi</div>
+              <div class="t">Masa Isısı &amp; Yakınsama</div>
+              <div class="mk" style="font-family:'IBM Plex Mono';font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase">Masa Isısı (hakem tahmini)</div>
               <div class="meter" id="tensionMeter">
                 <span class="mv" id="tensionVal">—</span>
                 <span class="mbar"><i id="tensionBar" style="width:0%"></i></span>
@@ -1475,9 +1557,9 @@ body.inner-off .inner-note{display:none}
         <div class="roomhead">
           <div>
             <div class="kicker">Masa 02 · Sıfır Grup Düşüncesi</div>
-            <h1>KÖR JÜRİ ODASI</h1>
+            <h1>KÖR JÜRİ ODASI <button class="jargonbtn" data-glos="kör jüri hakem" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
-          <div class="desc">Masadaki modeller birbirini ne görür ne duyar. Aynı soru, izole kanallar, paralel üretim — kimin doğru bildiği yan yana ortaya çıkar. Jüri, konseyin ilk 5 koltuğunu kullanır (2–8 koltuklu masada da sabit üst sınır 5).</div>
+          <div class="desc">Masadaki modeller birbirini ne görür ne duyar. Aynı soru, izole kanallar, paralel üretim — kimin doğru bildiği yan yana ortaya çıkar. Jüri, konseyin ilk 5 koltuğunu kullanır (2–8 koltuklu masada da sabit üst sınır 5). <b>Değerlendirme bir model çıktısıdır; bağımsız doğrulama değildir.</b></div>
         </div>
         <div class="jurybar">
           <input type="text" id="juryPrompt" placeholder="Jüriye sunulacak soruyu yazın — üç modele aynı anda sorulur…" />
@@ -1516,10 +1598,10 @@ body.inner-off .inner-note{display:none}
       <section class="room" id="room-synth">
         <div class="roomhead">
           <div>
-            <div class="kicker">Masa 03 · Başhakem Analizi</div>
-            <h1>SENTEZ &amp; HAKEM ODASI</h1>
+            <div class="kicker">Masa 03 · Değerlendiren Model Analizi</div>
+            <h1>SENTEZ &amp; HAKEM ODASI <button class="jargonbtn" data-glos="synth" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
-          <div class="desc">Konsey tutanağını veya jüri yanıtlarını tek tıkla çekin; Hakem modeli konsensüsü, anlaşmazlıkları ve nihai eylem planını raporlasın.</div>
+          <div class="desc">Konsey tutanağını veya jüri yanıtlarını tek tıkla çekin; değerlendiren model uzlaşmayı, anlaşmazlıkları ve eylem planını özetlesin. <b>Bu özet bir model değerlendirmesidir; bağımsız doğrulama değildir.</b></div>
         </div>
         <div class="synth">
           <div class="synleft">
@@ -1533,18 +1615,18 @@ body.inner-off .inner-note{display:none}
             </button>
             <div class="hud material">
               <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-              <div class="t" style="padding:12px 14px 0">Ham Malzeme</div>
+              <div class="t" style="padding:12px 14px 0">Kaynak metin</div>
               <div class="mbody" id="matBody">Henüz malzeme çekilmedi. Yukarıdaki butonlarla Masa 01 veya Masa 02 kaydını bu odaya aktarın.</div>
             </div>
             <div class="hud ctrl">
               <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-              <div class="t">Başhakem</div>
+              <div class="t">Değerlendiren model (hakem)</div>
               <div class="speakerrow" style="--sc:var(--amber);margin-bottom:10px">
                 <span class="sq" style="color:var(--amber);border-color:rgba(227,179,65,.45);background:rgba(227,179,65,.1)">H</span>
                 <span><span class="nm" style="color:var(--amber)" id="hakemName">HAKEM</span><br><span class="mono" style="font-size:9.5px;color:var(--dim)" id="hakemModel">—</span></span>
                 <span class="st" style="cursor:pointer" id="hakemCfg">AYAR ⚙</span>
               </div>
-              <button class="btn primary wide" id="btnSynth" disabled>◆ Sentez Raporu Üret</button>
+              <button class="btn primary wide" id="btnSynth" disabled>◆ Özeti Oluştur</button>
               <button class="btn danger wide" id="btnSynthStop" disabled style="margin-top:8px">■ Durdur</button>
             </div>
           </div>
@@ -1552,14 +1634,14 @@ body.inner-off .inner-note{display:none}
             <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
             <div class="rhead">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e3b341" stroke-width="1.7"><path d="M12 3v18M5 7l14 0M5 7 2.8 12a3.2 3.2 0 0 0 4.4 0L5 7ZM19 7l-2.2 5a3.2 3.2 0 0 0 4.4 0L19 7ZM8.5 21h7"/></svg>
-              <span class="t">NİHAİ RAPOR</span>
+              <span class="t" id="reportTitle">KARAR ÖZETİ</span>
               <span class="meta" id="reportMeta">BEKLEMEDE</span>
             </div>
             <div class="rbody md" id="reportBody">
               <div class="empty" style="min-height:340px">
                 <svg class="sigil" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#57606a" stroke-width="1.3"><path d="M12 3v18M5 7h14M5 7 2.8 12a3.2 3.2 0 0 0 4.4 0L5 7ZM19 7l-2.2 5a3.2 3.2 0 0 0 4.4 0L19 7ZM8.5 21h7"/></svg>
                 <h3>Hakem henüz kürsüye çıkmadı</h3>
-                <p>Soldan malzemeyi çekin ve <b style="color:var(--amber)">“Sentez Raporu Üret”</b> deyin. Rapor üç bölümde gelir: Konsensüs · Anlaşmazlıklar · Eylem Planı.</p>
+                <p>Soldan malzemeyi çekin ve <b style="color:var(--amber)">“Özeti Oluştur”</b> deyin. Özet üç bölümde gelir: Uzlaşma · Anlaşmazlıklar · Karar. <b>Uyarı:</b> bu metin bir model çıktısıdır; kanıt yerine geçmez.</p>
               </div>
             </div>
           </div>
@@ -1572,7 +1654,7 @@ body.inner-off .inner-note{display:none}
         <div class="roomhead">
           <div>
             <div class="kicker">Masa 04 · Zihinsel Simülasyon Kütüphanesi</div>
-            <h1>KARAKTER KÜTÜPHANESİ &amp; MİMAR AJAN</h1>
+            <h1>KARAKTER KÜTÜPHANESİ &amp; MİMAR AJAN <button class="jargonbtn" data-glos="sandalye karakter" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
           <div class="desc">Gerçek ve köklü düşünce yapılarına sahip ikonik şahsiyetleri sandalyelere oturtun ya da Karakter Mimarı ile saniyeler içinde yeni bir zihinsel dosya inşa edin.</div>
         </div>
@@ -1600,9 +1682,9 @@ body.inner-off .inner-note{display:none}
         <div class="roomhead">
           <div>
             <div class="kicker">Masa 05 · Kararın Oluşum Kanıtı</div>
-            <h1>MÜHÜRLÜ ZARF &amp; İKNA DELTASI</h1>
+            <h1>MÜHÜRLÜ ZARF &amp; İKNA DELTASI <button class="jargonbtn" data-glos="mühürlü zarf ikna deltası" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
-          <div class="desc">Açık tartışma başlamadan önce her delege, diğerlerinden habersiz izole kanaldan nihai pozisyonunu yazar; zarflar SHA-256 ile mühürlenir. Konsey bitince zarflar aynı saniyede açılır — ve İkna Deltası, kimi kimin hangi kanıtla ikna ettiğini ölçer.</div>
+          <div class="desc">Açık tartışma başlamadan önce her delege, diğerlerinden habersiz izole kanaldan nihai pozisyonunu yazar; zarflar SHA-256 ile mühürlenir. Konsey bitince zarflar aynı saniyede açılır — ve İkna Deltası, kimi kimin hangi kanıtla ikna ettiğini ölçer. <b>Mühür yalnız metnin değişmediğini kanıtlar; yazanın kimliğini veya iddianın doğruluğunu kanıtlamaz.</b></div>
         </div>
         <div class="envbar">
           <input type="text" id="envTopic" placeholder="Mühürlenecek konu… (Konseyde konu varsa otomatik dolar)" />
@@ -1611,6 +1693,7 @@ body.inner-off .inner-note{display:none}
           <button class="btn primary" id="btnEnvDelta" disabled>◆ İKNA DELTASI HESAPLA</button>
         </div>
         <div class="envstatus" id="envStatus">Konu girin ve zarfları mühürleyin — zarf sayısı Masa 01'deki koltuk sayısına uyarlanır.</div>
+        <div class="envgrid" inır.</div>
         <div class="envgrid" id="envGrid"></div>
         <div class="hud delta-panel" id="deltaPanel" style="display:none">
           <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
@@ -1641,7 +1724,7 @@ body.inner-off .inner-note{display:none}
         <div class="roomhead">
           <div>
             <div class="kicker">Masa 06 · Süreklilik ve Hesap Verebilirlik</div>
-            <h1>ARŞİV &amp; TUTANAK ODASI</h1>
+            <h1>ARŞİV &amp; TUTANAK ODASI <button class="jargonbtn" data-glos="arşiv demo" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
           <div class="desc">Tamamlanan tüm konsey oturumları yerel veritabanında saklanır. Tutanakları okuyun, Markdown olarak indirin ya da konuyu tekrar masaya taşıyın — karakterler kendi hafızalarıyla geri döner.</div>
         </div>
@@ -1674,9 +1757,9 @@ body.inner-off .inner-note{display:none}
         <div class="roomhead">
           <div>
             <div class="kicker">Masa 07 · Sıfır Sığınak</div>
-            <h1>ARENA 1v1 — İKİ ZİHİN, TEK KILIÇ</h1>
+            <h1>ARENA 1v1 — İKİ ZİHİN, TEK KILIÇ <button class="jargonbtn" data-glos="arena hakem" title="Bu oda ne yapar?">ⓘ</button></h1>
           </div>
-          <div class="desc">İki karakter, tek iddia. Salvo turu: biri vurur, diğeri kırar ve karşı vurur. Her söz, rakibin bir önceki sözünü parçalamak zorundadır. Salvo bitince Başhakem kazananı ve en güçlü darbeyi hükmeder — jüri yok, koltuk yok.</div>
+          <div class="desc">İki karakter, tek iddia. Salvo turu: biri vurur, diğeri kırar ve karşı vurur. Her söz, rakibin bir önceki sözünü parçalamak zorundadır. Salvo bitince değerlendiren model kazananı ve en güçlü darbeyi hükmeder — jüri yok, koltuk yok. <b>Hüküm bir model değerlendirmesidir; turnuva sonucu gibi okunmamalı.</b></div>
         </div>
         <div class="arenabar">
           <div class="arenaselect">
@@ -1684,7 +1767,7 @@ body.inner-off .inner-note{display:none}
             <select id="arenaSeatA"></select>
           </div>
           <div class="arenacore">
-            <input type="text" id="arenaClaim" placeholder="İddia / tez: masaya yatırılacak tek cümle… (Enter)" />
+            <input type="text" id="arenaClaim" placehoek cümle… (Enter)" />
             <div class="arenarounds" id="arenaRounds">
               <button data-r="1">1 SALVO</button><button data-r="2" class="on">2 SALVO</button><button data-r="3">3 SALVO</button><button data-r="5">5 SALVO</button>
             </div>
@@ -1723,6 +1806,71 @@ body.inner-off .inner-note{display:none}
       </section>
 
     </main>
+  </div>
+</div>
+
+<!-- ═══ v1.3 · BAŞLANGIÇ REHBERİ (3 adım) ═══ -->
+<div class="modalwrap" id="wizardModal">
+  <div class="modal">
+    <div class="mhead">
+      <div>
+        <div class="t">HOŞ GELDİNİZ — 3 ADIMDA BAŞLAYIN</div>
+        <div class="mono" style="font-size:9.5px;letter-spacing:.15em;color:var(--dim)">NE YAPMAK İSTİYORSUNUZ?</div>
+      </div>
+      <button class="x" id="wizClose">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="wizsteps"><i id="wzS1" class="on"></i><i id="wzS2"></i><i id="wzS3"></i></div>
+      <!-- Adım 1: hedef kartları -->
+      <div class="wizpane" id="wizPane1">
+        <div class="goalgrid">
+          <div class="goalcard" data-goal="discuss"><div class="gt">💬 Bir konuyu tartıştır</div><div class="gd">Birkaç yapay zekâ aynı konuda sırayla görüş söyler, birbirine itiraz eder.</div></div>
+          <div class="goalcard" data-goal="compare"><div class="gt">⚖ Bağımsız görüşleri karşılaştır</div><div class="gd">Modeller birbirini görmeden aynı soruyu yanıtlar; değerlendiren model sıralar.</div></div>
+          <div class="goalcard" data-goal="decide"><div class="gt">📋 Karar özeti çıkar</div><div class="gd">Tutanak veya yanıtlar üç başlıkta özetlenir: uzlaşma · anlaşmazlık · karar.</div></div>
+          <div class="goalcard" data-goal="explore"><div class="gt">🔍 Önce demoyla bakın</div><div class="gd">Gerçek model bağlamadan örnek metinlerle arayüzü deneyin (arşive yazılmaz).</div></div>
+        </div>
+      </div>
+      <!-- Adım 2: bağlantı -->
+      <div class="wizpane" id="wizPane2" style="display:none">
+        <div class="t" style="margin-bottom:6px">BAĞLANTI DURUMU</div>
+        <div id="wizHealth" class="mono" style="font-size:11px;line-height:1.7;border:1px solid var(--line);border-radius:4px;padding:10px 12px">Kontrol ediliyor…</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="ghostbtn" id="wizTest">BAĞLANTIYI TEST ET</button>
+          <button class="ghostbtn" id="wizDemo">DEMOLA DEVAM ET</button>
+          <button class="ghostbtn" id="wizAdv">GELİŞMİŞ: UÇ &amp; ANAHTAR AYARI</button>
+        </div>
+        <div class="trustnote" style="margin-top:10px"><b>Not:</b> “uç” demek modelin çalıştığı adrestir. Bilgisayarınızdaki ücretsiz seçenek (Pollinations) varsayılan olarak hazırdır; kendi anahtarınız varsa sandalye ayarlarından girersiniz.</div>
+      </div>
+      <!-- Adım 3: konu + sandalye -->
+      <div class="wizpane" id="wizPane3" style="display:none">
+        <div class="t" style="margin-bottom:6px">KONU + SANDALYELER</div>
+        <label class="minilabel">KONU (NE TARTIŞILACAK?)</label>
+        <input type="text" id="wizTopic" placeholder="örn: Uzaktan çalışma verimliliği artırır mı?" style="width:100%" />
+        <div class="autorow" style="margin-top:10px">
+          <span class="minilabel">KAÇ SANDALYE? (2–8)</span>
+          <select id="wizSeats"><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn primary" id="wizStart">TARTIŞMAYI BAŞLAT</button>
+          <button class="ghostbtn" id="wizSkip">REHBERİ ATLA</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;justify-content:space-between">
+        <button class="ghostbtn" id="wizBack">← GERİ</button>
+        <button class="ghostbtn" id="wizNext">İLERİ →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ v1.3 · SÖZLÜK (13 madde) ═══ -->
+<div class="modalwrap" id="glossaryModal">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="t">SÖZLÜK — TERİMLER NE DEMEK?</div></div>
+      <button class="x" id="glosClose">✕</button>
+    </div>
+    <div class="mbody" id="glossaryBody" style="max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -2046,6 +2194,7 @@ function jurySeats(){ return activeSeats().slice(0, 5); }
 const state = {
   seats: loadSeats(),
   backend: false,      // /api/health erişilebilir mi
+  health: null,        // v1.3: sunucudan gelen dürüst teşhis (/api/health)
   demo: false,         // demo mod zorlaması
   room: "council",
   seatCount: loadSeatCount(),
@@ -2312,8 +2461,11 @@ function demoStream(seat, messages, hooks){
 }
 
 /* ═══════════════════════ API İSTEMCİSİ ═══════════════════════ */
+/* v1.3: demo YALNIZ kullanıcı açıkça DEMO'yu seçtiyse çalışır. Sunucu yoksa
+   sessizce örnek metin üretilmez — dürüst hata döner (sahte başarı yok). */
 async function streamChat(seat, messages, hooks){
-  if(state.demo || !state.backend){ demoStream(seat, messages, hooks); return; }
+  if(state.demo){ demoStream(seat, messages, hooks); return; }
+  if(!state.backend){ hooks.onError("SUNUCU YOK — app.py çalışmıyor ya da erişilemiyor. Örnek metin üretilmedi; DEMO düğmesiyle örnek akışı deneyebilirsiniz."); return; }
   const ac = hooks.signal ? null : new AbortController();
   const signal = hooks.signal || ac.signal;
   try{
@@ -2388,6 +2540,8 @@ function councilMsgEl(m){
       '<div class="bhead" style="--mc:'+color+'">' +
         '<span class="nm">'+(m.kind==="op" ? "OPERATÖR" : esc(seat.name+" — "+seat.role))+'</span>' +
         '<span class="rl">'+(m.kind==="op" ? "İNSAN" : "TUR "+m.round)+'</span>' +
+        (m.demo ? '<span class="demobadge">DEMO</span>' : '') +
+        ((!m.demo && m.seat && seat) ? '<span class="modeltag" title="Bu sözü üreten model ve uç">'+esc((seat.model||"?")+" @ "+(seat.baseUrl||"").replace(/^https?:\/\//,"").replace(/\/v1\/?$/,""))+'</span>' : '') +
         (m.streaming ? '<span class="live"><i></i>YAZIYOR</span>' : '') +
         '<span class="tm">'+m.time+'</span>' +
       '</div>' +
@@ -2613,7 +2767,8 @@ async function fetchInnerThought(m){
 }
 function finalizeCouncilRecord(m){
   // Veritabanına kalıcı kayıt: içerik + (varsa) iç ses tek seferde düşer (K8 loop'unun besini)
-  if(state.council.sessionId && m.text){
+  // v1.3: demo modunda arşive yazılmaz (archivingOn kapısı).
+  if(state.council.sessionId && m.text && archivingOn()){
     fetch("/api/session/record_message", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
@@ -2727,7 +2882,7 @@ async function runMandatoryVote(){
     if(!c.votes || !activeSeats().some(k=>c.votes[k] && c.votes[k].score==null)) renderVoteStrip();
     return;
   }
-  if(!c.topic){ toast("Önce bir gündem belirleyin (Masa 01)."); return; }
+  if(!c.topic){ toast("Önce bir konu belirleyin (Masa 01)."); return; }
   const vSeats = activeSeats();
   c.voting = true;
   c.votes = {}; vSeats.forEach(k=>{ c.votes[k] = null; });
@@ -2810,7 +2965,9 @@ async function concludeSession(){
     onDone: async (stopped)=>{
       const verdict = (stopped ? acc : acc).trim() || "(karar metni üretilmedi)";
       c.verdict = verdict;
-      try{
+      // v1.3: demo'da kapatma arşive yazılmaz
+      if(!archivingOn()){ job("✓ Oturum kapatıldı (demo) — arşive yazılmadı"); }
+      else try{
         await fetch("/api/session/conclude", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({
@@ -2856,6 +3013,7 @@ async function concludeSession(){
                 for(const [self, other, otherSeat] of [[ka, nb, kb], [kb, na, ka]]){
                   const cid = (state.seats[self] && state.seats[self].id) || self;
                   if(!state.seats[self].id) continue; // sandalyeye karakter atanmamışsa kişisel defter yok
+                  if(!archivingOn()) continue; // v1.3: demo'da hafıza defterine yazılmaz
                   try{
                     await fetch("/api/memory/add", {
                       method:"POST", headers:{"Content-Type":"application/json"},
@@ -3623,25 +3781,31 @@ async function finalizeDecisionReport(report, dissentSeats, today, oldLabel, H){
   op.className = "sigil-stamp op";
   op.innerHTML = "OPERATÖR · MASA BAŞKANI<small>TUTANAK ONAYI</small>";
   sb.appendChild(op);
+  // v1.3: arşiv sonucu dürüstçe raporlanır — başarısız yazım "damgalandı" demez; demo'da yazılmaz
+  let archNote = "";
+  if(!archivingOn()){
+    archNote = " · Arşive yazılmadı (demo).";
+  } else {
+    try{
+      const rr = await fetch("/api/session/report", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          session_id: state.council.sessionId, topic: state.council.topic,
+          report_md: report, fingerprint: fp,
+          dissent_seats: dissentSeats.join(",")
+        })
+      });
+      const dd = await rr.json().catch(()=>({}));
+      archNote = (rr.ok && dd.ok !== false) ? " · Belge arşive yazıldı." : " · Belge arşive YAZILAMADI: " + esc(dd.error || ("HTTP " + rr.status));
+    }catch(e){ archNote = " · Belge arşive YAZILAMADI: " + esc(e.message || "bağlantı hatası"); }
+  }
   $("#decisionFoot").innerHTML =
     "Rapor parmak izi (SHA-256): <span class='fp'>" + fp + "</span><br>" +
-    "Üretim: Başhakem (" + esc((H && H.model) || "openai") + ") · Şerhler: " + dissentSeats.length + " sandalye (" +
-    (dissentSeats.length ? dissentSeats.join(", ") : "yok — oy birliği") + ") · " + today +
-    " · Belge arşive damgalandı.";
-  // arşive yaz
-  try{
-    await fetch("/api/session/report", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        session_id: state.council.sessionId, topic: state.council.topic,
-        report_md: report, fingerprint: fp,
-        dissent_seats: dissentSeats.join(",")
-      })
-    });
-  }catch(e){}
+    "Üretim: Değerlendiren model (" + esc((H && H.model) || "openai") + ") — bu belge bir model değerlendirmesidir, bağımsız doğrulama değildir · Şerhler: " + dissentSeats.length + " sandalye (" +
+    (dissentSeats.length ? dissentSeats.join(", ") : "yok — oy birliği") + ") · " + today + archNote;
   $("#btnDecisionDownload").dataset.md = report;
   finishDecisionBtn(oldLabel);
-  toast("⚖ Karar raporu imzalandı — " + dissentSeats.length + " muhalefet şerhi");
+  toast("⚖ Karar özeti hazır — " + dissentSeats.length + " muhalefet şerhi" + (archivingOn() ? archNote.replace(/<[^>]*>/g,"") : " · arşive yazılmadı (demo)"));
 }
 $("#btnDecision").addEventListener("click", generateDecisionReport);
 $("#btnDecisionDownload").addEventListener("click", ()=>{
@@ -3757,10 +3921,12 @@ async function startArena(){
   $("#arcolA").classList.remove("winner","loser"); $("#arcolB").classList.remove("winner","loser");
   populateArenaSeats(); renderArenaHeads();
   $("#arenaRoundLbl").textContent = "DÜELLO";
-  // düello tutanağı arşive de düşer
+  // düello tutanağı arşive de düşer — v1.3: demo'da yazılmaz
   A.sessionId = "arena_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,5);
-  fetch("/api/session/start", { method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ session_id: A.sessionId, topic: "ARENA 1v1 — " + claim.slice(0,120) }) }).catch(()=>{});
+  if(archivingOn()){
+    fetch("/api/session/start", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ session_id: A.sessionId, topic: "ARENA 1v1 — " + claim.slice(0,120) }) }).catch(()=>{});
+  }
   for(let r = 1; r <= A.rounds && A.running; r++){
     A.round = r;
     $("#arenaRoundLbl").textContent = "SALVO " + r + "/" + A.rounds;
@@ -3801,10 +3967,10 @@ async function startArena(){
         $(A.winner==="A" ? "#arcolB" : "#arcolA").classList.add("loser");
         toast("⚔ Kazanan: Kılıç " + A.winner);
       }
-      // düello tutanağı arşive
+      // düello tutanağı arşive — v1.3: demo'da yazılmaz
       const rec = (seat, side)=>{
         const k = side==="A" ? a : b;
-        if(state.arena.cols[side]){
+        if(state.arena.cols[side] && archivingOn()){
           fetch("/api/session/record_message", { method:"POST", headers:{"Content-Type":"application/json"},
             body: JSON.stringify({ session_id:A.sessionId, seat:k, character_id:(state.seats[k]&&state.seats[k].id)||k, role:(state.seats[k]&&state.seats[k].role)||"seat", content:state.arena.cols[side] }) }).catch(()=>{});
         }
@@ -4059,7 +4225,11 @@ async function runVerifyClaim(m, btn){
     const d = await r.json();
     if(d.ok && d.report){
       const vm = d.report.match(/\*\*Doğruluk Durumu:\*\*\s*([^\n]+)/);
-      const verdict = vm ? vm[1].trim().toUpperCase().slice(0,60) : "RAPOR ÜRETİLDİ";
+      let verdict = vm ? vm[1].trim().toUpperCase().slice(0,60) : "RAPOR ÜRETİLDİ";
+      // v1.3: kaynak yoksa hüküm kesin bilgi gibi sunulmaz
+      const hasSource = /https?:\/\/|KAYNAK\s*\d|www\./i.test(d.report);
+      if(!hasSource) verdict = "KAYNAK YOK — DOĞRULANMADI";
+      if(!hasSource) job("⚠ İddia tarandı ama <b>kaynak bulunamadı</b> — hüküm: KAYNAK YOK", "err");
       state.council.claims.push({ speaker: seatName, time: now(), verdict, report: d.report });
       renderClaimList();
       pushCouncil({
@@ -4296,7 +4466,7 @@ async function councilTurn(){
   if(c.tmIndex != null) tmExit();
   const key = nextSpeaker();
   if(!key){
-    toast("Masada konuşacak kimse kalmadı — herkes sessizde veya ihraç edildi. (🔇 ile açın, YENİ OTURUM ile sıfırlayın.)");
+    toast("Masada konuşacak kimse kalmadı — herkes sessizde veya ihraç edildi. (🔇 ile açın, YENİ GÖRÜŞME ile sıfırlayın.)");
     return;
   }
   const seat = state.seats[key];
@@ -4305,10 +4475,13 @@ async function councilTurn(){
   // Faz 6 (bağlam bütçesi): modele tam tutanak değil, kayan pencere gider (UI hâlâ her şeyi görür)
   const transcriptBefore = councilModelContext();
   const m = { id: uid(), seat:key, kind:"model", text:"", streaming:true, time: now(), round: Math.ceil(c.modelTurns/activeSeats().length),
+    demo: state.demo,
     cognitiveCharacterId: seat.id ? "character:" + seat.id : "name:" + (seat.charName || seat.name || key).trim().toLocaleLowerCase("tr-TR"),
     cognitiveSessionId: c.sessionId };
   c.msgs.push(m);
   pushCouncil(m);
+  // v1.3: işlem günlüğü — hangi sandalye, hangi model, sonuç nerede
+  job("✓ Sandalye <b>"+key+"</b> yanıtlıyor <span class='jw'>"+esc(seat.model||"?")+"</span> … Nerede: "+esc(jobWhere()));
   setCouncilRunning(true);
   const ac = new AbortController(); c.ac = ac;
   // Faz 6 (K6): söz başı süre kısıtı (başkan yetkisi) — süre dolan söz sistem damgasıyla kesilir
@@ -4334,7 +4507,7 @@ async function councilTurn(){
     cognitiveCharacterId: m.cognitiveCharacterId,
     cognitiveSessionId: m.cognitiveSessionId,
     onDelta: (t)=>{ m.text = t; updateCouncilMsg(m); },
-    onError: (e)=>{ if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; } m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); },
+    onError: (e)=>{ if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; } m.streaming=false; m.error=e; updateCouncilMsg(m); setCouncilRunning(false); job("✗ Sandalye <b>"+key+"</b> hata: "+esc(String(e).slice(0,120)), "err"); },
     onDone: async (stopped)=>{
       m.streaming = false; if(stopped) m.stopped = true;
       if(c.speechTimer){ clearTimeout(c.speechTimer); c.speechTimer=null; }
@@ -4418,14 +4591,17 @@ $("#btnStart").onclick = ()=>{
     if(total > 0) toast("🧠 Yaşayan Hafıza: " + total + " sandalyede eski oturum anıları masaya taşındı.");
   }, 1200);
 
-  // Veritabanına oturum kaydı aç
-  fetch("/api/session/start", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ session_id: state.council.sessionId, topic: topic })
-  }).catch(()=>{});
+  // Veritabanına oturum kaydı aç — v1.3: demo modunda yazılmaz
+  if(archivingOn()){
+    fetch("/api/session/start", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ session_id: state.council.sessionId, topic: topic })
+    }).catch(()=>{});
+  }
 
   cScroll.querySelectorAll(".msg").forEach(n=>n.remove());
-  pushCouncil({ id: uid(), kind:"op", text:"**Gündem masaya yatırıldı:** "+topic, time: now() });
+  job("✓ Görüşme başlatıldı <span class='jw'>"+esc(topic.slice(0,60))+"</span> · " + (archivingOn() ? "Arşive yazılıyor" : "Arşive yazılmıyor (demo)"));
+  pushCouncil({ id: uid(), kind:"op", text:"**Konu masaya yatırıldı:** "+topic, time: now(), demo: state.demo });
   state.council.msgs.push({ id:uid(), kind:"op", text: topic, time: now() });
   $("#btnNext").disabled = false;
   councilTurn();
@@ -4437,7 +4613,7 @@ $("#btnClearC").onclick = ()=>{
   state.council.msgs = []; state.council.modelTurns = 0; state.council.topic = "";
   cScroll.querySelectorAll(".msg").forEach(n=>n.remove());
   if(!$("#cEmpty")){
-    cScroll.insertAdjacentHTML("afterbegin", '<div class="empty" id="cEmpty"><h3>Masa temizlendi</h3><p>Yeni bir gündemle tartışmayı yeniden başlatabilirsiniz.</p></div>');
+    cScroll.insertAdjacentHTML("afterbegin", '<div class="empty" id="cEmpty"><h3>Masa temizlendi</h3><p>Yeni bir konuyla tartışmayı yeniden başlatabilirsiniz.</p></div>');
   }
   $("#btnNext").disabled = true;
   renderSpeakers(); updatePullMeta();
@@ -4503,8 +4679,8 @@ function opSend(){
   const m = { id: uid(), kind:"op", text: v, time: now() };
   state.council.msgs.push(m);
   pushCouncil(m);
-  // Faz 3b: operatör müdahaleleri de tutanağa (arşiv + film şeridi tamamlık)
-  if(state.council.sessionId){
+  // Faz 3b: operatör müdahaleleri de tutanağa (arşiv + film şeridi tamamlık) — v1.3: demo'da yazılmaz
+  if(state.council.sessionId && archivingOn()){
     fetch("/api/session/record_message", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ session_id: state.council.sessionId, seat:"OP", character_id:"operatör", role:"Operatör — İnsan İradesi", content:v })
@@ -4665,7 +4841,10 @@ $("#btnSynth").onclick = ()=>{
   const body = $("#reportBody");
   let acc = "";
   body.innerHTML = "";
-  $("#reportMeta").textContent = "HAKEM YAZIYOR…";
+  // v1.3: demo özeti gerçek rapor gibi sunulmaz
+  $("#reportTitle").textContent = state.demo ? "DEMO ÖRNEK RAPOR" : "KARAR ÖZETİ";
+  $("#reportMeta").textContent = state.demo ? "DEMO — ÖRNEK METİN" : "HAKEM YAZIYOR…";
+  job("✓ Özet isteniyor <span class='jw'>"+esc(seat.model||"?")+"</span> … Nerede: " + (state.demo ? "Yalnız ekran (demo)" : "Karar Özeti paneli")); if(state.demo) job("⚠ Bu bir örnek metindir — gerçek model değerlendirmesi değildir");
   state.synth.running = true;
   $("#btnSynth").disabled = true; $("#btnSynthStop").disabled = false;
   const ac = new AbortController(); state.synth.ac = ac;
@@ -4683,8 +4862,9 @@ $("#btnSynth").onclick = ()=>{
       state.synth.running = false;
     },
     onDone: async (stopped)=>{
-      mountMd(body, acc + (stopped ? "\n\n> ■ *operatör tarafından durduruldu*" : ""), false);
-      $("#reportMeta").textContent = stopped ? "DURDURULDU" : "RAPOR TAMAM · " + now();
+      const demoWarn = state.demo ? "\n\n> ⚠ **DEMO ÖRNEK METNİ** — bu rapor gerçek bir model değerlendirmesi değildir." : "";
+      mountMd(body, acc + demoWarn + (stopped ? "\n\n> ■ *operatör tarafından durduruldu*" : ""), false);
+      $("#reportMeta").textContent = stopped ? "DURDURULDU" : (state.demo ? "DEMO ÖRNEK · " + now() : "RAPOR TAMAM · " + now());
       $("#btnSynth").disabled = false; $("#btnSynthStop").disabled = true;
       state.synth.running = false;
     },
@@ -4695,6 +4875,11 @@ $("#btnSynthStop").onclick = ()=>{ state.synth.ac && state.synth.ac.abort(); };
 /* ═══════════════════════ ODALAR / NAVİGASYON ═══════════════════════ */
 function switchRoom(r){
   state.room = r;
+  // v1.3: ileri araç odasına geçilince grup kendiliğinden açılır
+  if(["characters","envelope","archive","arena"].includes(r)){
+    const adv = $("#advTools");
+    if(adv) adv.open = true;
+  }
   $$(".roomnav").forEach(b=>b.classList.toggle("active", b.dataset.room===r));
   $$(".room").forEach(s=>s.classList.toggle("on", s.id==="room-"+r));
   // Faz 2 (K4): Arşiv odası her açılışta taze tutanak listesi çeker
@@ -4879,7 +5064,9 @@ $("#mKeyDel").onclick = async ()=>{
 };
 $("#mTest").onclick = async ()=>{
   $("#mTestTxt").textContent = "Test ediliyor…"; $("#mLed").className = "led demo";
-  if(state.demo){ setTimeout(()=>{ $("#mLed").className="led live"; $("#mTestTxt").textContent="DEMO: uç erişilebilir kabul edildi"; },600); return; }
+  // v1.3: demo modunda sahte başarı yok — gerçek çağrı yapılmaz, açıkça söylenir
+  if(state.demo){ setTimeout(()=>{ $("#mLed").className="led demo"; $("#mTestTxt").textContent="DEMO modu: gerçek çağrı yapılmaz, test edilemez"; },600); return; }
+  if(!state.backend){ $("#mLed").className="led err"; $("#mTestTxt").textContent="SUNUCU YOK — test edilemez (önce app.py)"; return; }
   try{
     const r = await fetch("/api/ping?url=" + encodeURIComponent($("#fUrl").value.trim()));
     const j = await r.json();
@@ -4924,13 +5111,42 @@ $("#demoToggle").onclick = ()=>{
   $("#demoToggle").style.borderColor = state.demo ? "var(--amber)" : "";
   $("#demoToggle").style.color = state.demo ? "var(--amber)" : "";
   applyStatus();
+  toast(state.demo
+    ? "DEMO açık — yanıtlar örnek metindir, arşive yazılmaz."
+    : (state.backend ? "Demo kapalı — gerçek model kullanılacak." : "Demo kapalı — ama sunucu yok, önce app.py çalıştırılmalı."));
 };
+/* v1.3: dürüst durum göstergesi. Sunucu yoksa OTOMATİK demo'ya geçilmez;
+   kullanıcı bilinçli seçer. Gerçek modda hangi model@uç aktifse yazılır. */
+function activeUpstreamTag(){
+  try{
+    const s = state.seats[activeSeats()[0]] || {};
+    const host = (s.baseUrl||"").replace(/^https?:\/\//,"").replace(/\/v1\/?$/,"");
+    return (s.model || "model") + (host ? " @ " + host : "");
+  }catch(e){ return "model"; }
+}
 function applyStatus(){
   const led = $("#ledMain"), txt = $("#statusTxt");
   const core = $("#coreNetStat");
-  if(state.demo){ led.className="led demo"; txt.textContent="DEMO SİMÜLASYONU"; if(core) core.textContent="NÖRAL BAĞLANTI: SİMÜLASYON"; }
-  else if(state.backend){ led.className="led live"; txt.textContent="PROXY CANLI · 127.0.0.1:8888"; if(core) core.textContent="NÖRAL BAĞLANTI: CANLI"; }
-  else { led.className="led err"; txt.textContent="PROXY YOK · DEMO’YA GEÇ"; if(core) core.textContent="NÖRAL BAĞLANTI: KOPUK"; state.demo = true; led.className="led demo"; txt.textContent="DEMO SİMÜLASYONU"; if(core) core.textContent="NÖRAL BAĞLANTI: SİMÜLASYON"; $("#demoToggle").style.color="var(--amber)"; $("#demoToggle").style.borderColor="var(--amber)"; }
+  const banner = $("#demoBanner");
+  if(banner) banner.classList.toggle("on", !!state.demo);
+  if(state.demo){
+    led.className="led demo"; txt.textContent="DEMO · GERÇEK MODEL YOK";
+    if(core) core.textContent="ÖRNEK METİN MODU (ARŞİVE YAZILMAZ)";
+  }
+  else if(state.backend){
+    led.className="led live"; txt.textContent="GERÇEK MODEL · " + activeUpstreamTag();
+    if(core) core.textContent="GERÇEK MODEL BAĞLANTISI";
+  }
+  else {
+    led.className="led err"; txt.textContent="SUNUCU YOK";
+    if(core) core.textContent="SUNUCU YOK — app.py ÇALIŞMIYOR";
+  }
+  const pill = $("#statusPill");
+  if(pill && state.health){
+    pill.title = "Sunucu v" + (state.health.version||"?") + " · yapay zekâ: " +
+      (state.health.ai||"?") + " · backend simülasyonu: " + (state.health.simulation_in_backend?"VAR":"yok") +
+      " · giriş koruması: " + (state.health.auth||"?");
+  }
 }
 /* HUD toast (alert yerine — Denetim B6) */
 function toast(msg){
@@ -4962,8 +5178,28 @@ async function checkBackend(){
     const r = await fetch("/api/health", {signal:c.signal});
     const j = await r.json();
     state.backend = !!j.ok;
-  }catch(e){ state.backend = false; }
+    state.health = j.ok ? j : null;
+  }catch(e){ state.backend = false; state.health = null; }
   applyStatus();
+}
+/* v1.3: arşiv kapısı — demo modunda HİÇBİR şey arşive/oturuma yazılmaz.
+   Sunucu yoksa da yazma denemesi yapılmaz (sessiz başarısızlık yok). */
+function archivingOn(){
+  return !state.demo && state.backend;
+}
+/* v1.3: işlem günlüğü — ne başladı / hangi model / bitti-hata / sonuç nerede */
+function job(html, cls){
+  const box = $("#jobStrip");
+  if(!box) return null;
+  const d = document.createElement("div");
+  d.className = "jobitem" + (cls ? " " + cls : "");
+  d.innerHTML = html;
+  box.prepend(d);
+  while(box.children.length > 6) box.lastChild.remove();
+  return d;
+}
+function jobWhere(){
+  return archivingOn() ? "Tartışma Masası + Arşiv" : "Yalnız ekran — demo, arşive yazılmadı";
 }
 
 
@@ -5134,10 +5370,13 @@ state.envelope = {
 function envSessionId(){
   if(!state.envelope.sessionId){
     state.envelope.sessionId = "zarf_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,6);
-    fetch("/api/session/start", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ session_id: state.envelope.sessionId, topic: state.envelope.topic })
-    }).catch(()=>{});
+    // v1.3: demo modunda arşive oturum açılmaz
+    if(archivingOn()){
+      fetch("/api/session/start", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ session_id: state.envelope.sessionId, topic: state.envelope.topic })
+      }).catch(()=>{});
+    }
   }
   return state.envelope.sessionId;
 }
@@ -5236,7 +5475,11 @@ function runSealCol(k, topic){
       let word = lines.length ? lines[lines.length-1] : "";
       word = word.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü0-9 \-]/g,"").trim().slice(0,24).toUpperCase();
       const position = (lines.length > 1 ? lines.slice(0,-1).join("\n") : text).trim();
-      try{
+      // v1.3: demo'da sunucuya mühürlenmez — yerel örnek mühür (metin bütünlüğü gösterimi)
+      if(!archivingOn()){
+        try{ c.hash = await sha256Hex(position + "|" + word); }catch(e){ c.hash = "demo"; }
+        c.state = "sealed"; c.word = word; c.position = position; c.demoSeal = true;
+      } else try{
         const r = await fetch("/api/envelope/seal", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({
@@ -5350,6 +5593,19 @@ $("#btnEnvSeal").onclick = ()=>{
 };
 
 $("#btnEnvOpen").onclick = async ()=>{
+  // v1.3: demo mühürleri yereldir — sunucuya sorulmadan açılır (yalnız ekran)
+  if(!archivingOn()){
+    activeSeats().forEach(k=>{
+      const c = state.envelope.cols[k];
+      if(c && (c.state==="sealed"||c.state==="opened")){ c.state="opened"; c.openedAt=c.openedAt||now(); renderEnvCard(k); }
+    });
+    state.envelope.delta = null;
+    $("#deltaPanel").style.display = "none";
+    updateEnvStatus();
+    job("✓ Zarflar açıldı (demo) — mühürler yerel örnek, sunucu kaydı yok");
+    toast(activeSeats().length + " zarf açıldı (DEMO — sunucuda mühür kaydı yok).");
+    return;
+  }
   const r = await fetch("/api/envelope/open", {
     method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ session_id: state.envelope.sessionId })
@@ -5369,6 +5625,12 @@ $("#btnEnvOpen").onclick = async ()=>{
 };
 
 $("#btnEnvDelta").onclick = async ()=>{
+  // v1.3: delta sunucudaki mühür kayıtlarıyla hesaplanır — demo'da dürüstçe yapılmaz
+  if(!archivingOn()){
+    toast("Delta demo modunda hesaplanamaz — mühürler sunucuda değil. Gerçek modda deneyin.");
+    job("✗ İkna Deltası atlandı: demo modunda sunucu mührü yok", "err");
+    return;
+  }
   const modelTurns = state.council.msgs.filter(m=>m.kind!=="op" && m.text);
   if(modelTurns.length < 2){ toast("Önce Masa 01'de aynı konu üzerinde açık konseyi yürütün (en az birkaç söz)."); return; }
   if(state.envelope.topic && state.council.topic && state.council.topic !== state.envelope.topic){
@@ -5417,7 +5679,106 @@ _origBtnStart.addEventListener("click", ()=>{
   }, 0);
 });
 
+/* ═══════════════════════ v1.3 · REHBER + SÖZLÜK ═══════════════════════ */
+const GLOSSARY = [
+  { k:"uç (endpoint)", d:"Modelin çalıştığı adres. Örnek: bilgisayarınızdaki Ollama (http://127.0.0.1:11434/v1) veya bir bulut servisi. Her sandalyenin ucu ayrı ayarlanabilir." },
+  { k:"sandalye / koltuk", d:"Masadaki yapay zekâ katılımcılarından biri (A–H). Her sandalyenin kendi karakteri, modeli ve ucu vardır." },
+  { k:"hakem (değerlendiren model)", d:"Tartışmaya katılmaz; tutanağı okuyup sıralama, özet veya karar metni yazar. Yanılmaz değildir — bir model değerlendirmesidir." },
+  { k:"sentez / karar özeti", d:"Uzun tartışmanın üç başlıkta kısaltılmışı: uzlaşma · anlaşmazlıklar · karar. Model tarafından yazılır." },
+  { k:"kör jüri", d:"Modellerin birbirini görmeden aynı soruyu ayrı ayrı yanıtlaması. Hakem, kimin ne dediğini bilmeden yalnız argümana bakar." },
+  { k:"mühürlü zarf", d:"Tartışmadan önce her sandalyenin gizlice yazdığı nihai pozisyon. SHA-256 ile mühürlenir: sonradan değiştirilemez, değiştirilirse mühür tutmaz. Yalnız metin bütünlüğü kanıtıdır." },
+  { k:"ikna deltası", d:"Her sandalyenin mühürlü pozisyonu ile tartışma sonundaki pozisyonu arasındaki değişim puanı (0–100). Kimin kimi ikna ettiğini gösterir." },
+  { k:"iç ses", d:"Her sözün ardından aynı modelin ürettiği 1–2 cümlelik gizli monolog. Masadakiler duymaz; yalnız siz okursunuz. Bir kurgu katmanıdır." },
+  { k:"masa ısısı", d:"Hakemin her turda tahmin ettiği tartışma sıcaklığı (0–100). Bir ölçüm değil, model tahminidir." },
+  { k:"iddia defteri", d:"Doğrulanması istenen iddiaların ve web araştırması sonuçlarının toplandığı defter. Kaynak yoksa hüküm “doğrulanmadı” olur." },
+  { k:"kâsa (vault)", d:"API anahtarlarının sunucuda tutulduğu tablo. Anahtarlar tarayıcıda saklanmaz; arayüze yalnız son 4 hanenin ipucu gösterilir." },
+  { k:"demo modu", d:"Gerçek model kullanmadan arayüzü örnek metinlerle deneme kipi. Arşive hiçbir şey yazılmaz; yanıtlar gerçeği yansıtmaz." },
+  { k:"yaşayan hafıza", d:"Karakterlerin eski oturumlardan damıtılmış kısa anıları. Yeni oturumda “geçen oturumda…” diye hatırlamalarını sağlar." },
+];
+function renderGlossary(){
+  const box = $("#glossaryBody");
+  if(!box) return;
+  box.innerHTML = GLOSSARY.map((g,i)=>'<div class="glositem" id="glos-'+i+'"><div class="gk">'+esc(g.k)+'</div><div class="gd">'+esc(g.d)+'</div></div>').join("");
+}
+function openGlossary(term){
+  renderGlossary();
+  $("#glossaryModal").classList.add("on");
+  if(term){
+    const idx = GLOSSARY.findIndex(g=>term.toLowerCase().split(/\s+/).some(w=>w.length>3 && (g.k.toLowerCase().includes(w)||g.d.toLowerCase().includes(w))));
+    const el = idx>=0 && document.getElementById("glos-"+idx);
+    if(el) setTimeout(()=>el.scrollIntoView({block:"center"}), 50);
+  }
+}
+document.addEventListener("click", (e)=>{
+  const b = e.target && e.target.closest ? e.target.closest(".jargonbtn") : null;
+  if(b) openGlossary(b.dataset.glos || "");
+});
+$("#btnGlossary").onclick = ()=>openGlossary("");
+$("#glosClose").onclick = ()=>$("#glossaryModal").classList.remove("on");
+$("#glossaryModal").addEventListener("click", e=>{ if(e.target.id==="glossaryModal") $("#glossaryModal").classList.remove("on"); });
+
+/* ── Rehber ── */
+let wizStep = 1, wizGoal = "";
+function wizShow(n){
+  wizStep = Math.max(1, Math.min(3, n));
+  [1,2,3].forEach(i=>{
+    $("#wizPane"+i).style.display = i===wizStep ? "" : "none";
+    $("#wzS"+i).classList.toggle("on", i<=wizStep);
+  });
+  $("#wizBack").disabled = wizStep===1;
+  $("#wizNext").disabled = wizStep===3;
+  if(wizStep===2) wizRefreshHealth();
+}
+function openWizard(){ wizShow(1); $("#wizardModal").classList.add("on"); }
+function closeWizard(markDone){
+  $("#wizardModal").classList.remove("on");
+  if(markDone){ try{ localStorage.setItem("konsul_onboarded","1"); }catch(e){} }
+}
+async function wizRefreshHealth(){
+  const el = $("#wizHealth");
+  await checkBackend();
+  if(state.backend && state.health){
+    el.innerHTML = "✓ Sunucu erişilebilir (v"+esc(state.health.version||"?")+") — gerçek model kullanılacak.<br>"+
+      "Aktif uç: <b>"+esc(activeUpstreamTag())+"</b><br>"+
+      "<span style='color:var(--dim)'>Backend simülasyonu: yok · giriş koruması: "+esc(state.health.auth||"?")+"</span>";
+  } else if(state.demo){
+    el.innerHTML = "DEMO modu açık — örnek metinlerle denenecek, arşive yazılmayacak.";
+  } else {
+    el.innerHTML = "✗ Sunucuya ulaşılamadı (app.py çalışıyor mu?).<br>“DEMOLA DEVAM ET” ile örneklere bakabilir ya da sunucuyu başlatıp “BAĞLANTIYI TEST ET” diyebilirsiniz.";
+  }
+}
+$$("#wizardModal .goalcard").forEach(c=>{
+  c.onclick = ()=>{
+    $$("#wizardModal .goalcard").forEach(x=>x.classList.remove("sel"));
+    c.classList.add("sel");
+    wizGoal = c.dataset.goal;
+    if(wizGoal==="explore" && !state.demo) $("#demoToggle").click();
+    if(wizGoal!=="explore" && state.demo) $("#demoToggle").click();
+    wizShow(2);
+  };
+});
+$("#wizBack").onclick = ()=>wizShow(wizStep-1);
+$("#wizNext").onclick = ()=>wizShow(wizStep+1);
+$("#wizClose").onclick = ()=>closeWizard(true);
+$("#wizSkip").onclick = ()=>{ closeWizard(true); toast("Rehber kapatıldı — BAŞLANGIÇ düğmesiyle her zaman açabilirsiniz."); };
+$("#wizTest").onclick = ()=>wizRefreshHealth();
+$("#wizDemo").onclick = ()=>{ if(!state.demo) $("#demoToggle").click(); wizRefreshHealth(); wizShow(3); };
+$("#wizAdv").onclick = ()=>{ closeWizard(false); openSeatModal(activeSeats()[0] || "A"); };
+$("#wizStart").onclick = ()=>{
+  const t = $("#wizTopic").value.trim();
+  if(t) $("#topicInput").value = t;
+  const n = parseInt($("#wizSeats").value,10);
+  if(n>=2 && n<=8) applySeatCount(n);
+  closeWizard(true);
+  switchRoom(wizGoal==="compare" ? "jury" : wizGoal==="decide" ? "synth" : "council");
+  if($("#topicInput").value.trim()) $("#btnStart").click();
+  else { $("#topicInput").focus(); toast("Konuyu yazıp “Tartışmayı Başlat” deyin."); }
+};
+$("#btnWizard").onclick = openWizard;
+$("#wizardModal").addEventListener("click", e=>{ if(e.target.id==="wizardModal") closeWizard(true); });
+
 /* ── Kalkış ── */
+renderGlossary();
 renderSeatChips();
 renderSpeakers();
 renderDelegatesBar();
@@ -5432,6 +5793,15 @@ loadCharacters();
 // Faz 6 (S2): eski localStorage anahtarlarının kâsaya göçü — health kontrolünün (≤2.5 sn) ardından iki deneme
 setTimeout(migrateLegacyCreds, 800);
 setTimeout(migrateLegacyCreds, 3500);
+// v1.3: ilk kullanımda rehber kendiliğinden açılır (?welcome=1 ile her zaman)
+(function(){
+  let first = false;
+  try{
+    first = !localStorage.getItem("konsul_onboarded");
+    if(location.search.includes("welcome=1")) first = true;
+  }catch(e){ first = true; }
+  if(first) setTimeout(openWizard, 700);
+})();
 </script>
 </body>
 </html>
