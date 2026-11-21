@@ -70,6 +70,48 @@ _LOCAL_PORTS = {
 }
 _ALLOW_ALL_LOCAL = os.environ.get("KONSUL_ALLOW_ALL_LOCAL", "0") == "1"
 
+# v1.4: hız sınırı — dış model çağrısı yapan uçlarda IP başına kayan pencere.
+# KONSUL_RATE_LIMIT_PER_MIN=0 ile kapatılır. Not: işlem-içi (in-memory) sayaçtır;
+# çok çalışanlı (multi-worker) dağıtımlarda sayaç çalışan başına ayrı tutulur.
+try:
+    _RATE_LIMIT_PER_MIN = max(0, int(os.environ.get("KONSUL_RATE_LIMIT_PER_MIN", "60")))
+except ValueError:
+    _RATE_LIMIT_PER_MIN = 60
+_RATE_WINDOW_S = 60.0
+_rate_hits: dict[str, list[float]] = {}
+
+
+def _client_ip(request: Request) -> str:
+    fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if fwd:
+        return fwd[:64]
+    return request.client.host if request.client else "unknown"
+
+
+def _check_rate_limit(request: Request):
+    """Sınır aşıldıysa 429 JSONResponse, yoksa None döner."""
+    if _RATE_LIMIT_PER_MIN <= 0:
+        return None
+    import time as _time
+    ip = _client_ip(request)
+    now = _time.monotonic()
+    hits = _rate_hits.get(ip)
+    if hits is None:
+        hits = _rate_hits[ip] = []
+    cutoff = now - _RATE_WINDOW_S
+    while hits and hits[0] <= cutoff:
+        hits.pop(0)
+    if len(hits) >= _RATE_LIMIT_PER_MIN:
+        retry_after = max(1, int(hits[0] + _RATE_WINDOW_S - now) + 1)
+        return JSONResponse(
+            {"ok": False, "error": f"Hız sınırı aşıldı — dakikada en fazla {_RATE_LIMIT_PER_MIN} model çağrısı. {retry_after} sn sonra tekrar deneyin.",
+             "retry_after": retry_after},
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+        )
+    hits.append(now)
+    return None
+
 
 # ── Paylaşımlı HTTP istemcisi (bağlantı havuzu — her istekte yeniden kurulum yok) ──
 _HTTP: httpx.AsyncClient | None = None
@@ -270,18 +312,28 @@ async def health():
         "auth": "none",
         "key_storage": "plaintext-sqlite",
         "exposed": not loopback,
+        "rate_limit_per_min": _RATE_LIMIT_PER_MIN,
     }
 
 
 @app.get("/api/ping")
-async def ping(url: str):
-    """Verilen OpenAI-uyumlu Base URL'yi test eder, model listesini döndürür."""
+async def ping(url: str, key: str = "", request: Request = None):
+    """Verilen OpenAI-uyumlu Base URL'yi test eder, model listesini döndürür.
+    v1.4: BYOK akışında anahtarla test için isteğe bağlı `key` (yalnızca test
+    isteğinde taşınır, saklanmaz)."""
+    if request is not None:
+        limited = _check_rate_limit(request)
+        if limited is not None:
+            return limited
     err = _validate_base_url(url)
     if err:
         return {"ok": False, "error": err}
     target = _clean_base(url) + "/models"
     try:
-        resp = await _get_http().get(target, timeout=5.0)
+        headers = {"Authorization": f"Bearer {key.strip()}"} if key and key.strip() else {}
+        resp = await _get_http().get(target, headers=headers, timeout=5.0)
+        if resp.status_code == 401:
+            return {"ok": False, "error": "HTTP 401 — anahtar geçersiz ya da bu uç anahtar istiyor. Anahtarı yapıştırıp tekrar deneyin."}
         if resp.status_code != 200:
             return {"ok": False, "error": f"HTTP {resp.status_code}"}
         data = resp.json()
@@ -336,7 +388,10 @@ async def credentials_delete(seat: str):
 
 
 @app.post("/api/chat")
-async def chat(payload: ChatPayload):
+async def chat(payload: ChatPayload, request: Request):
+    limited = _check_rate_limit(request)
+    if limited is not None:
+        return limited
     base, api_key, model, rerr = _resolve_endpoint(
         payload.base_url, payload.api_key, payload.model, payload.seat
     )
@@ -385,6 +440,9 @@ async def chat(payload: ChatPayload):
 # ── Ana proxy: SSE streaming motoru ─────────────────────────────────────
 @app.post("/api/chat/stream")
 async def chat_stream(payload: ChatPayload, request: Request):
+    limited = _check_rate_limit(request)
+    if limited is not None:
+        return limited
     base, api_key, model, rerr = _resolve_endpoint(
         payload.base_url, payload.api_key, payload.model, payload.seat
     )
@@ -544,7 +602,10 @@ async def save_character_endpoint(payload: dict):
 
 
 @app.post("/api/character/architect")
-async def character_architect(payload: dict):
+async def character_architect(payload: dict, request: Request):
+    limited = _check_rate_limit(request)
+    if limited is not None:
+        return limited
     prompt = (payload.get("prompt") or "").strip()
     if not prompt:
         return JSONResponse({"ok": False, "error": "Karakter tanımı boş olamaz."}, status_code=400)
@@ -772,7 +833,10 @@ async def envelope_open(payload: dict):
 
 
 @app.post("/api/delta/compute")
-async def delta_compute(payload: dict):
+async def delta_compute(payload: dict, request: Request):
+    limited = _check_rate_limit(request)
+    if limited is not None:
+        return limited
     sid = payload.get("session_id", "")
     if not sid:
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
@@ -844,7 +908,10 @@ async def convergence_route(payload: dict):
 
 
 @app.post("/api/research/verify")
-async def research_verify(payload: dict):
+async def research_verify(payload: dict, request: Request):
+    limited = _check_rate_limit(request)
+    if limited is not None:
+        return limited
     claim = (payload.get("claim") or "").strip()
     if not claim:
         return JSONResponse({"ok": False, "error": "İncelenecek iddia boş olamaz."}, status_code=400)
