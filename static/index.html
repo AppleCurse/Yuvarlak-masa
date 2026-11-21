@@ -1265,6 +1265,25 @@ body.inner-off .inner-note{display:none}
   .modeltag{max-width:60vw}
 }
 
+/* ═══════════════ v1.4 · BYOK (kendi anahtarınla gel) ═══════════════ */
+.keyguide{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:10px;
+  background:rgba(57,197,207,.04);font-size:11.5px;line-height:1.6}
+.keyguide:empty{display:none}
+.kg-row{display:flex;align-items:center;gap:8px}
+.kg-row .kg-ok{color:var(--green,#3ddc84);font-weight:700}
+.kg-row .kg-ic{font-size:14px}
+.kg-btn{margin-left:auto;white-space:nowrap;text-decoration:none;font-size:10px;padding:5px 12px}
+.kg-steps{margin-top:6px;color:var(--dim);font-size:11px}
+.kg-steps b{color:var(--text)}
+.provchips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.provchip{border:1px solid var(--line);border-radius:6px;padding:8px 11px;cursor:pointer;
+  background:rgba(255,255,255,.015);font-size:11.5px;text-align:left}
+.provchip:hover{border-color:var(--cyan)}
+.provchip.sel{border-color:var(--cyan);background:rgba(57,197,207,.07)}
+.provchip .pn{font-weight:700;font-size:12px}
+.provchip .pd{color:var(--dim);font-size:10.5px;margin-top:2px}
+@media (max-width:640px){ .kg-row{flex-wrap:wrap} .kg-btn{margin-left:0} }
+
 </style>
 </head>
 <body>
@@ -1839,6 +1858,15 @@ body.inner-off .inner-note{display:none}
           <button class="ghostbtn" id="wizDemo">DEMOLA DEVAM ET</button>
           <button class="ghostbtn" id="wizAdv">GELİŞMİŞ: UÇ &amp; ANAHTAR AYARI</button>
         </div>
+        <!-- v1.4 BYOK: ücretsiz anahtar al → yapıştır → kaydet -->
+        <div class="t" style="margin:12px 0 4px">HIZLI KURULUM: ÜCRETSİZ ANAHTARINIZI GETİRİN</div>
+        <div class="mono" style="font-size:10.5px;color:var(--dim);line-height:1.6">Herkes kendi anahtarıyla gelir — anahtarınız yalnız bu sunucunun kâsasında durur. Sağlayıcıyı seçin, anahtarı alıp aşağıya yapıştırın:</div>
+        <div class="provchips" id="wizProvs"></div>
+        <div id="wizKeyRow" style="display:none;gap:8px;flex-wrap:wrap">
+          <input type="password" id="wizKey" placeholder="API anahtarını buraya yapıştırın (sk-… / gsk-…)" style="flex:1;min-width:200px" />
+          <button class="btn primary" id="wizKeySave">KAYDET VE TEST ET</button>
+        </div>
+        <div class="mono" id="wizKeyMsg" style="font-size:10.5px;margin-top:6px;line-height:1.6"></div>
         <div class="trustnote" style="margin-top:10px"><b>Not:</b> “uç” demek modelin çalıştığı adrestir. Bilgisayarınızdaki ücretsiz seçenek (Pollinations) varsayılan olarak hazırdır; kendi anahtarınız varsa sandalye ayarlarından girersiniz.</div>
       </div>
       <!-- Adım 3: konu + sandalye -->
@@ -1957,7 +1985,9 @@ body.inner-off .inner-note{display:none}
               <option value="lmstudio">LM Studio — 127.0.0.1:1234</option>
               <option value="openai">OpenAI (Bulut)</option>
               <option value="deepseek">DeepSeek (Bulut)</option>
-              <option value="groq">Groq (Bulut)</option>
+              <option value="groq">Groq (Bulut · ücretsiz katman)</option>
+              <option value="openrouter">OpenRouter (ücretsiz modeller var)</option>
+              <option value="gemini">Google Gemini (ücretsiz anahtar)</option>
               <option value="pollinations">Pollinations (Ücretsiz Doğrudan)</option>
             </select>
           </div>
@@ -1967,10 +1997,17 @@ body.inner-off .inner-note{display:none}
           </div>
         </div>
 
+        <!-- v1.4 BYOK: anahtar nereden alınır + tüm sandalyelere kopyalama -->
+        <div id="keyGuide" class="keyguide"></div>
+
         <div class="field row" style="display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label>Base URL (Uç Nokta)</label>
             <input type="text" id="fUrl" placeholder="http://127.0.0.1:20128/v1" />
+            <label style="margin-top:8px;display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:normal">
+              <input type="checkbox" id="fKeyAll" style="width:auto" />
+              <span>Bu uç + anahtarı <b>tüm sandalyelere</b> uygula</span>
+            </label>
           </div>
           <div>
             <label>API Key</label>
@@ -2029,14 +2066,17 @@ const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&g
 const now = () => new Date().toLocaleTimeString("tr-TR", {hour12:false});
 
 /* ── Uç presetleri ── */
+/* v1.4 BYOK: keys = anahtarın alınacağı sayfa (boşsa anahtar gerekmez) */
 const PRESETS = {
-  "9router":     { url: "http://127.0.0.1:20128/v1", model: "pineal-general-reasoning" },
-  "ollama":      { url: "http://127.0.0.1:11434/v1", model: "llama3.2:latest" },
-  "lmstudio":    { url: "http://127.0.0.1:1234/v1",  model: "local-model" },
-  "openai":      { url: "https://api.openai.com/v1", model: "gpt-4o-mini" },
-  "deepseek":    { url: "https://api.deepseek.com/v1", model: "deepseek-chat" },
-  "groq":        { url: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" },
-  "pollinations":{ url: "https://text.pollinations.ai/openai", model: "openai" },
+  "9router":     { url: "http://127.0.0.1:20128/v1", model: "pineal-general-reasoning", label: "9Router (yerel)", keys: "", note: "Yerel sunucu — anahtar gerekmez." },
+  "ollama":      { url: "http://127.0.0.1:11434/v1", model: "llama3.2:latest", label: "Ollama (yerel)", keys: "", note: "Yerel sunucu — anahtar gerekmez." },
+  "lmstudio":    { url: "http://127.0.0.1:1234/v1",  model: "local-model", label: "LM Studio (yerel)", keys: "", note: "Yerel sunucu — anahtar gerekmez." },
+  "openai":      { url: "https://api.openai.com/v1", model: "gpt-4o-mini", label: "OpenAI", keys: "https://platform.openai.com/api-keys", note: "Ücretli — bakiye gerekir." },
+  "deepseek":    { url: "https://api.deepseek.com/v1", model: "deepseek-chat", label: "DeepSeek", keys: "https://platform.deepseek.com/api_keys", note: "Uygun fiyatlı bulut." },
+  "groq":        { url: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile", label: "Groq", keys: "https://console.groq.com/keys", note: "Ücretsiz katman var — hızlı, günlük limitli." },
+  "openrouter":  { url: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct:free", label: "OpenRouter", keys: "https://openrouter.ai/keys", note: "Ücretsiz modeller için adı :free ile bitenleri seçin." },
+  "gemini":      { url: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-2.0-flash", label: "Google Gemini", keys: "https://aistudio.google.com/apikey", note: "AI Studio'dan ücretsiz anahtar alınır." },
+  "pollinations":{ url: "https://text.pollinations.ai/openai", model: "openai", label: "Pollinations", keys: "", note: "Anahtar gerekmez — paylaşımlı ücretsiz uç, yoğun saatte yavaşlayabilir." },
 };
 
 /* ── Karakter Sistem İstemini Derleme Motoru ── */
@@ -2474,7 +2514,15 @@ async function streamChat(seat, messages, hooks){
       // Faz 6 (S2): gövdeye anahtar gitmez — koltuk anahtarı (seat) gider, anahtarı sunucu kâsası çözer
       body: JSON.stringify({ base_url: seat.baseUrl, api_key: "", model: seat.model, seat: seat.key || "", cognitive_character_id: hooks.cognitiveCharacterId || "", cognitive_session_id: hooks.cognitiveSessionId || "", messages, temperature: 0.7 }),
     });
-    if(!resp.ok || !resp.body){ hooks.onError("Proxy HTTP "+resp.status+" döndürdü."); return; }
+    if(!resp.ok || !resp.body){
+      // v1.4: hız sınırı (429) mesajını olduğu gibi göster
+      if(resp.status === 429){
+        try{ const dj = await resp.json(); hooks.onError(dj.error || "Hız sınırı aşıldı — biraz bekleyip tekrar deneyin."); }
+        catch(e){ hooks.onError("Hız sınırı aşıldı (HTTP 429) — biraz bekleyip tekrar deneyin."); }
+        return;
+      }
+      hooks.onError("Proxy HTTP "+resp.status+" döndürdü."); return;
+    }
     const reader = resp.body.getReader();
     const dec = new TextDecoder();
     let buf = "", acc = "";
@@ -4981,6 +5029,15 @@ function openSeatModal(k){
     expel.textContent = (active && state.council.expelled.includes(s.key)) ? "↻ GERİ OTURT" : "⛔ OTURUMDAN İHRAÇ ET";
   }
 
+  // v1.4 BYOK: preset'i mevcut uca göre önceden seç + rehberi tazele
+  try{
+    const cur = ($("#fUrl").value || "").trim().replace(/\/+$/,"");
+    const hit = Object.keys(PRESETS).find(k=>PRESETS[k].url.replace(/\/+$/,"") === cur);
+    if(hit) $("#fPreset").value = hit;
+  }catch(e){}
+  try{ updateKeyGuide(); }catch(e){}
+  const kall = $("#fKeyAll"); if(kall) kall.checked = false;
+
   $("#mTestTxt").textContent = "Bağlantı testi bekleniyor";
   $("#mLed").className = "led";
   $("#seatModal").classList.add("on");
@@ -5002,7 +5059,24 @@ $("#fPreset").onchange = ()=>{
     $("#fUrl").value = p.url;
     if(p.model && !$("#fModel").value) $("#fModel").value = p.model;
   }
+  updateKeyGuide();
 };
+/* v1.4 BYOK: seçili sağlayıcının anahtar sayfasına direkt bağlantı + 3 adım */
+function updateKeyGuide(){
+  const box = $("#keyGuide");
+  if(!box) return;
+  const p = PRESETS[$("#fPreset").value];
+  if(!p){ box.innerHTML = ""; return; }
+  if(!p.keys){
+    box.innerHTML = '<div class="kg-row"><span class="kg-ok">✓</span><span><b>'+esc(p.label||"")+'</b> — '+esc(p.note||"")+'</span></div>';
+    return;
+  }
+  box.innerHTML =
+    '<div class="kg-row"><span class="kg-ic">🔑</span><span><b>'+esc(p.label||"")+'</b> anahtarı gerekir — '+esc(p.note||"")+'</span>' +
+    '<a class="ghostbtn kg-btn" href="'+esc(p.keys)+'" target="_blank" rel="noopener">ANAHTAR AL ↗</a></div>' +
+    '<div class="kg-steps">1. <b>Anahtar Al</b> düğmesiyle sağlayıcı sayfasını açın, giriş yapın · 2. Yeni anahtar oluşturup kopyalayın · ' +
+    '3. Aşağıdaki <b>API Key</b> kutusuna yapıştırıp <b>Bağlantıyı Test Et</b> deyin, sonra <b>Kaydet ve Uygula</b>.</div>';
+}
 
 $("#mClose").onclick = $("#mCancel").onclick = ()=>$("#seatModal").classList.remove("on");
 $("#seatModal").addEventListener("click", e=>{ if(e.target.id==="seatModal") $("#seatModal").classList.remove("on"); });
@@ -5037,12 +5111,33 @@ $("#mSave").onclick = async ()=>{
   }
   Object.assign(s, fields);
   s.system = $("#fSystem").value.trim() || compileSystemPrompt(s);
+  // v1.4 BYOK: aynı uç + anahtarı tüm sandalyelere uygula
+  const applyAll = $("#fKeyAll") && $("#fKeyAll").checked;
+  if(applyAll){
+    const au = $("#fUrl").value.trim() || s.baseUrl || "";
+    const am = $("#fModel").value.trim() || s.model || "";
+    const targets = activeSeats().concat(["K"]).filter(k=>k !== editingSeat && state.seats[k]);
+    for(const k of targets){
+      state.seats[k].baseUrl = au;
+      state.seats[k].model = am;
+      if(newKey){
+        try{
+          const rr = await fetch("/api/credentials", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ seat: k, base_url: au, api_key: newKey, model: am })
+          });
+          const dd = await rr.json();
+          if(dd.ok) state.seats[k].keyHint = dd.key_hint || "";
+        }catch(e){}
+      }
+    }
+  }
   saveSeats();
   renderSeatChips();
   renderSpeakers();
   buildJuryCols();
   $("#fKey").value = "";
-  toast("Sandalye " + editingSeat + " kaydedildi" + (newKey ? " · anahtar sunucu kâsasına taşındı, tarayıcıdan silindi" : ""));
+  toast("Sandalye " + editingSeat + " kaydedildi" + (newKey ? " · anahtar sunucu kâsasına taşındı, tarayıcıdan silindi" : "") + (applyAll ? " · tüm sandalyelere uygulandı" : ""));
   $("#seatModal").classList.remove("on");
 };
 $("#mKeyDel").onclick = async ()=>{
@@ -5068,7 +5163,9 @@ $("#mTest").onclick = async ()=>{
   if(state.demo){ setTimeout(()=>{ $("#mLed").className="led demo"; $("#mTestTxt").textContent="DEMO modu: gerçek çağrı yapılmaz, test edilemez"; },600); return; }
   if(!state.backend){ $("#mLed").className="led err"; $("#mTestTxt").textContent="SUNUCU YOK — test edilemez (önce app.py)"; return; }
   try{
-    const r = await fetch("/api/ping?url=" + encodeURIComponent($("#fUrl").value.trim()));
+    // v1.4 BYOK: kutuda anahtar varsa onunla test et (anahtar isteyen uçlar için şart)
+    const tk = $("#fKey").value.trim();
+    const r = await fetch("/api/ping?url=" + encodeURIComponent($("#fUrl").value.trim()) + (tk ? "&key=" + encodeURIComponent(tk) : ""));
     const j = await r.json();
     if(j.ok){ $("#mLed").className="led live"; $("#mTestTxt").textContent = "ERİŞİLDİ · " + j.models.length + " model görünüyor" + (j.models.length? " ("+j.models.slice(0,2).join(", ")+(j.models.length>2?"…":"")+")" : ""); }
     else { $("#mLed").className="led err"; $("#mTestTxt").textContent = j.error; }
@@ -5694,6 +5791,8 @@ const GLOSSARY = [
   { k:"kâsa (vault)", d:"API anahtarlarının sunucuda tutulduğu tablo. Anahtarlar tarayıcıda saklanmaz; arayüze yalnız son 4 hanenin ipucu gösterilir." },
   { k:"demo modu", d:"Gerçek model kullanmadan arayüzü örnek metinlerle deneme kipi. Arşive hiçbir şey yazılmaz; yanıtlar gerçeği yansıtmaz." },
   { k:"yaşayan hafıza", d:"Karakterlerin eski oturumlardan damıtılmış kısa anıları. Yeni oturumda “geçen oturumda…” diye hatırlamalarını sağlar." },
+  { k:"API anahtarı", d:"Model sağlayıcısının size verdiği parola benzeri kod. Herkes kendi anahtarını getirir; sandalye ayarlarındaki ANAHTAR AL bağlantısı sizi sağlayıcının anahtar sayfasına götürür. Anahtar tarayıcıda durmaz, sunucu kâsasına yazılır." },
+  { k:"hız sınırı", d:"Dakikada yapılabilecek en fazla model çağrısı (varsayılan 60). Aşılırsa sunucu 429 döndürür ve kısa süre beklemeniz istenir; ücretsiz uçların kilitlenmesini önler." },
 ];
 function renderGlossary(){
   const box = $("#glossaryBody");
@@ -5764,6 +5863,67 @@ $("#wizSkip").onclick = ()=>{ closeWizard(true); toast("Rehber kapatıldı — B
 $("#wizTest").onclick = ()=>wizRefreshHealth();
 $("#wizDemo").onclick = ()=>{ if(!state.demo) $("#demoToggle").click(); wizRefreshHealth(); wizShow(3); };
 $("#wizAdv").onclick = ()=>{ closeWizard(false); openSeatModal(activeSeats()[0] || "A"); };
+/* v1.4 BYOK: rehberden ücretsiz anahtar kurulumu */
+let wizProv = "";
+function buildWizProvs(){
+  const box = $("#wizProvs");
+  if(!box || box.children.length) return;
+  ["groq","openrouter","gemini","pollinations"].forEach(k=>{
+    const p = PRESETS[k];
+    const d = document.createElement("div");
+    d.className = "provchip"; d.dataset.prov = k;
+    d.innerHTML = '<div class="pn">'+esc(p.label||k)+'</div><div class="pd">'+esc(p.note||"")+'</div>';
+    d.onclick = ()=>selectWizProv(k);
+    box.appendChild(d);
+  });
+}
+function selectWizProv(k){
+  wizProv = k;
+  $$("#wizProvs .provchip").forEach(x=>x.classList.toggle("sel", x.dataset.prov===k));
+  const p = PRESETS[k];
+  const msg = $("#wizKeyMsg"), row = $("#wizKeyRow");
+  if(!p.keys){
+    row.style.display = "none";
+    msg.innerHTML = "✓ <b>"+esc(p.label)+"</b> anahtar istemez. <b>İLERİ →</b> ile devam edin.";
+    return;
+  }
+  row.style.display = "flex";
+  msg.innerHTML = '<a href="'+esc(p.keys)+'" target="_blank" rel="noopener" style="color:var(--cyan)">🔑 '+esc(p.label)+' anahtar sayfasını açın ↗</a> — anahtarı oluşturup yukarıdaki kutuya yapıştırın, <b>KAYDET VE TEST ET</b> deyin.';
+}
+$("#wizKeySave").onclick = async ()=>{
+  const p = PRESETS[wizProv];
+  const msg = $("#wizKeyMsg");
+  if(!p || !p.keys){ msg.textContent = "Önce bir sağlayıcı seçin."; return; }
+  const key = $("#wizKey").value.trim();
+  if(!key){ msg.textContent = "Anahtar kutusu boş — sağlayıcı sayfasından aldığınız anahtarı yapıştırın."; return; }
+  if(!state.backend){ msg.textContent = "SUNUCU YOK — önce app.py çalıştırılmalı."; return; }
+  msg.textContent = "Kaydediliyor ve test ediliyor…";
+  let okN = 0;
+  for(const k of activeSeats().concat(["K"])){
+    if(!state.seats[k]) continue;
+    try{
+      const r = await fetch("/api/credentials", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ seat:k, base_url:p.url, api_key:key, model:p.model })
+      });
+      const d = await r.json();
+      if(d.ok){ state.seats[k].baseUrl = p.url; state.seats[k].model = p.model; state.seats[k].keyHint = d.key_hint || ""; okN++; }
+    }catch(e){}
+  }
+  $("#wizKey").value = "";
+  if(!okN){ msg.textContent = "Kasa yazımı başarısız — sunucu yanıt vermedi."; return; }
+  saveSeats(); renderSeatChips();
+  try{
+    const r = await fetch("/api/ping?url=" + encodeURIComponent(p.url) + "&key=" + encodeURIComponent(key));
+    const j = await r.json();
+    if(j.ok){
+      msg.innerHTML = "✓ Anahtar <b>"+okN+" sandalyeye</b> kaydedildi, uç erişildi ("+j.models.length+" model). <b>İLERİ →</b> ile konuya geçin.";
+      applyStatus();
+    } else {
+      msg.textContent = "Anahtar kaydedildi ama uç yanıtı: " + (j.error || "bilinmiyor");
+    }
+  }catch(e){ msg.textContent = "Anahtar kaydedildi; test edilemedi: " + e.message; }
+};
 $("#wizStart").onclick = ()=>{
   const t = $("#wizTopic").value.trim();
   if(t) $("#topicInput").value = t;
@@ -5779,6 +5939,7 @@ $("#wizardModal").addEventListener("click", e=>{ if(e.target.id==="wizardModal")
 
 /* ── Kalkış ── */
 renderGlossary();
+buildWizProvs();
 renderSeatChips();
 renderSpeakers();
 renderDelegatesBar();
