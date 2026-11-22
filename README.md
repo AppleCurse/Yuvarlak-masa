@@ -124,17 +124,29 @@ Tarihsel olarak hassas figürler (totaliter liderler, insanlık suçluları) **b
 
 Her sandalye bağımsız bir istemcidir; dilediğiniz sandalyeye dilediğiniz OpenAI-uyumlu uç atanabilir:
 
-| Preset | Tür | Varsayılan Uç |
-| :--- | :--- | :--- |
-| **9Router** | Yerel | `http://127.0.0.1:20128/v1` |
-| **Ollama** | Yerel | `http://127.0.0.1:11434/v1` |
-| **LM Studio** | Yerel | `http://127.0.0.1:1234/v1` |
-| **OpenAI** | Bulut | `https://api.openai.com/v1` |
-| **DeepSeek** | Bulut | `https://api.deepseek.com/v1` |
-| **Groq** | Bulut | `https://api.groq.com/openai/v1` |
-| **Pollinations** | Canlı & Ücretsiz | `https://text.pollinations.ai/openai` (anahtarsız) |
+| Preset | Tür | Varsayılan Uç | Anahtar |
+| :--- | :--- | :--- | :--- |
+| **9Router** | Yerel | `http://127.0.0.1:20128/v1` | Gerekmez |
+| **Ollama** | Yerel | `http://127.0.0.1:11434/v1` | Gerekmez |
+| **LM Studio** | Yerel | `http://127.0.0.1:1234/v1` | Gerekmez |
+| **OpenAI** | Bulut | `https://api.openai.com/v1` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| **DeepSeek** | Bulut | `https://api.deepseek.com/v1` | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
+| **Groq** | Bulut · ücretsiz katman | `https://api.groq.com/openai/v1` | [console.groq.com/keys](https://console.groq.com/keys) |
+| **OpenRouter** | Bulut · ücretsiz modeller | `https://openrouter.ai/api/v1` | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| **Google Gemini** | Bulut · ücretsiz anahtar | `https://generativelanguage.googleapis.com/v1beta/openai/` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Pollinations** | Canlı & Ücretsiz | `https://text.pollinations.ai/openai` (anahtarsız) | Gerekmez |
 
-* **Canlı API Doğrulama:** Sandalye modali "Bağlantıyı Test Et" ile uca `GET /models` atar, model listesini döndürür.
+### 🔑 API anahtarı nasıl alınır? (v1.4 — herkes kendi anahtarıyla gelir)
+
+1. Sandalye ayarlarında (veya başlangıç rehberinin 2. adımında) sağlayıcıyı seçin.
+2. **ANAHTAR AL ↗** düğmesi sizi sağlayıcının anahtar sayfasına götürür — giriş yapıp yeni anahtar oluşturun, kopyalayın.
+3. Anahtarı **API Key** kutusuna yapıştırıp **Bağlantıyı Test Et** deyin (test anahtarla yapılır), sonra **Kaydet ve Uygula**.
+4. Aynı uç + anahtarı bütün masaya vermek için **"tüm sandalyelere uygula"** kutusunu işaretleyin.
+
+Anahtar tarayıcıda saklanmaz — sunucu kâsasına yazılır, arayüze yalnız `…son4` ipucu gösterilir.
+
+* **Canlı API Doğrulama:** Sandalye modali "Bağlantıyı Test Et" ile uca `GET /models` atar (kutuda anahtar varsa onunla), model listesini döndürür.
+* **Hız Sınırı (v1.4):** Model çağrısı yapan uçlarda IP başına dakikada 60 çağrı (`KONSUL_RATE_LIMIT_PER_MIN`, `0` = kapalı). Aşılırsa `429` + Türkçe mesaj + `Retry-After` döner.
 * **SSRF Kilidi (v1.1):** Proxy yalnızca http(s) uçları kabul eder; yerel (loopback/özel ağ) hedefler yalnızca `KONSUL_LOCAL_PORTS` (varsayılan `11434,1234,20128`) listesindeki portlarda izinlidir. Genişletme: `KONSUL_LOCAL_PORTS="11434,1234,20128,8080"` · Acil: `KONSUL_ALLOW_ALL_LOCAL=1`.
 
 ---

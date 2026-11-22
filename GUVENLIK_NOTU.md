@@ -33,10 +33,14 @@ Aşağıdakiler mimari değişiklik gerektirir ve bu çalışmanın kapsamı dı
 (izinsiz uygulanmadı):
 
 1. **Kimlik doğrulama katmanı** (token/oturum) ve buna bağlı arayüz giriş akışı.
+   v1.4 kararı: Konsul token İSTENMEDİ — herkes kendi sağlayıcı anahtarıyla gelir (BYOK).
+   Bu, dışa açık çalışmada kâsa riskini azaltmaz; bkz. Bölüm 4.
 2. **Anahtar şifreleme** (KMS/OS keyring ya da parola türevi anahtar). Düz metin → şifreli
    geçiş, mevcut kâsanın göçünü ve anahtar kaybı riskini gerektirir.
 3. **Çok kullanıcılı yetkilendirme** (koltuk sahipliği, oturum izolasyonu).
-4. **Rate limit / kötüye kullanım koruması** (özellikle Pollinations gibi ücretsiz uçlarda).
+4. ~~**Rate limit / kötüye kullanım koruması**~~ — **v1.4'te YAPILDI:** model çağrısı yapan
+   uçlarda IP başına dakikada 60 çağrı (`KONSUL_RATE_LIMIT_PER_MIN`), `429` + `Retry-After`.
+   İşlem-içi sayaçtır; çok çalışanlı dağıtımda çalışan başına ayrı sayar.
 
 ## 4. Operatör için pratik öneriler
 
