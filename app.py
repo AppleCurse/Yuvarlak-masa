@@ -98,6 +98,9 @@ _TR_MONTHS = [
 
 
 def _client_ip(request: Request) -> str:
+    cf_ip = (request.headers.get("cf-connecting-ip") or "").strip()
+    if cf_ip:
+        return cf_ip[:64]
     fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
     if fwd:
         return fwd[:64]
@@ -297,13 +300,12 @@ PROVIDER_CATALOG = [
         "base_url": "https://api.groq.com/openai/v1",
         "env_key": "GROQ_API_KEY",
         "key_url": "https://console.groq.com/keys",
-        "note": "Kredi kartı istemez. Çok hızlı Llama ve Qwen modelleri sunar.",
-        "default_model": "llama-3.3-70b-versatile",
+        "note": "Kredi kartı istemez. Çok hızlı Qwen ve GPT-OSS modelleri sunar.",
+        "default_model": "qwen/qwen3.8-27b",
         "models": [
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
-            "qwen/qwen3-32b",
+            "qwen/qwen3.8-27b",
             "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
         ],
     },
     {
@@ -413,6 +415,10 @@ _SEAT_DEFAULT_PROVIDER = {
     "H": "openrouter",
 }
 _POLLINATIONS_FALLBACK = ("https://text.pollinations.ai/openai", "", "openai", "Hazır Ücretsiz Havuz")
+
+
+def _strip_think_tags(text: str) -> str:
+    return re.sub(r"<think>[\s\S]*?</think>\s*", "", text or "", flags=re.IGNORECASE).strip()
 
 
 def _provider_label_for_url(base_url: str) -> str:
@@ -840,7 +846,7 @@ async def chat(payload: ChatPayload, request: Request):
                     continue
                 return JSONResponse({"ok": False, "error": last_err, "error_code": last_code}, status_code=502)
             data = resp.json()
-            raw_content = data["choices"][0]["message"]["content"]
+            raw_content = _strip_think_tags(data["choices"][0]["message"]["content"])
             content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
             return {"ok": True, "content": content, "provider_label": t_label, "model": t_model}
         except KeyError:
@@ -936,7 +942,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
 
                     yield "data: " + json.dumps({"meta": {"provider": t_label, "model": t_model}}, ensure_ascii=False) + "\n\n"
                     try:
-                        raw_content = resp.json()["choices"][0]["message"]["content"]
+                        raw_content = _strip_think_tags(resp.json()["choices"][0]["message"]["content"])
                         content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
                         if not content.strip():
                             raise ValueError("empty")
@@ -1004,7 +1010,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
                     await resp.aclose()
                     resp = None
                     try:
-                        raw_content = json.loads(raw)["choices"][0]["message"]["content"]
+                        raw_content = _strip_think_tags(json.loads(raw)["choices"][0]["message"]["content"])
                         content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
                         yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
                     except Exception:  # noqa: BLE001
@@ -1063,7 +1069,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
 
                 full_raw = "".join(acc_chunks)
                 if full_raw:
-                    cleaned = neuro_bridge.clean_human_speech(engine.filter_persona_text(full_raw))
+                    cleaned = neuro_bridge.clean_human_speech(engine.filter_persona_text(_strip_think_tags(full_raw)))
                     if cleaned != full_raw:
                         yield "data: " + json.dumps({"replace": cleaned}, ensure_ascii=False) + "\n\n"
                 yield "data: [DONE]\n\n"

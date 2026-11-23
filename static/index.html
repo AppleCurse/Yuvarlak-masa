@@ -1955,7 +1955,7 @@
       const perSeatEl = document.getElementById("perSeatConfigList");
       perSeatEl.innerHTML = seatLabels.map((item, idx) => {
         const st = state.seatStatus[item.seat] || {};
-        const defProv = list[idx % Math.max(1, list.length)] || { id: "groq", models: ["llama-3.3-70b-versatile"], key_url: "https://console.groq.com/keys" };
+        const defProv = list[idx % Math.max(1, list.length)] || { id: "groq", models: ["qwen/qwen3.8-27b"], key_url: "https://console.groq.com/keys" };
         return `
           <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2 bg-slate-50/50 dark:bg-slate-800/40" data-seat-row="${item.seat}">
             <div class="flex flex-wrap items-center justify-between gap-2">
