@@ -217,11 +217,200 @@ def _validate_base_url(url: str) -> str | None:
     return None
 
 
+# ── v2.0: 5 Ücretsiz Sağlayıcı Havuzu + Çoklu Sağlayıcı Kataloğu ────────
+# Ziyaretçiye geliştirici detayı göstermeden her koltuğa farklı bir yapay zeka
+# sağlayıcısı atar. Railway ortam değişkenleri (GROQ_API_KEY, GEMINI_API_KEY,
+# OPENROUTER_API_KEY, NVIDIA_API_KEY, MISTRAL_API_KEY, ARENA_API_KEY) tanımlıysa
+# sunucu tarafında güvenle kullanılır (tarayıcıya ASLA sızmaz).
+PROVIDER_CATALOG = [
+    {
+        "id": "groq",
+        "name": "Groq",
+        "badge": "Ücretsiz · Çok Hızlı",
+        "free": True,
+        "multi_model": False,
+        "base_url": "https://api.groq.com/openai/v1",
+        "env_key": "GROQ_API_KEY",
+        "key_url": "https://console.groq.com/keys",
+        "note": "Kredi kartı istemez. Çok hızlı Llama ve Qwen modelleri sunar.",
+        "default_model": "llama-3.3-70b-versatile",
+        "models": [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "qwen/qwen3-32b",
+            "openai/gpt-oss-120b",
+        ],
+    },
+    {
+        "id": "gemini",
+        "name": "Google Gemini",
+        "badge": "Ücretsiz · Güçlü Türkçe",
+        "free": True,
+        "multi_model": False,
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "env_key": "GEMINI_API_KEY",
+        "key_url": "https://aistudio.google.com/apikey",
+        "note": "Google hesabıyla 10 saniyede ücretsiz anahtar alınır. Türkçesi çok güçlüdür.",
+        "default_model": "gemini-2.5-flash",
+        "models": [
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-2.0-flash",
+        ],
+    },
+    {
+        "id": "openrouter",
+        "name": "OpenRouter",
+        "badge": "Ücretsiz + Çoklu Model",
+        "free": True,
+        "multi_model": True,
+        "base_url": "https://openrouter.ai/api/v1",
+        "env_key": "OPENROUTER_API_KEY",
+        "key_url": "https://openrouter.ai/keys",
+        "note": "Tek anahtarla onlarca ücretsiz (:free) ve farklı marka modele erişim.",
+        "default_model": "meta-llama/llama-3.3-70b-instruct:free",
+        "models": [
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "deepseek/deepseek-r1-0528:free",
+            "qwen/qwen3-235b-a22b:free",
+            "google/gemma-3-27b-it:free",
+            "mistralai/mistral-small-3.1-24b-instruct:free",
+        ],
+    },
+    {
+        "id": "nvidia",
+        "name": "NVIDIA NIM",
+        "badge": "Ücretsiz · Açık Modeller",
+        "free": True,
+        "multi_model": True,
+        "base_url": "https://integrate.api.nvidia.com/v1",
+        "env_key": "NVIDIA_API_KEY",
+        "key_url": "https://build.nvidia.com/explore/discover",
+        "note": "NVIDIA geliştirici hesabıyla ücretsiz. Nemotron, DeepSeek, Qwen ve Llama sunar.",
+        "default_model": "meta/llama-3.3-70b-instruct",
+        "models": [
+            "meta/llama-3.3-70b-instruct",
+            "nvidia/llama-3.1-nemotron-70b-instruct",
+            "deepseek-ai/deepseek-r1",
+            "qwen/qwen2.5-72b-instruct",
+        ],
+    },
+    {
+        "id": "mistral",
+        "name": "Mistral AI",
+        "badge": "Ücretsiz · Avrupa Ekolü",
+        "free": True,
+        "multi_model": False,
+        "base_url": "https://api.mistral.ai/v1",
+        "env_key": "MISTRAL_API_KEY",
+        "key_url": "https://console.mistral.ai/api-keys",
+        "note": "Ücretsiz deneme katmanı. Farklı üslubuyla masaya denge katar.",
+        "default_model": "mistral-small-latest",
+        "models": [
+            "mistral-small-latest",
+            "mistral-medium-latest",
+            "open-mistral-nemo",
+        ],
+    },
+    {
+        "id": "arena",
+        "name": "Arena API",
+        "badge": "Çoklu Model · 20 Model",
+        "free": False,
+        "multi_model": True,
+        "base_url": "https://api.arena.ai/v1",
+        "env_key": "ARENA_API_KEY",
+        "key_url": "https://platform.arena.ai/dashboard/keys",
+        "note": "Tek anahtarla Claude, GPT, Gemini, Grok, Qwen ve MiniMax modellerine erişim.",
+        "default_model": "claude-haiku-5-5",
+        "models": [
+            "claude-haiku-5-5",
+            "gpt-6-luna",
+            "gemini-3.8-flash",
+            "minimax-m3p1-flash",
+            "grok-4.7",
+            "claude-sonnet-5",
+            "qwen3p8-max",
+        ],
+    },
+]
+
+_PROVIDER_BY_ID = {p["id"]: p for p in PROVIDER_CATALOG}
+_SEAT_DEFAULT_PROVIDER = {
+    "A": "groq",
+    "B": "gemini",
+    "C": "openrouter",
+    "D": "nvidia",
+    "K": "mistral",
+    "E": "arena",
+    "F": "groq",
+    "G": "gemini",
+    "H": "openrouter",
+}
+_POLLINATIONS_FALLBACK = ("https://text.pollinations.ai/openai", "", "openai", "Hazır Ücretsiz Havuz")
+
+
+def _provider_label_for_url(base_url: str) -> str:
+    low = (base_url or "").lower()
+    for p in PROVIDER_CATALOG:
+        if p["id"] in low or urlparse(p["base_url"]).hostname in low:
+            return p["name"]
+    if "pollinations.ai" in low:
+        return "Hazır Ücretsiz Havuz"
+    if "127.0.0.1" in low or "localhost" in low:
+        return "Yerel Model"
+    return "Özel Sağlayıcı"
+
+
+def _configured_server_providers() -> list[dict]:
+    """Ortam değişkeninde anahtarı tanımlı sunucu sağlayıcılarını döndürür."""
+    ready = []
+    for p in PROVIDER_CATALOG:
+        val = (os.environ.get(p["env_key"]) or "").strip()
+        if val:
+            ready.append({
+                "id": p["id"],
+                "name": p["name"],
+                "base_url": p["base_url"],
+                "api_key": val,
+                "model": os.environ.get(f"{p['id'].upper()}_MODEL", "").strip() or p["default_model"],
+            })
+    return ready
+
+
+def _server_pool_for_seat(seat: str):
+    """Koltuk için sunucu ortam havuzundan (base_url, api_key, model, label) seçer."""
+    ready = _configured_server_providers()
+    if not ready:
+        return None
+    preferred = _SEAT_DEFAULT_PROVIDER.get(seat.upper(), "groq")
+    for p in ready:
+        if p["id"] == preferred:
+            return p["base_url"], p["api_key"], p["model"], p["name"]
+    idx = list(engine.VALID_CRED_SEATS).index(seat.upper()) % len(ready) if seat.upper() in engine.VALID_CRED_SEATS else 0
+    pick = ready[idx]
+    return pick["base_url"], pick["api_key"], pick["model"], pick["name"]
+
+
+def _fallback_candidates(seat: str, primary_base: str) -> list[tuple[str, str, str, str]]:
+    """Birincil sağlayıcı başarısız olursa sırayla denenecek yedek sağlayıcılar."""
+    cands: list[tuple[str, str, str, str]] = []
+    seen = {_clean_base(primary_base)}
+    for p in _configured_server_providers():
+        b = _clean_base(p["base_url"])
+        if b not in seen:
+            seen.add(b)
+            cands.append((b, p["api_key"], p["model"], p["name"]))
+    if _clean_base(_POLLINATIONS_FALLBACK[0]) not in seen:
+        cands.append(_POLLINATIONS_FALLBACK)
+    return cands
+
+
 # ── Faz 6 (S2): koltuk bazlı kimlik çözümleme ──────────────────────────
 # Tarayıcı anahtarı localStorage'da tutmaz; çağrı yalnızca koltuk anahtarını
 # (seat) gönderir, anahtar + base_url sunucu tarafı kâsadan (api_credentials)
-# çözülür. Gövdede açık anahtar da geçerse (geliştirme) öncelik gövdededir.
-def _resolve_endpoint(base_url: str, api_key: str, model: str, seat: str):
+# veya sunucu ortam havuzundan çözülür.
+def _resolve_endpoint(base_url: str, api_key: str, model: str, seat: str, use_pool: bool = False):
     """(base_url, api_key, model, error) döndürür."""
     b = (base_url or "").strip()
     k = (api_key or "").strip()
@@ -233,6 +422,14 @@ def _resolve_endpoint(base_url: str, api_key: str, model: str, seat: str):
             b = b or (cred.get("base_url") or "")
             k = k or (cred.get("api_key") or "")
             m = m or (cred.get("model") or "")
+    if not b and use_pool and s in engine.VALID_CRED_SEATS:
+        pool_pick = _server_pool_for_seat(s)
+        if pool_pick:
+            b, k_pool, m_pool, _ = pool_pick
+            k = k or k_pool
+            m = m or m_pool
+        else:
+            b, k, m, _ = _POLLINATIONS_FALLBACK
     if not b:
         return None, None, None, "base_url eksik — koltuk yapılandırmasından (veya sunucu kâsasından) çözülemedi."
     return b, k, m, None
@@ -293,10 +490,69 @@ class ChatPayload(BaseModel):
     api_key: str = ""
     model: str = ""
     seat: str = ""
+    use_pool: bool = False
     messages: list[dict] = Field(default_factory=list)
     cognitive_character_id: str = Field(default="", max_length=200)
     cognitive_session_id: str = Field(default="", max_length=200)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+
+
+@app.get("/api/providers")
+async def providers_info():
+    """Sağlayıcı kataloğu (anahtar linkleri + sunucu hazır durumu; ham anahtar ASLA dönmez)."""
+    ready_ids = {p["id"] for p in _configured_server_providers()}
+    vault = engine.list_api_credentials()
+    catalog = []
+    for p in PROVIDER_CATALOG:
+        catalog.append({
+            "id": p["id"],
+            "name": p["name"],
+            "badge": p["badge"],
+            "free": p["free"],
+            "multi_model": p["multi_model"],
+            "base_url": p["base_url"],
+            "key_url": p["key_url"],
+            "note": p["note"],
+            "default_model": p["default_model"],
+            "models": p["models"],
+            "server_ready": p["id"] in ready_ids,
+        })
+    seat_status = {}
+    for seat in ("A", "B", "C", "D", "K"):
+        vc = vault.get(seat)
+        if vc and vc.get("base_url"):
+            seat_status[seat] = {
+                "source": "user_vault",
+                "provider_label": _provider_label_for_url(vc.get("base_url", "")),
+                "model": vc.get("model") or "otomatik",
+                "has_key": bool(vc.get("has_key")),
+                "key_hint": vc.get("key_hint") or "",
+            }
+        else:
+            pool_pick = _server_pool_for_seat(seat)
+            if pool_pick:
+                _, _, p_model, p_label = pool_pick
+                seat_status[seat] = {
+                    "source": "server_pool",
+                    "provider_label": p_label,
+                    "model": p_model,
+                    "has_key": True,
+                    "key_hint": "sunucu",
+                }
+            else:
+                seat_status[seat] = {
+                    "source": "free_fallback",
+                    "provider_label": "Hazır Ücretsiz Havuz",
+                    "model": "otomatik",
+                    "has_key": False,
+                    "key_hint": "",
+                }
+    return {
+        "ok": True,
+        "providers": catalog,
+        "server_pool_count": len(ready_ids),
+        "seat_status": seat_status,
+    }
 
 
 # ── Sağlık / teşhis rotaları ────────────────────────────────────────────
@@ -393,7 +649,7 @@ async def chat(payload: ChatPayload, request: Request):
     if limited is not None:
         return limited
     base, api_key, model, rerr = _resolve_endpoint(
-        payload.base_url, payload.api_key, payload.model, payload.seat
+        payload.base_url, payload.api_key, payload.model, payload.seat, use_pool=payload.use_pool
     )
     if rerr:
         return JSONResponse({"ok": False, "error": rerr}, status_code=400)
@@ -401,40 +657,57 @@ async def chat(payload: ChatPayload, request: Request):
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
     prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
-    body = {
-        "model": model,
-        "messages": prepared_messages,
-        "temperature": payload.temperature,
-        "stream": False,
-    }
-    try:
-        resp = None
-        async with _pollinations_guard(base):
-            for attempt in range(5):
-                resp = await _get_http().post(
-                    _clean_base(base) + "/chat/completions",
-                    json=body,
-                    headers=_auth_headers(api_key),
-                )
-                if resp.status_code in (429, 402) and attempt < 4:
-                    wait_s = _extract_retry_seconds(resp.status_code, resp.text)
-                    await asyncio.sleep(wait_s)
+
+    targets: list[tuple[str, str, str, str]] = [(_clean_base(base), api_key, model, _provider_label_for_url(base))]
+    if payload.use_pool and not payload.base_url:
+        targets.extend(_fallback_candidates(payload.seat, base))
+
+    last_err = "Uç sunucudan yanıt alınamadı."
+    for idx, (t_base, t_key, t_model, t_label) in enumerate(targets):
+        if _validate_base_url(t_base):
+            continue
+        body = {
+            "model": t_model,
+            "messages": prepared_messages,
+            "temperature": payload.temperature,
+            "stream": False,
+        }
+        try:
+            resp = None
+            max_tries = 2 if (payload.use_pool and idx < len(targets) - 1) else 5
+            async with _pollinations_guard(t_base):
+                for attempt in range(max_tries):
+                    resp = await _get_http().post(
+                        _clean_base(t_base) + "/chat/completions",
+                        json=body,
+                        headers=_auth_headers(t_key),
+                    )
+                    if resp.status_code in (429, 402) and attempt < max_tries - 1:
+                        wait_s = min(8, _extract_retry_seconds(resp.status_code, resp.text)) if payload.use_pool else _extract_retry_seconds(resp.status_code, resp.text)
+                        await asyncio.sleep(wait_s)
+                        continue
+                    break
+            if resp.status_code != 200:
+                detail = resp.text[:300].replace("\n", " ")
+                last_err = f"Uç sunucu HTTP {resp.status_code} döndürdü: {detail}"
+                if idx < len(targets) - 1:
                     continue
-                break
-        if resp.status_code != 200:
-            detail = resp.text[:300].replace("\n", " ")
-            return JSONResponse(
-                {"ok": False, "error": f"Uç sunucu HTTP {resp.status_code} döndürdü: {detail}"},
-                status_code=502,
-            )
-        data = resp.json()
-        raw_content = data["choices"][0]["message"]["content"]
-        content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
-        return {"ok": True, "content": content}
-    except KeyError:
-        return JSONResponse({"ok": False, "error": "Uç sunucu beklenmeyen biçimde yanıt verdi."}, status_code=502)
-    except Exception as exc:  # noqa: BLE001
-        return JSONResponse({"ok": False, "error": _friendly_error(exc)}, status_code=502)
+                return JSONResponse({"ok": False, "error": last_err}, status_code=502)
+            data = resp.json()
+            raw_content = data["choices"][0]["message"]["content"]
+            content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
+            return {"ok": True, "content": content, "provider_label": t_label, "model": t_model}
+        except KeyError:
+            last_err = "Uç sunucu beklenmeyen biçimde yanıt verdi."
+            if idx < len(targets) - 1:
+                continue
+            return JSONResponse({"ok": False, "error": last_err}, status_code=502)
+        except Exception as exc:  # noqa: BLE001
+            last_err = _friendly_error(exc)
+            if idx < len(targets) - 1:
+                continue
+            return JSONResponse({"ok": False, "error": last_err}, status_code=502)
+    return JSONResponse({"ok": False, "error": last_err}, status_code=502)
 
 
 # ── Ana proxy: SSE streaming motoru ─────────────────────────────────────
@@ -444,7 +717,7 @@ async def chat_stream(payload: ChatPayload, request: Request):
     if limited is not None:
         return limited
     base, api_key, model, rerr = _resolve_endpoint(
-        payload.base_url, payload.api_key, payload.model, payload.seat
+        payload.base_url, payload.api_key, payload.model, payload.seat, use_pool=payload.use_pool
     )
     if rerr:
         return JSONResponse({"ok": False, "error": rerr}, status_code=400)
@@ -453,118 +726,141 @@ async def chat_stream(payload: ChatPayload, request: Request):
         return JSONResponse({"ok": False, "error": err}, status_code=400)
 
     prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
-    body = {
-        "model": model,
-        "messages": prepared_messages,
-        "temperature": payload.temperature,
-        "stream": True,
-    }
-    base = _clean_base(base)
-    headers = _auth_headers(api_key)
+    targets: list[tuple[str, str, str, str]] = [(_clean_base(base), api_key, model, _provider_label_for_url(base))]
+    if payload.use_pool and not payload.base_url:
+        targets.extend(_fallback_candidates(payload.seat, base))
 
     async def event_generator():
-        resp = None
-        acc_chunks: list[str] = []
-        try:
-            async with _pollinations_guard(base):
-                for attempt in range(5):
-                    req = _get_http().build_request(
-                        "POST", base + "/chat/completions", json=body, headers=headers, timeout=60.0
-                    )
-                    resp = await _get_http().send(req, stream=True)
-                    if resp.status_code in (429, 402) and attempt < 4:
-                        code = resp.status_code
-                        err_text = (await resp.aread()).decode("utf-8", "ignore")
-                        await resp.aclose()
-                        resp = None
-                        wait_s = _extract_retry_seconds(code, err_text)
-                        for _ in range(wait_s):
-                            if await request.is_disconnected():
-                                return
-                            await asyncio.sleep(1.0)
-                        continue
-                    break
-
-                if resp is None or resp.status_code != 200:
-                    code = resp.status_code if resp is not None else 502
-                    detail = (await resp.aread()).decode("utf-8", "ignore")[:300] if resp is not None else "Yanıt alınamadı"
-                    if resp is not None:
-                        await resp.aclose()
-                        resp = None
-                    err_msg = f"Uç sunucu HTTP {code}: {detail}"
-                    yield "data: " + json.dumps({"error": err_msg}, ensure_ascii=False) + "\n\n"
-                    return
-
-                ctype = resp.headers.get("content-type", "")
-
-                # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
-                if "application/json" in ctype:
-                    raw = (await resp.aread()).decode("utf-8", "ignore")
-                    await resp.aclose()
-                    resp = None
-                    try:
-                        raw_content = json.loads(raw)["choices"][0]["message"]["content"]
-                        content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
-                        yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
-                    except Exception:  # noqa: BLE001
-                        yield "data: " + json.dumps({"error": "Uç sunucu geçersiz JSON döndürdü."}, ensure_ascii=False) + "\n\n"
-                    yield "data: [DONE]\n\n"
-                    return
-
-                buffer = ""
-                done_seen = False
-                async for chunk in resp.aiter_text():
-                    if await request.is_disconnected():
-                        await resp.aclose()
-                        resp = None
-                        return  # Operatör "Durdur"a bastı → upstream de kesilir
-                    buffer += chunk
-                    while "\n" in buffer:
-                        line, buffer = buffer.split("\n", 1)
-                        line = line.strip()
-                        if not line.startswith("data:"):
+        last_err = "Yanıt alınamadı"
+        for idx, (t_base, t_key, t_model, t_label) in enumerate(targets):
+            if _validate_base_url(t_base):
+                continue
+            body = {
+                "model": t_model,
+                "messages": prepared_messages,
+                "temperature": payload.temperature,
+                "stream": True,
+            }
+            headers = _auth_headers(t_key)
+            resp = None
+            acc_chunks: list[str] = []
+            try:
+                max_tries = 2 if (payload.use_pool and idx < len(targets) - 1) else 5
+                async with _pollinations_guard(t_base):
+                    for attempt in range(max_tries):
+                        req = _get_http().build_request(
+                            "POST", t_base + "/chat/completions", json=body, headers=headers, timeout=60.0
+                        )
+                        resp = await _get_http().send(req, stream=True)
+                        if resp.status_code in (429, 402) and attempt < max_tries - 1:
+                            code = resp.status_code
+                            err_text = (await resp.aread()).decode("utf-8", "ignore")
+                            await resp.aclose()
+                            resp = None
+                            wait_s = min(6, _extract_retry_seconds(code, err_text)) if payload.use_pool else _extract_retry_seconds(code, err_text)
+                            for _ in range(wait_s):
+                                if await request.is_disconnected():
+                                    return
+                                await asyncio.sleep(1.0)
                             continue
-                        data = line[5:].strip()
-                        if data == "[DONE]":
-                            done_seen = True
-                            break
+                        break
+
+                    if resp is None or resp.status_code != 200:
+                        code = resp.status_code if resp is not None else 502
+                        detail = (await resp.aread()).decode("utf-8", "ignore")[:300] if resp is not None else "Yanıt alınamadı"
+                        if resp is not None:
+                            await resp.aclose()
+                            resp = None
+                        last_err = f"Uç sunucu HTTP {code}: {detail}"
+                        if idx < len(targets) - 1:
+                            continue
+                        yield "data: " + json.dumps({"error": last_err}, ensure_ascii=False) + "\n\n"
+                        return
+
+                    yield "data: " + json.dumps({"meta": {"provider": t_label, "model": t_model}}, ensure_ascii=False) + "\n\n"
+                    ctype = resp.headers.get("content-type", "")
+
+                    # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
+                    if "application/json" in ctype:
+                        raw = (await resp.aread()).decode("utf-8", "ignore")
+                        await resp.aclose()
+                        resp = None
                         try:
-                            obj = json.loads(data)
-                        except json.JSONDecodeError:
-                            continue
-                        if obj.get("error"):
-                            msg = obj["error"].get("message", str(obj["error"]))
-                            yield "data: " + json.dumps({"error": msg}, ensure_ascii=False) + "\n\n"
+                            raw_content = json.loads(raw)["choices"][0]["message"]["content"]
+                            content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
+                            yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
+                        except Exception:  # noqa: BLE001
+                            if idx < len(targets) - 1:
+                                continue
+                            yield "data: " + json.dumps({"error": "Uç sunucu geçersiz JSON döndürdü."}, ensure_ascii=False) + "\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+
+                    buffer = ""
+                    done_seen = False
+                    stream_error = None
+                    async for chunk in resp.aiter_text():
+                        if await request.is_disconnected():
                             await resp.aclose()
                             resp = None
                             return
-                        try:
-                            delta = obj["choices"][0]["delta"].get("content")
-                        except (KeyError, IndexError, AttributeError):
-                            delta = None
-                        if delta:
-                            acc_chunks.append(delta)
-                            yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
-                    if done_seen:
-                        break
+                        buffer += chunk
+                        while "\n" in buffer:
+                            line, buffer = buffer.split("\n", 1)
+                            line = line.strip()
+                            if not line.startswith("data:"):
+                                continue
+                            data = line[5:].strip()
+                            if data == "[DONE]":
+                                done_seen = True
+                                break
+                            try:
+                                obj = json.loads(data)
+                            except json.JSONDecodeError:
+                                continue
+                            if obj.get("error"):
+                                stream_error = obj["error"].get("message", str(obj["error"]))
+                                break
+                            try:
+                                delta = obj["choices"][0]["delta"].get("content")
+                            except (KeyError, IndexError, AttributeError):
+                                delta = None
+                            if delta:
+                                acc_chunks.append(delta)
+                                yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
+                        if done_seen or stream_error:
+                            break
 
+                    if resp is not None:
+                        await resp.aclose()
+                        resp = None
+
+                    if stream_error and not acc_chunks:
+                        last_err = stream_error
+                        if idx < len(targets) - 1:
+                            continue
+                        yield "data: " + json.dumps({"error": stream_error}, ensure_ascii=False) + "\n\n"
+                        return
+
+                full_raw = "".join(acc_chunks)
+                if full_raw:
+                    cleaned = neuro_bridge.clean_human_speech(engine.filter_persona_text(full_raw))
+                    if cleaned != full_raw:
+                        yield "data: " + json.dumps({"replace": cleaned}, ensure_ascii=False) + "\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            except Exception as exc:  # noqa: BLE001
                 if resp is not None:
-                    await resp.aclose()
-                    resp = None
-
-            full_raw = "".join(acc_chunks)
-            if full_raw:
-                cleaned = neuro_bridge.clean_human_speech(engine.filter_persona_text(full_raw))
-                if cleaned != full_raw:
-                    yield "data: " + json.dumps({"replace": cleaned}, ensure_ascii=False) + "\n\n"
-            yield "data: [DONE]\n\n"
-        except Exception as exc:  # noqa: BLE001 — terminal çöpü asla UI'a sızmasın
-            if resp is not None:
-                try:
-                    await resp.aclose()
-                except Exception:
-                    pass
-            yield "data: " + json.dumps({"error": _friendly_error(exc)}, ensure_ascii=False) + "\n\n"
+                    try:
+                        await resp.aclose()
+                    except Exception:
+                        pass
+                last_err = _friendly_error(exc)
+                if not acc_chunks and idx < len(targets) - 1:
+                    continue
+                yield "data: " + json.dumps({"error": last_err}, ensure_ascii=False) + "\n\n"
+                return
+        yield "data: " + json.dumps({"error": last_err}, ensure_ascii=False) + "\n\n"
 
     return StreamingResponse(
         event_generator(),
@@ -1002,6 +1298,12 @@ async def persona_clean_endpoint(payload: dict):
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/classic")
+async def classic_index():
+    classic = STATIC_DIR / "classic.html"
+    return FileResponse(classic if classic.exists() else STATIC_DIR / "index.html")
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
