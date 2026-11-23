@@ -13,6 +13,7 @@ import re
 import sqlite3
 import urllib.parse
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import httpx
@@ -136,6 +137,17 @@ def init_database():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS free_trial_usage (
+            ip_hash TEXT NOT NULL,
+            day_utc TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            call_count INTEGER NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (ip_hash, day_utc, session_id)
+        )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_free_trial_ip_day ON free_trial_usage(ip_hash, day_utc)")
         conn.commit()
 
         # İndeksler (arşiv sorguları)
@@ -360,6 +372,98 @@ def delete_api_credential(seat: str) -> bool:
         cur = conn.execute("DELETE FROM api_credentials WHERE seat = ?", (seat,))
         conn.commit()
         return cur.rowcount > 0
+
+
+# ── Günlük IP Bazlı Ücretsiz Tam Oturum Kotası ──────────────────────────
+def _hash_client_ip(ip: str) -> str:
+    raw = (ip or "unknown").strip().encode("utf-8", "ignore")
+    return hashlib.sha256(raw).hexdigest()[:24]
+
+
+def get_free_trial_status(ip: str, daily_sessions: int = 2) -> Dict[str, Any]:
+    """Ziyaretçinin bugün kullandığı ve kalan ücretsiz tam oturum sayısını döndürür."""
+    ip_hash = _hash_client_ip(ip)
+    day_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM free_trial_usage WHERE ip_hash = ? AND day_utc = ?",
+            (ip_hash, day_utc),
+        ).fetchone()
+    used = int(row["cnt"]) if row else 0
+    return {
+        "used_sessions": used,
+        "limit_sessions": daily_sessions,
+        "remaining_sessions": max(0, daily_sessions - used),
+    }
+
+
+def consume_free_trial_call(
+    ip: str,
+    session_id: str,
+    daily_sessions: int = 2,
+    max_calls_per_session: int = 14,
+) -> tuple[bool, Dict[str, Any]]:
+    """Sunucu yedek havuzu çağrısı için günlük 2 tam oturum kotasını denetler ve işler."""
+    ip_hash = _hash_client_ip(ip)
+    now_utc = datetime.now(timezone.utc)
+    day_utc = now_utc.strftime("%Y-%m-%d")
+    cutoff_day = (now_utc - timedelta(days=7)).strftime("%Y-%m-%d")
+    sid = (session_id or f"anon_{day_utc}").strip()[:100]
+
+    with get_db() as conn:
+        conn.execute("DELETE FROM free_trial_usage WHERE day_utc < ?", (cutoff_day,))
+        existing = conn.execute(
+            "SELECT call_count FROM free_trial_usage WHERE ip_hash = ? AND day_utc = ? AND session_id = ?",
+            (ip_hash, day_utc, sid),
+        ).fetchone()
+        cnt_row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM free_trial_usage WHERE ip_hash = ? AND day_utc = ?",
+            (ip_hash, day_utc),
+        ).fetchone()
+        used = int(cnt_row["cnt"]) if cnt_row else 0
+
+        if existing is not None:
+            calls = int(existing["call_count"])
+            if calls >= max_calls_per_session:
+                return False, {
+                    "reason": "session_call_limit",
+                    "used_sessions": used,
+                    "limit_sessions": daily_sessions,
+                    "remaining_sessions": max(0, daily_sessions - used),
+                }
+            conn.execute(
+                "UPDATE free_trial_usage SET call_count = call_count + 1, updated_at = CURRENT_TIMESTAMP "
+                "WHERE ip_hash = ? AND day_utc = ? AND session_id = ?",
+                (ip_hash, day_utc, sid),
+            )
+            conn.commit()
+            return True, {
+                "reason": "ok",
+                "used_sessions": used,
+                "limit_sessions": daily_sessions,
+                "remaining_sessions": max(0, daily_sessions - used),
+            }
+
+        if used >= daily_sessions:
+            return False, {
+                "reason": "daily_session_limit",
+                "used_sessions": used,
+                "limit_sessions": daily_sessions,
+                "remaining_sessions": 0,
+            }
+
+        conn.execute(
+            "INSERT INTO free_trial_usage (ip_hash, day_utc, session_id, call_count) VALUES (?, ?, ?, 1)",
+            (ip_hash, day_utc, sid),
+        )
+        conn.commit()
+        new_used = used + 1
+        return True, {
+            "reason": "ok",
+            "used_sessions": new_used,
+            "limit_sessions": daily_sessions,
+            "remaining_sessions": max(0, daily_sessions - new_used),
+        }
 
 def record_fact_check(claim: str, verdict: str, source_data: str, session_id: Optional[str] = None) -> str:
     fc_id = str(uuid.uuid4())[:8]

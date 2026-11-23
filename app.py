@@ -40,6 +40,7 @@ import threading
 import uuid
 import webbrowser
 from contextlib import asynccontextmanager, nullcontext
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -80,6 +81,20 @@ except ValueError:
     _RATE_LIMIT_PER_MIN = 60
 _RATE_WINDOW_S = 60.0
 _rate_hits: dict[str, list[float]] = {}
+
+try:
+    FREE_TRIAL_DAILY_SESSIONS = max(1, int(os.environ.get("FREE_TRIAL_DAILY_SESSIONS", "2")))
+except ValueError:
+    FREE_TRIAL_DAILY_SESSIONS = 2
+try:
+    FREE_TRIAL_MAX_CALLS_PER_SESSION = max(5, int(os.environ.get("FREE_TRIAL_MAX_CALLS_PER_SESSION", "14")))
+except ValueError:
+    FREE_TRIAL_MAX_CALLS_PER_SESSION = 14
+
+_TR_MONTHS = [
+    "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+]
 
 
 def _client_ip(request: Request) -> str:
@@ -546,6 +561,56 @@ def _prepare_cognitive_messages(messages: list[dict], seat: str, character_id: s
     return out
 
 
+def _inject_current_date_context(messages: list[dict]) -> list[dict]:
+    """Modelin 2023/2024 verilerini 'bugün' sanmaması için sistem istemine güncel ay/yıl ekler."""
+    if not messages:
+        return messages
+    for msg in messages:
+        if msg.get("role") == "system" and "GÜNCEL TARİH:" in str(msg.get("content", "")):
+            return messages
+    now = datetime.now(timezone.utc)
+    month_name = _TR_MONTHS[now.month] if 1 <= now.month <= 12 else ""
+    note = (
+        f"\n\nGÜNCEL TARİH: Bugün {month_name} {now.year} ({now.year} yılındayız). "
+        "2023 veya 2024 gibi geçmiş yılları asla 'bugün/güncel' gibi anlatma."
+    )
+    out = [dict(m) for m in messages]
+    for m in out:
+        if m.get("role") == "system":
+            m["content"] = str(m.get("content", "")) + note
+            return out
+    out.insert(0, {"role": "system", "content": note.strip()})
+    return out
+
+
+def _check_free_trial_quota(payload: "ChatPayload", request: Request) -> tuple[str | None, str | None]:
+    """Ziyaretçi kendi anahtarı olmadan sunucu yedek havuzunu kullanıyorsa
+    IP başına günlük 2 tam oturum kotasını uygular."""
+    has_user_creds = bool((payload.api_key or "").strip() or (payload.base_url or "").strip())
+    if not payload.use_pool or has_user_creds or not _configured_server_providers():
+        return None, None
+    sid = (payload.cognitive_session_id or "").strip() or "anon"
+    allowed, info = engine.consume_free_trial_call(
+        _client_ip(request),
+        sid,
+        daily_sessions=FREE_TRIAL_DAILY_SESSIONS,
+        max_calls_per_session=FREE_TRIAL_MAX_CALLS_PER_SESSION,
+    )
+    if allowed:
+        return None, None
+    if info.get("reason") == "session_call_limit":
+        return (
+            "Bu ücretsiz deneme oturumunda maksimum mesaj sınırına ulaşıldı. "
+            "Kendi ücretsiz Groq veya Google Gemini anahtarını bağlayarak kesintisiz ve sınırsız devam edebilirsin.",
+            "daily_trial_limit",
+        )
+    return (
+        f"Bugünkü {FREE_TRIAL_DAILY_SESSIONS} ücretsiz tam oturum hakkını kullandın. Yarın hakkın yenilenir; "
+        "hemen devam etmek için sağ üstteki 'Ücretsiz API Bağla' düğmesinden 10 saniyede kendi ücretsiz Groq veya Google Gemini anahtarını bağlayabilirsin.",
+        "daily_trial_limit",
+    )
+
+
 # ── Paylaşımlı istem şeması (Pydantic) ─────────────────────────────────
 class ChatPayload(BaseModel):
     base_url: str = ""
@@ -561,8 +626,8 @@ class ChatPayload(BaseModel):
 
 
 @app.get("/api/providers")
-async def providers_info():
-    """Sağlayıcı kataloğu (anahtar linkleri + sunucu hazır durumu; ham anahtar ASLA dönmez)."""
+async def providers_info(request: Request):
+    """Sağlayıcı kataloğu (anahtar linkleri + sunucu hazır durumu + deneme kotası; ham anahtar ASLA dönmez)."""
     ready_ids = {p["id"] for p in _configured_server_providers()}
     vault = engine.list_api_credentials()
     catalog = []
@@ -610,11 +675,14 @@ async def providers_info():
                     "has_key": False,
                     "key_hint": "",
                 }
+    trial = engine.get_free_trial_status(_client_ip(request), daily_sessions=FREE_TRIAL_DAILY_SESSIONS)
     return {
         "ok": True,
         "providers": catalog,
         "server_pool_count": len(ready_ids),
         "seat_status": seat_status,
+        "trial": trial,
+        "current_year": datetime.now(timezone.utc).year,
     }
 
 
@@ -711,6 +779,9 @@ async def chat(payload: ChatPayload, request: Request):
     limited = _check_rate_limit(request)
     if limited is not None:
         return limited
+    q_msg, q_code = _check_free_trial_quota(payload, request)
+    if q_msg:
+        return JSONResponse({"ok": False, "error": q_msg, "error_code": q_code}, status_code=429)
     base, api_key, model, rerr = _resolve_endpoint(
         payload.base_url, payload.api_key, payload.model, payload.seat, use_pool=payload.use_pool
     )
@@ -719,7 +790,9 @@ async def chat(payload: ChatPayload, request: Request):
     err = _validate_base_url(base)
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
-    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
+    prepared_messages = _inject_current_date_context(
+        _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
+    )
 
     targets: list[tuple[str, str, str, str]] = [(_clean_base(base), api_key, model, _provider_label_for_url(base))]
     if payload.use_pool and not payload.base_url:
@@ -790,6 +863,9 @@ async def chat_stream(payload: ChatPayload, request: Request):
     limited = _check_rate_limit(request)
     if limited is not None:
         return limited
+    q_msg, q_code = _check_free_trial_quota(payload, request)
+    if q_msg:
+        return JSONResponse({"ok": False, "error": q_msg, "error_code": q_code}, status_code=429)
     base, api_key, model, rerr = _resolve_endpoint(
         payload.base_url, payload.api_key, payload.model, payload.seat, use_pool=payload.use_pool
     )
@@ -799,7 +875,9 @@ async def chat_stream(payload: ChatPayload, request: Request):
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
 
-    prepared_messages = _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
+    prepared_messages = _inject_current_date_context(
+        _prepare_cognitive_messages(payload.messages, payload.seat, payload.cognitive_character_id, payload.cognitive_session_id)
+    )
     targets: list[tuple[str, str, str, str]] = [(_clean_base(base), api_key, model, _provider_label_for_url(base))]
     if payload.use_pool and not payload.base_url:
         targets.extend(_fallback_candidates(payload.seat, base))

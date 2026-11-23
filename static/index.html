@@ -549,8 +549,10 @@
       return currentTable().seats.filter(s => !state.disabledSeats.has(s.seat));
     }
 
+    const CURRENT_YEAR = new Date().getFullYear();
     const TR_REALITY_RULE =
-      "\n\nKESİN GERÇEKLİK KURALI: Güncel Türkiye faiz oranlarını, enflasyonu, döviz kurunu, asgari ücreti, kira/kredi yüzdelerini veya değişen mevzuat rakamlarını ASLA ezberden veya eski/yabancı verilere bakarak uydurma. Kullanıcının vermediği güncel bir oran gerekiyorsa kesin sayı uydurmak yerine oran/kural mantığıyla analiz yap (ör. taksit/gelir oranı, nakit yastığı ayı, maliyet-getiri farkı) ve gerekirse kullanıcıdan güncel oranı yazmasını iste.";
+      `\n\nGÜNCEL TARİH: Şu an ${CURRENT_YEAR} yılındayız; 2023 veya 2024 gibi geçmiş yılları asla "güncel/bugün" gibi anma.` +
+      "\nKESİN GERÇEKLİK KURALI: Güncel Türkiye faiz oranlarını, enflasyonu, döviz kurunu, asgari ücreti, kira/kredi yüzdelerini veya değişen mevzuat rakamlarını ASLA ezberden veya eski/yabancı verilere bakarak uydurma. Kullanıcının vermediği güncel bir oran gerekiyorsa kesin sayı uydurmak yerine oran/kural mantığıyla analiz yap (ör. taksit/gelir oranı, nakit yastığı ayı, maliyet-getiri farkı) ve gerekirse kullanıcıdan güncel oranı yazmasını iste.";
 
     function getExpertSystemPrompt(seatObj) {
       const dbChar = state.charactersById[seatObj.id];
@@ -563,6 +565,9 @@
     function sanitizeUserError(rawMsg, errCode = "") {
       const txt = String(rawMsg || "").trim();
       const low = txt.toLowerCase();
+      if (errCode === "daily_trial_limit" && txt) {
+        return txt;
+      }
       if (
         errCode === "pool_rate_limit" ||
         low.includes("rate_limited") ||
@@ -1334,6 +1339,8 @@
       let successCount = 0;
       let failCount = 0;
       let sharedPoolBlocked = false;
+      let sharedPoolBlockReason = "";
+      let sharedPoolBlockMsg = "";
 
       for (let i = 0; i < seats.length; i++) {
         if (!state.isRunning || state.runId !== myRun) break;
@@ -1341,13 +1348,16 @@
         const hasPersonalKey = Boolean(getPersonalSeatConfig(s.seat) && getPersonalSeatConfig(s.seat).api_key);
         const ui = createSpeakerCard(s);
 
-        // Ortak deneme havuzu 45 sn IP sınırına takıldıysa kalan deneme koltuklarını boşuna bekletme
+        // Ortak deneme havuzu veya günlük kota sınırına takıldıysa kalan koltukları boşuna bekletme
         if (sharedPoolBlocked && !hasPersonalKey) {
           failCount += 1;
+          const fallbackMsg = sharedPoolBlockReason === "daily_trial_limit"
+            ? (sharedPoolBlockMsg || "Bugünkü 2 ücretsiz tam oturum hakkını kullandın. Yarın hakkın yenilenir; hemen devam etmek için sağ üstteki 'Ücretsiz API Bağla' düğmesinden kendi ücretsiz Groq veya Google Gemini anahtarını bağlayabilirsin.")
+            : "Ücretsiz deneme havuzu arka arkaya gelen istekleri kısıtladığı için bu uzman beklemeye alındı. Kendi ücretsiz Groq / Gemini anahtarını bağlayarak veya biraz sonra Tekrar Dene'ye basarak bu koltuğu hemen konuşturabilirsin.";
           renderInlineErrorBox(
             ui.bodyEl,
-            "Ücretsiz deneme havuzu arka arkaya gelen istekleri kısıtladığı için bu uzman beklemeye alındı. Kendi ücretsiz Groq / Gemini anahtarını bağlayarak veya biraz sonra Tekrar Dene'ye basarak bu koltuğu hemen konuşturabilirsin.",
-            () => retrySingleSeat(s, ui, question, extraCondition)
+            fallbackMsg,
+            sharedPoolBlockReason === "daily_trial_limit" ? null : () => retrySingleSeat(s, ui, question, extraCondition)
           );
           continue;
         }
@@ -1408,14 +1418,20 @@
           if (err && err.name === "AbortError") break;
           if (state.runId !== myRun) break;
           failCount += 1;
-          if (!hasPersonalKey && (err.errorCode === "pool_rate_limit" || err.errorCode === "pool_timeout")) {
+          if (!hasPersonalKey && (err.errorCode === "pool_rate_limit" || err.errorCode === "pool_timeout" || err.errorCode === "daily_trial_limit")) {
             sharedPoolBlocked = true;
+            sharedPoolBlockReason = err.errorCode;
+            sharedPoolBlockMsg = err.message;
           }
-          renderInlineErrorBox(ui.bodyEl, err.message, () => retrySingleSeat(s, ui, question, extraCondition));
+          renderInlineErrorBox(
+            ui.bodyEl,
+            err.message,
+            err.errorCode === "daily_trial_limit" ? null : () => retrySingleSeat(s, ui, question, extraCondition)
+          );
         }
       }
       if (window.lucide) lucide.createIcons();
-      return { successCount, failCount, sharedPoolBlocked };
+      return { successCount, failCount, sharedPoolBlocked, sharedPoolBlockReason, sharedPoolBlockMsg };
     }
 
     async function runJudgeVerdict(question) {
@@ -1565,7 +1581,8 @@
         }
 
         if (!state.transcript.length) {
-          setRunningUI(false, "Uzmanlardan yanıt alınamadı", "error");
+          const isDailyLimit = roundRes && roundRes.sharedPoolBlockReason === "daily_trial_limit";
+          setRunningUI(false, isDailyLimit ? "Günlük ücretsiz deneme hakkı doldu" : "Uzmanlardan yanıt alınamadı", isDailyLimit ? "warn" : "error");
           return;
         }
 
@@ -1574,12 +1591,19 @@
           const verdictCard = document.getElementById("verdictCard");
           const verdictBody = document.getElementById("verdictBody");
           verdictCard.classList.remove("hidden");
+          const isDailyLimit = roundRes.sharedPoolBlockReason === "daily_trial_limit";
           renderInlineErrorBox(
             verdictBody,
-            "Ücretsiz deneme havuzu yoğunluk sınırına ulaştığı için Hakem özeti beklemeye alındı. Kendi ücretsiz Groq / Gemini anahtarını bağlayıp veya biraz sonra Tekrar Dene'ye basarak özeti hemen alabilirsin.",
-            () => triggerRefreshVerdict()
+            isDailyLimit
+              ? (roundRes.sharedPoolBlockMsg || "Bugünkü 2 ücretsiz tam oturum hakkını kullandın. Yarın hakkın yenilenir; hemen devam etmek için sağ üstteki 'Ücretsiz API Bağla' düğmesinden kendi ücretsiz Groq veya Google Gemini anahtarını bağlayabilirsin.")
+              : "Ücretsiz deneme havuzu yoğunluk sınırına ulaştığı için Hakem özeti beklemeye alındı. Kendi ücretsiz Groq / Gemini anahtarını bağlayıp veya biraz sonra Tekrar Dene'ye basarak özeti hemen alabilirsin.",
+            isDailyLimit ? null : () => triggerRefreshVerdict()
           );
-          setRunningUI(false, "Deneme havuzu yoğun · Kısmi yanıt", "warn");
+          setRunningUI(
+            false,
+            isDailyLimit ? "Günlük ücretsiz deneme hakkı doldu" : "Deneme havuzu yoğun · Kısmi yanıt",
+            "warn"
+          );
           return;
         }
 
@@ -1673,7 +1697,8 @@
 
       const hasPersonalJudge = Boolean(getPersonalSeatConfig("K") && getPersonalSeatConfig("K").api_key);
       if (roundRes && roundRes.sharedPoolBlocked && !hasPersonalJudge) {
-        setRunningUI(false, "Deneme havuzu yoğun · Kısmi yanıt", "warn");
+        const isDailyLimit = roundRes.sharedPoolBlockReason === "daily_trial_limit";
+        setRunningUI(false, isDailyLimit ? "Günlük ücretsiz deneme hakkı doldu" : "Deneme havuzu yoğun · Kısmi yanıt", "warn");
         return;
       }
 
