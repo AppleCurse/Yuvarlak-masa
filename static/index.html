@@ -239,24 +239,43 @@
       <!-- Uzman Konuşma Kartları -->
       <div id="messagesContainer" class="space-y-3"></div>
 
-      <!-- Devam / Şart Değiştir Çubuğu -->
-      <div id="followUpBox" class="hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3 fade-in">
+      <!-- Masaya Yaz / Yön Değiştir / Devam Ettir Çubuğu (Her an aktif) -->
+      <div id="followUpBox" class="hidden bg-white dark:bg-slate-900 border border-brand-200/80 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm space-y-3 fade-in">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+            <i data-lucide="message-square-plus" class="w-4 h-4 text-brand-600 dark:text-indigo-400"></i>
+            <span>Masaya Müdahale Et / Konuyu Devam Ettir</span>
+          </div>
+          <span class="text-[11px] text-slate-500 dark:text-slate-400">Yazdıklarını ve tüm detayları bütün koltuklar birlikte takip eder.</span>
+        </div>
+
         <div class="flex flex-wrap gap-1.5">
+          <button type="button" id="continueRoundBtn" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-200 transition">
+            <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i>
+            <span>1 Tur Daha Tartıştır</span>
+          </button>
           <button type="button" data-followup="Şimdi bir öncekinin en zayıf argümanına doğrudan ve daha sert itiraz edin." class="quick-followup px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
             Daha sert itiraz edin
           </button>
           <button type="button" data-followup="Bunu büyük risk almadan en ucuz ve hızlı şekilde nasıl test edebilirim?" class="quick-followup px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
             En risksiz deneme yolu ne?
           </button>
-          <button type="button" data-followup="Peki bütçe veya zaman yarı yarıya daha kısıtlı olsaydı kararınız ne olurdu?" class="quick-followup px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
-            Bütçe yarı yarıya düşerse?
+          <button type="button" id="refreshVerdictBtn" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:text-emerald-300 transition">
+            <i data-lucide="gavel" class="w-3.5 h-3.5"></i>
+            <span>Karar Özetini Güncelle</span>
           </button>
         </div>
-        <form id="followUpForm" class="flex gap-2">
-          <input id="followUpInput" type="text" placeholder="Şart değiştir veya masaya yeni bir soru at..." class="flex-1 min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <button type="submit" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition shrink-0">
-            Sor
-          </button>
+
+        <form id="followUpForm" class="flex flex-col sm:flex-row gap-2">
+          <select id="followUpTarget" class="sm:w-52 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0">
+            <option value="ALL">Tüm Masa (Hepsi)</option>
+          </select>
+          <div class="flex flex-1 gap-2 min-w-0">
+            <input id="followUpInput" type="text" placeholder="Tartışmanın yönünü değiştir, yeni şart ekle veya seçili uzmana sor..." class="flex-1 min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <button type="submit" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition shrink-0">
+              Gönder
+            </button>
+          </div>
         </form>
       </div>
     </section>
@@ -501,6 +520,7 @@
       serverPoolCount: 0,
       quickSelectedProviderId: "openrouter",
       isRunning: false,
+      runId: 0,
       abortController: null,
       sessionId: null,
       activeQuestion: "",
@@ -875,7 +895,15 @@
           </span>
         </div>
         <div class="inner-voice hidden text-xs italic text-rose-700 dark:text-rose-300 bg-rose-50/70 dark:bg-rose-950/30 border border-dashed border-rose-200 dark:border-rose-500/30 rounded-xl px-3 py-2"></div>
-        <div class="card-actions hidden pt-1 flex items-center gap-3">
+        <div class="card-actions hidden pt-1 flex flex-wrap items-center gap-3">
+          <button type="button" class="elaborate-btn inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition">
+            <i data-lucide="book-open-text" class="w-3.5 h-3.5"></i>
+            <span>Daha Detaylı Anlat</span>
+          </button>
+          <button type="button" class="ask-seat-btn inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            <span>Bu Koltuğa Sor</span>
+          </button>
           <button type="button" class="verify-claim-btn inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-indigo-400 transition">
             <i data-lucide="search-check" class="w-3.5 h-3.5"></i>
             <span>İddiayı İnternette Doğrula</span>
@@ -890,6 +918,8 @@
         providerEl: card.querySelector(".provider-chip"),
         innerEl: card.querySelector(".inner-voice"),
         actionsEl: card.querySelector(".card-actions"),
+        elaborateBtn: card.querySelector(".elaborate-btn"),
+        askSeatBtn: card.querySelector(".ask-seat-btn"),
         verifyBtn: card.querySelector(".verify-claim-btn"),
         verifyOut: card.querySelector(".verify-result")
       };
@@ -944,24 +974,157 @@
       }));
     }
 
-    async function runExpertRound(question, seats, extraCondition = "") {
+    function populateFollowUpTargets(seats) {
+      const sel = document.getElementById("followUpTarget");
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = `<option value="ALL">Tüm Masa (Hepsi Cevaplasın)</option>` +
+        seats.map(s => `<option value="${s.seat}">Sadece ${escapeHtml(s.name)}</option>`).join("") +
+        `<option value="K">Sadece Karar Hakemi</option>`;
+      if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function buildSharedTranscriptContext() {
+      if (!state.transcript.length) return "";
+      const slice = state.transcript.slice(-24);
+      const skipped = state.transcript.length - slice.length;
+      const note = skipped > 0 ? `[Önceki ${skipped} mesaj özet dışı bırakıldı]\n` : "";
+      return "\n\nMasada şimdiye kadar geçen TÜM konuşmalar (tüm koltukların ve masa başkanının müdahaleleri dahil):\n" +
+        note +
+        slice.map((t, idx) => `${idx + 1}. ${t.speaker} (${t.role}): ${t.content}`).join("\n");
+    }
+
+    function bindCardActionButtons(ui, seatObj, cleanText) {
+      ui.actionsEl.classList.remove("hidden");
+      ui.elaborateBtn.addEventListener("click", () => {
+        askSeatElaborate(seatObj, cleanText);
+      });
+      ui.askSeatBtn.addEventListener("click", () => {
+        const sel = document.getElementById("followUpTarget");
+        if (sel) sel.value = seatObj.seat;
+        const inp = document.getElementById("followUpInput");
+        if (inp) {
+          inp.placeholder = `${seatObj.name} için sorunu veya ek şartını yaz...`;
+          inp.focus();
+          inp.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+      ui.verifyBtn.addEventListener("click", async () => {
+        ui.verifyBtn.disabled = true;
+        ui.verifyOut.textContent = "İddia araştırılıyor...";
+        ui.verifyOut.classList.remove("hidden");
+        try {
+          const kCfg = getPersonalSeatConfig("K") || getPersonalSeatConfig("A");
+          const vrBody = {
+            claim: cleanText.slice(0, 350),
+            session_id: state.sessionId || "",
+            seat: "K"
+          };
+          if (kCfg && kCfg.base_url && kCfg.api_key) {
+            vrBody.base_url = kCfg.base_url;
+            vrBody.api_key = kCfg.api_key;
+            vrBody.model = kCfg.model || "";
+          }
+          const vr = await fetch("/api/research/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(vrBody)
+          }).then(r => r.json());
+          ui.verifyOut.textContent = vr.ok ? (vr.report || vr.verdict || "Araştırma tamamlandı.") : (vr.error || "Doğrulama yapılamadı.");
+        } catch (_) {
+          ui.verifyOut.textContent = "Doğrulama servisi şu an yanıt veremedi.";
+        } finally {
+          ui.verifyBtn.disabled = false;
+        }
+      });
+    }
+
+    function cancelActiveRun() {
+      state.runId += 1;
+      state.isRunning = false;
+      if (state.abortController) {
+        try { state.abortController.abort(); } catch (_) {}
+        state.abortController = null;
+      }
+      return state.runId;
+    }
+
+    async function askSeatElaborate(seatObj, previousText) {
+      const myRun = cancelActiveRun();
+      state.isRunning = true;
+
+      const opPrompt = `${seatObj.name}, az önceki fikrini daha detaylı anlat (somut örnek, rakam ve adım adım gerekçeyle).`;
+      const userCard = createSpeakerCard(null, true);
+      userCard.bodyEl.textContent = `→ ${seatObj.name}: Daha detaylı anlatır mısın?`;
+      state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: opPrompt });
+      if (state.sessionId) {
+        fetch("/api/session/record_message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: state.sessionId, seat: "OP", speaker_name: "Masa Başkanı", content: opPrompt })
+        }).catch(() => {});
+      }
+
+      setRunningUI(true, `${seatObj.name} detaylı anlatıyor...`);
+      const detailedSeat = { ...seatObj, role: `${seatObj.role} · Detaylı Açıklama` };
+      const ui = createSpeakerCard(detailedSeat);
+      ui.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      const messages = [
+        { role: "system", content: getExpertSystemPrompt(seatObj) + "\n\nŞimdi senden kapsamlı ama okunması kolay bir derinleştirme istendi: 2-3 kısa paragraf veya net maddeler halinde somut örnek, rakam ve uygulanabilir adımlarla açıkla." },
+        {
+          role: "user",
+          content: `Ana konu: ${state.activeQuestion}${buildSharedTranscriptContext()}\n\nMasa Başkanı senin şu sözünü beğendi ve daha detaylı anlatmanı istedi: "${previousText.slice(0, 500)}"\n\nDiğer koltukların söylediklerini de dikkate alarak fikrini derinleştir, somut örnek ve net adımlar ver.`
+        }
+      ];
+
+      try {
+        const finalText = await streamSeatCompletion({
+          seat: seatObj.seat,
+          characterId: seatObj.id,
+          messages,
+          onMeta: meta => { if (meta && meta.provider) ui.providerEl.textContent = meta.provider; },
+          onDelta: txt => { if (state.runId === myRun) ui.bodyEl.textContent = txt; }
+        });
+        if (state.runId !== myRun) return;
+        const cleanText = finalText || "Detaylı yanıt üretilemedi.";
+        ui.bodyEl.textContent = cleanText;
+        state.transcript.push({ seat: seatObj.seat, speaker: seatObj.name, role: seatObj.role, content: cleanText });
+        if (state.sessionId) {
+          fetch("/api/session/record_message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: state.sessionId, seat: seatObj.seat, speaker_name: seatObj.name, content: cleanText })
+          }).catch(() => {});
+        }
+        bindCardActionButtons(ui, seatObj, cleanText);
+        setRunningUI(false, `${seatObj.name} detaylandırdı · tüm koltuklar gördü`);
+      } catch (err) {
+        if (state.runId === myRun && err && err.name !== "AbortError") {
+          ui.bodyEl.textContent = `Yanıt alınamadı: ${err.message}`;
+          ui.bodyEl.classList.add("text-rose-600", "dark:text-rose-400");
+          setRunningUI(false, "Hata");
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function runExpertRound(question, seats, extraCondition = "", myRun = state.runId) {
       const wantInner = document.getElementById("optInnerVoice").checked;
       for (let i = 0; i < seats.length; i++) {
-        if (!state.isRunning) break;
+        if (!state.isRunning || state.runId !== myRun) break;
         const s = seats[i];
         setRunningUI(true, `${s.name} konuşuyor (${i + 1}/${seats.length})...`);
         const ui = createSpeakerCard(s);
 
-        const priorContext = state.transcript.length
-          ? "\n\nMasada şimdiye kadar söylenenler:\n" + state.transcript.slice(-8).map(t => `- ${t.speaker}: ${t.content}`).join("\n")
-          : "";
-        const condLine = extraCondition ? `\n\nKullanıcının yeni sorusu / şartı: ${extraCondition}` : "";
+        const priorContext = buildSharedTranscriptContext();
+        const condLine = extraCondition ? `\n\nMasa Başkanının son yönlendirmesi / yeni şartı: ${extraCondition}` : "";
 
         const messages = [
           { role: "system", content: getExpertSystemPrompt(s) },
           {
             role: "user",
-            content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}\n\nKendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Önceki konuşmacılar varsa katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
+            content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}\n\nMasada şimdiye kadar konuşulan her şeyi (diğer uzmanların detayları ve Masa Başkanının yönlendirmeleri dahil) dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
           }
         ];
 
@@ -973,8 +1136,9 @@
             onMeta: meta => {
               if (meta && meta.provider) ui.providerEl.textContent = meta.provider;
             },
-            onDelta: txt => { ui.bodyEl.textContent = txt; }
+            onDelta: txt => { if (state.runId === myRun) ui.bodyEl.textContent = txt; }
           });
+          if (state.runId !== myRun) break;
 
           const cleanText = finalText || "Bu açıdan yanıt üretilemedi.";
           ui.bodyEl.textContent = cleanText;
@@ -993,42 +1157,14 @@
             }).catch(() => {});
           }
 
-          // Doğrulama butonu bağla
-          ui.actionsEl.classList.remove("hidden");
-          ui.verifyBtn.addEventListener("click", async () => {
-            ui.verifyBtn.disabled = true;
-            ui.verifyOut.textContent = "İddia araştırılıyor...";
-            ui.verifyOut.classList.remove("hidden");
-            try {
-              const kCfg = getPersonalSeatConfig("K") || getPersonalSeatConfig("A");
-              const vrBody = {
-                claim: cleanText.slice(0, 350),
-                session_id: state.sessionId || "",
-                seat: "K"
-              };
-              if (kCfg && kCfg.base_url && kCfg.api_key) {
-                vrBody.base_url = kCfg.base_url;
-                vrBody.api_key = kCfg.api_key;
-                vrBody.model = kCfg.model || "";
-              }
-              const vr = await fetch("/api/research/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(vrBody)
-              }).then(r => r.json());
-              ui.verifyOut.textContent = vr.ok ? (vr.report || vr.verdict || "Araştırma tamamlandı.") : (vr.error || "Doğrulama yapılamadı.");
-            } catch (_) {
-              ui.verifyOut.textContent = "Doğrulama servisi şu an yanıt veremedi.";
-            } finally {
-              ui.verifyBtn.disabled = false;
-            }
-          });
+          bindCardActionButtons(ui, s, cleanText);
 
-          if (wantInner && state.isRunning) {
+          if (wantInner && state.isRunning && state.runId === myRun) {
             runInnerVoice(s, cleanText, ui.innerEl);
           }
         } catch (err) {
           if (err && err.name === "AbortError") break;
+          if (state.runId !== myRun) break;
           ui.bodyEl.textContent = `Bu uzman şu an yanıt veremedi: ${err.message || "bağlantı hatası"}`;
           ui.bodyEl.classList.add("text-rose-600", "dark:text-rose-400");
         }
@@ -1107,6 +1243,7 @@
       }
       if (state.isRunning) return;
 
+      const myRun = cancelActiveRun();
       const tbl = currentTable();
       const seats = activeSeatsList();
       state.activeQuestion = question;
@@ -1119,7 +1256,8 @@
       document.getElementById("messagesContainer").innerHTML = "";
       document.getElementById("verdictCard").classList.add("hidden");
       document.getElementById("envelopeResultCard").classList.add("hidden");
-      document.getElementById("followUpBox").classList.add("hidden");
+      populateFollowUpTargets(seats);
+      document.getElementById("followUpBox").classList.remove("hidden");
       document.getElementById("debateWorkspace").classList.remove("hidden");
       document.getElementById("debateWorkspace").scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -1135,42 +1273,81 @@
           })
         }).then(r => r.json()).catch(() => ({}));
         if (sResp && sResp.session_id) state.sessionId = sResp.session_id;
+        if (state.runId !== myRun) return;
 
         if (document.getElementById("optEnvelope").checked && state.isRunning) {
           await runSealEnvelopes(question, seats);
         }
+        if (state.runId !== myRun) return;
 
-        await runExpertRound(question, seats);
+        await runExpertRound(question, seats, "", myRun);
+        if (state.runId !== myRun) return;
 
         if (state.isRunning) {
           await runJudgeVerdict(question);
+          if (state.runId !== myRun) return;
           if (document.getElementById("optEnvelope").checked) {
             renderEnvelopeComparison(seats);
           }
-          document.getElementById("followUpBox").classList.remove("hidden");
           setRunningUI(false, "Karar özeti hazır");
         } else {
           setRunningUI(false, "Durduruldu");
         }
       } catch (err) {
-        setRunningUI(false, "Tamamlandı");
-        showToast(err.message || "Bir hata oluştu");
+        if (state.runId === myRun) {
+          setRunningUI(false, "Tamamlandı");
+          showToast(err.message || "Bir hata oluştu");
+        }
       }
     }
 
-    async function handleFollowUp(text) {
+    async function handleFollowUp(text, forcedTarget = null) {
       const clean = (text || "").trim();
-      if (!clean || state.isRunning) return;
-      document.getElementById("followUpInput").value = "";
-      const userCard = createSpeakerCard(null, true);
-      userCard.bodyEl.textContent = clean;
-      state.transcript.push({ seat: "OP", speaker: "Kullanıcı", role: "Başkan", content: clean });
+      if (!clean) return;
+      const myRun = cancelActiveRun();
+      state.isRunning = true;
 
-      setRunningUI(true, "Uzmanlar yeni şartı değerlendiriyor...");
-      await runExpertRound(state.activeQuestion, activeSeatsList(), clean);
+      const targetSel = document.getElementById("followUpTarget");
+      const target = forcedTarget || (targetSel ? targetSel.value : "ALL");
+      document.getElementById("followUpInput").value = "";
+
+      const allSeats = activeSeatsList();
+      const targetSeatObj = allSeats.find(s => s.seat === target);
+      const labelPrefix = target === "ALL"
+        ? "Tüm Masa"
+        : (target === "K" ? "Karar Hakemi" : (targetSeatObj ? targetSeatObj.name : "Masa"));
+
+      const userCard = createSpeakerCard(null, true);
+      userCard.bodyEl.textContent = `[→ ${labelPrefix}] ${clean}`;
+      userCard.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: `[${labelPrefix} için] ${clean}` });
+      if (state.sessionId) {
+        fetch("/api/session/record_message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: state.sessionId, seat: "OP", speaker_name: "Masa Başkanı", content: clean })
+        }).catch(() => {});
+      }
+
+      if (target === "K") {
+        await runJudgeVerdict(state.activeQuestion + " — Masa Başkanı yönlendirmesi: " + clean);
+        if (state.runId === myRun) setRunningUI(false, "Karar özeti güncellendi");
+        return;
+      }
+
+      const seatsToSpeak = targetSeatObj ? [targetSeatObj] : allSeats;
+      setRunningUI(true, targetSeatObj ? `${targetSeatObj.name} yanıtlıyor...` : "Tüm masa yönlendirmene yanıt veriyor...");
+      await runExpertRound(state.activeQuestion, seatsToSpeak, clean, myRun);
+      if (state.runId !== myRun) return;
+
       if (state.isRunning) {
-        await runJudgeVerdict(state.activeQuestion + " (Ek şart: " + clean + ")");
-        setRunningUI(false, "Güncel karar hazır");
+        if (!targetSeatObj) {
+          await runJudgeVerdict(state.activeQuestion + " (Ek yönlendirme: " + clean + ")");
+        }
+        if (state.runId === myRun) {
+          setRunningUI(false, targetSeatObj ? `${targetSeatObj.name} yanıtladı · tüm masa takip ediyor` : "Güncel karar hazır");
+        }
       } else {
         setRunningUI(false, "Durduruldu");
       }
@@ -1576,19 +1753,26 @@
     });
 
     document.getElementById("stopDebateBtn").addEventListener("click", () => {
-      state.isRunning = false;
-      if (state.abortController) {
-        try { state.abortController.abort(); } catch (_) {}
-      }
+      cancelActiveRun();
       setRunningUI(false, "Durduruldu");
     });
 
     document.getElementById("resetDebateBtn").addEventListener("click", () => {
-      state.isRunning = false;
-      if (state.abortController) { try { state.abortController.abort(); } catch (_) {} }
+      cancelActiveRun();
       document.getElementById("debateWorkspace").classList.add("hidden");
       document.getElementById("questionInput").value = "";
       document.getElementById("questionInput").focus();
+    });
+
+    document.getElementById("continueRoundBtn").addEventListener("click", () => {
+      handleFollowUp("Tartışmayı bir tur daha ilerletin; birbirinizin az önce söylediği güçlü ve zayıf noktalara doğrudan yanıt verip netleşin.", "ALL");
+    });
+
+    document.getElementById("refreshVerdictBtn").addEventListener("click", async () => {
+      const myRun = cancelActiveRun();
+      state.isRunning = true;
+      await runJudgeVerdict(state.activeQuestion);
+      if (state.runId === myRun) setRunningUI(false, "Karar özeti güncellendi");
     });
 
     document.getElementById("copyVerdictBtn").addEventListener("click", async () => {
