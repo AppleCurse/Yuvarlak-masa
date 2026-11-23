@@ -95,20 +95,6 @@
     <span id="toastMsg">İşlem tamamlandı</span>
   </div>
 
-  <!-- Kişisel Ücretsiz API Davet Şeridi (Yalnızca kullanıcı henüz kendi anahtarını eklemediyse görünür) -->
-  <div id="byokPromptBanner" class="hidden max-w-5xl mx-auto px-3 sm:px-4 pt-4">
-    <div class="bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-      <div class="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-indigo-950 dark:text-indigo-100">
-        <i data-lucide="shield-check" class="w-4 h-4 text-brand-600 dark:text-indigo-400 shrink-0 mt-0.5 sm:mt-0"></i>
-        <span><strong>Kendi ücretsiz yapay zekanı bağla:</strong> Groq, Gemini, OpenRouter, NVIDIA veya Mistral'den 10 saniyede ücretsiz anahtar al — <strong>anahtarın sadece senin tarayıcında saklanır, kimseyle paylaşılmaz.</strong></span>
-      </div>
-      <button id="bannerOpenProvidersBtn" type="button" class="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shrink-0 transition">
-        <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-        <span>Ücretsiz Anahtar Bağla</span>
-      </button>
-    </div>
-  </div>
-
   <!-- =================================================================== -->
   <!-- SEKME 1: KARAR MASASI                                                -->
   <!-- =================================================================== -->
@@ -145,17 +131,9 @@
         <!-- Alt Aksiyon Satırı -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
           <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
-            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Tartışma başlamadan herkes ilk fikrini gizlice zarfa koyar, sonunda kimin fikrinin değiştiği açılır">
-              <input id="optEnvelope" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-              <span>Kimin fikri değişti? (Zarf)</span>
-            </label>
-            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Uzmanların masada kibarlıkla söylemediği 1 cümlelik iç düşüncesini gösterir">
-              <input id="optInnerVoice" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-              <span>İç sesleri göster</span>
-            </label>
-            <button id="toggleExpertsBtn" type="button" class="inline-flex items-center gap-1 text-brand-600 dark:text-indigo-400 font-semibold hover:underline">
+            <button id="toggleExpertsBtn" type="button" class="inline-flex items-center gap-1.5 text-brand-600 dark:text-indigo-400 font-semibold hover:underline">
               <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-              <span id="expertsToggleLabel">4 Uzman + Hakem</span>
+              <span id="expertsToggleLabel">4 Uzman + Hakem · Masa Ayarları</span>
             </button>
           </div>
 
@@ -172,7 +150,7 @@
         </div>
       </form>
 
-      <!-- Açılır Uzman Kadrosu Paneli (Varsayılan kapalı, tek tıkla açılır) -->
+      <!-- Açılır Uzman Kadrosu & Gelişmiş Masa Ayarları Paneli (Varsayılan kapalı, tek tıkla açılır) -->
       <div id="expertsPanel" class="hidden pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-3 fade-in">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-xs text-slate-500 dark:text-slate-400">İstediğin uzmanı masadan kaldırabilir veya her koltuğa farklı ücretsiz yapay zeka atayabilirsin.</p>
@@ -181,6 +159,17 @@
           </button>
         </div>
         <div id="seatCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"></div>
+        <div class="pt-2.5 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Ek Seçenekler:</span>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Tartışma başlamadan herkes ilk fikrini gizlice zarfa koyar, sonunda kimin fikrinin değiştiği açılır">
+            <input id="optEnvelope" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span>Kimin fikri değişti? (Zarf)</span>
+          </label>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Uzmanların masada kibarlıkla söylemediği 1 cümlelik iç düşüncesini gösterir">
+            <input id="optInnerVoice" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span>İç sesleri göster</span>
+          </label>
+        </div>
       </div>
     </section>
 
@@ -560,10 +549,41 @@
       return currentTable().seats.filter(s => !state.disabledSeats.has(s.seat));
     }
 
+    const TR_REALITY_RULE =
+      "\n\nKESİN GERÇEKLİK KURALI: Güncel Türkiye faiz oranlarını, enflasyonu, döviz kurunu, asgari ücreti, kira/kredi yüzdelerini veya değişen mevzuat rakamlarını ASLA ezberden veya eski/yabancı verilere bakarak uydurma. Kullanıcının vermediği güncel bir oran gerekiyorsa kesin sayı uydurmak yerine oran/kural mantığıyla analiz yap (ör. taksit/gelir oranı, nakit yastığı ayı, maliyet-getiri farkı) ve gerekirse kullanıcıdan güncel oranı yazmasını iste.";
+
     function getExpertSystemPrompt(seatObj) {
       const dbChar = state.charactersById[seatObj.id];
-      if (dbChar && dbChar.system_prompt) return dbChar.system_prompt;
-      return `Sen Yuvarlak Masa'da oturan ${seatObj.name} (${seatObj.role}) uzmanısın. 3-4 kısa, somut ve net Türkçe cümleyle konuş; önceki konuşmacının kör noktasına doğrudan değin. Kendi adını başa yazma.`;
+      const base = (dbChar && dbChar.system_prompt)
+        ? dbChar.system_prompt
+        : `Sen Yuvarlak Masa'da oturan ${seatObj.name} (${seatObj.role}) uzmanısın. 3-4 kısa, somut ve net Türkçe cümleyle konuş; önceki konuşmacının kör noktasına doğrudan değin. Kendi adını başa yazma.`;
+      return base.includes("KESİN GERÇEKLİK KURALI") ? base : (base + TR_REALITY_RULE);
+    }
+
+    function sanitizeUserError(rawMsg, errCode = "") {
+      const txt = String(rawMsg || "").trim();
+      const low = txt.toLowerCase();
+      if (
+        errCode === "pool_rate_limit" ||
+        low.includes("rate_limited") ||
+        low.includes("free_limit") ||
+        low.includes("previous request is still running") ||
+        low.includes("http 429") ||
+        low.includes("http 402")
+      ) {
+        return "Ücretsiz deneme havuzu şu an yoğun veya bekleme sınırında. Birkaç saniye sonra tekrar deneyebilir ya da sağ üstten 10 saniyede kendi ücretsiz API anahtarını (Groq / Gemini / OpenRouter) bağlayarak kesintisiz devam edebilirsin.";
+      }
+      if (errCode === "pool_timeout" || low.includes("zaman aşımı") || low.includes("timeout")) {
+        return "Model yanıtı zaman aşımına uğradı (25 sn). Tekrar deneyebilir veya daha hızlı yanıt için kendi ücretsiz API anahtarını (Groq / Gemini) bağlayabilirsin.";
+      }
+      if (low.includes("http 401") || low.includes("http 403") || errCode === "auth_error") {
+        return "API anahtarı geçersiz veya yetkisiz görünüyor. Sağ üstteki 'Ücretsiz API Bağla' ekranından anahtarını kontrol et.";
+      }
+      if (txt.includes("{") && txt.includes("}") && (low.includes("\"status\"") || low.includes("\"error\""))) {
+        return "Yapay zeka sunucusu şu an geçici olarak yanıt veremedi. Birkaç saniye sonra tekrar dene ya da kendi ücretsiz API anahtarını bağla.";
+      }
+      if (!txt) return "Yapay zeka sunucusu şu an yanıt veremedi. Lütfen tekrar dene.";
+      return txt.length > 260 ? txt.slice(0, 257) + "..." : txt;
     }
 
     // =========================================================================
@@ -660,15 +680,29 @@
       } else {
         lbl.textContent = "Ücretsiz API Bağla";
       }
-      const banner = document.getElementById("byokPromptBanner");
-      if (banner) {
-        banner.classList.toggle("hidden", customCount > 0);
-      }
     }
 
-    async function streamSeatCompletion({ seat, characterId, messages, temperature = 0.7, onDelta, onMeta }) {
+    async function streamSeatCompletion({ seat, characterId, messages, temperature = 0.7, maxTokens = 450, timeoutMs = 25000, onDelta, onMeta }) {
       const controller = new AbortController();
       state.abortController = controller;
+      let timedOut = false;
+      let firstChunkSeen = false;
+      const hardCapTimer = setTimeout(() => {
+        timedOut = true;
+        try { controller.abort(); } catch (_) {}
+      }, Math.max(timeoutMs + 20000, 45000));
+      let idleTimer = setTimeout(() => {
+        timedOut = true;
+        try { controller.abort(); } catch (_) {}
+      }, timeoutMs);
+      const bumpIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          timedOut = true;
+          try { controller.abort(); } catch (_) {}
+        }, firstChunkSeen ? 18000 : timeoutMs);
+      };
+
       const personal = getPersonalSeatConfig(seat);
       const bodyPayload = {
         seat,
@@ -676,78 +710,131 @@
         messages,
         cognitive_character_id: characterId || "",
         cognitive_session_id: state.sessionId || "",
-        temperature
+        temperature,
+        max_tokens: maxTokens
       };
       if (personal && personal.base_url && personal.api_key) {
         bodyPayload.base_url = personal.base_url;
         bodyPayload.api_key = personal.api_key;
         bodyPayload.model = personal.model || "";
       }
-      const resp = await fetch("/api/chat/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify(bodyPayload)
-      });
 
-      if (!resp.ok) {
-        let errTxt = `Sunucu hatası (${resp.status})`;
-        try {
-          const j = await resp.json();
-          if (j && j.error) errTxt = j.error;
-        } catch (_) {}
-        throw new Error(errTxt);
-      }
+      try {
+        const resp = await fetch("/api/chat/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify(bodyPayload)
+        });
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buf = "";
-      let fullText = "";
+        if (!resp.ok) {
+          let errTxt = "";
+          let errCode = "";
+          try {
+            const j = await resp.json();
+            if (j && j.error) errTxt = j.error;
+            if (j && j.error_code) errCode = j.error_code;
+          } catch (_) {}
+          const e = new Error(sanitizeUserError(errTxt || `HTTP ${resp.status}`, errCode));
+          e.errorCode = errCode || (resp.status === 429 ? "pool_rate_limit" : "upstream_error");
+          throw e;
+        }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl;
-        while ((nl = buf.indexOf("\n")) !== -1) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (payload === "[DONE]") return fullText.trim();
-          let obj;
-          try { obj = JSON.parse(payload); } catch (_) { continue; }
-          if (obj.error) throw new Error(obj.error);
-          if (obj.meta && onMeta) onMeta(obj.meta);
-          if (obj.delta) {
-            fullText += obj.delta;
-            if (onDelta) onDelta(fullText);
-          }
-          if (obj.replace) {
-            fullText = obj.replace;
-            if (onDelta) onDelta(fullText);
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buf = "";
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let nl;
+          while ((nl = buf.indexOf("\n")) !== -1) {
+            const line = buf.slice(0, nl).trim();
+            buf = buf.slice(nl + 1);
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") return fullText.trim();
+            let obj;
+            try { obj = JSON.parse(payload); } catch (_) { continue; }
+            if (obj.error) {
+              const e = new Error(sanitizeUserError(obj.error, obj.error_code || ""));
+              e.errorCode = obj.error_code || "";
+              throw e;
+            }
+            if (obj.meta && onMeta) onMeta(obj.meta);
+            if (obj.delta) {
+              firstChunkSeen = true;
+              bumpIdleTimer();
+              fullText += obj.delta;
+              if (onDelta) onDelta(fullText);
+            }
+            if (obj.replace) {
+              firstChunkSeen = true;
+              bumpIdleTimer();
+              fullText = obj.replace;
+              if (onDelta) onDelta(fullText);
+            }
           }
         }
+        return fullText.trim();
+      } catch (err) {
+        if (timedOut) {
+          const isPersonal = Boolean(personal && personal.api_key);
+          const te = new Error(
+            isPersonal
+              ? "Model yanıtı zaman aşımına uğradı (25 sn). Tekrar dene."
+              : "Ücretsiz deneme havuzu 25 saniyede yanıt vermedi. Tekrar deneyebilir ya da sağ üstten 10 saniyede kendi ücretsiz API anahtarını (Groq / Gemini) bağlayabilirsin."
+          );
+          te.errorCode = isPersonal ? "timeout" : "pool_timeout";
+          throw te;
+        }
+        throw err;
+      } finally {
+        clearTimeout(idleTimer);
+        clearTimeout(hardCapTimer);
       }
-      return fullText.trim();
     }
 
-    async function quickChat({ seat, messages, temperature = 0.5 }) {
+    async function quickChat({ seat, messages, temperature = 0.5, maxTokens = 350, timeoutMs = 22000 }) {
+      const controller = new AbortController();
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        try { controller.abort(); } catch (_) {}
+      }, timeoutMs);
       const personal = getPersonalSeatConfig(seat);
-      const bodyPayload = { seat, use_pool: true, messages, temperature };
+      const bodyPayload = { seat, use_pool: true, messages, temperature, max_tokens: maxTokens };
       if (personal && personal.base_url && personal.api_key) {
         bodyPayload.base_url = personal.base_url;
         bodyPayload.api_key = personal.api_key;
         bodyPayload.model = personal.model || "";
       }
-      const resp = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyPayload)
-      });
-      const data = await resp.json();
-      if (!resp.ok || !data.ok) throw new Error(data.error || "Yanıt alınamadı");
-      return data;
+      try {
+        const resp = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify(bodyPayload)
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          const e = new Error(sanitizeUserError(data.error || `HTTP ${resp.status}`, data.error_code || ""));
+          e.errorCode = data.error_code || "";
+          throw e;
+        }
+        return data;
+      } catch (err) {
+        if (timedOut) {
+          const te = new Error(sanitizeUserError("timeout", personal && personal.api_key ? "timeout" : "pool_timeout"));
+          te.errorCode = personal && personal.api_key ? "timeout" : "pool_timeout";
+          throw te;
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     // =========================================================================
@@ -804,7 +891,7 @@
 
       // Uzman Kartları (Açılır Panel)
       const activeCount = activeSeatsList().length;
-      document.getElementById("expertsToggleLabel").textContent = `${activeCount} Uzman + Hakem`;
+      document.getElementById("expertsToggleLabel").textContent = `${activeCount} Uzman + Hakem · Masa Ayarları`;
       const grid = document.getElementById("seatCardsGrid");
       grid.innerHTML = tbl.seats.map(s => {
         const enabled = !state.disabledSeats.has(s.seat);
@@ -847,9 +934,69 @@
     }
 
     // =========================================================================
+    // KİŞİSEL GEÇMİŞ SAKLAMA (SADECE BU TARAYICIDA, ANINDA YÜKLENİR)
+    // =========================================================================
+    const LOCAL_HISTORY_STORAGE = "ym_history_v2";
+
+    function loadLocalHistory() {
+      try {
+        const raw = localStorage.getItem(LOCAL_HISTORY_STORAGE);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveLocalHistory(items) {
+      try {
+        localStorage.setItem(LOCAL_HISTORY_STORAGE, JSON.stringify((items || []).slice(0, 30)));
+      } catch (_) {}
+    }
+
+    function upsertCurrentSessionHistory(verdictText = null) {
+      if (!state.sessionId || !state.activeQuestion) return;
+      const items = loadLocalHistory();
+      const tbl = currentTable();
+      const idx = items.findIndex(x => x.id === state.sessionId);
+      const existing = idx >= 0 ? items[idx] : null;
+      const entry = {
+        id: state.sessionId,
+        tableLabel: tbl.label,
+        topic: state.activeQuestion,
+        createdAt: existing ? existing.createdAt : new Date().toISOString(),
+        messages: state.transcript.map(m => ({
+          seat: m.seat,
+          speaker: m.speaker,
+          role: m.role,
+          content: m.content
+        })),
+        verdict: verdictText !== null ? verdictText : (existing ? existing.verdict : "")
+      };
+      if (idx >= 0) items[idx] = entry;
+      else items.unshift(entry);
+      saveLocalHistory(items);
+    }
+
+    function deleteLocalHistoryItem(sid) {
+      const items = loadLocalHistory().filter(x => x.id !== sid);
+      saveLocalHistory(items);
+    }
+
+    function formatTrDate(isoStr) {
+      try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return isoStr || "";
+        return d.toLocaleString("tr-TR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      } catch (_) {
+        return isoStr || "";
+      }
+    }
+
+    // =========================================================================
     // CANLI TARTIŞMA AKIŞI (GERÇEK STREAMING + HAKEM + ZARF + İÇ SES)
     // =========================================================================
-    function setRunningUI(running, statusText = "Masa tartışıyor") {
+    function setRunningUI(running, statusText = "Masa tartışıyor", tone = "ok") {
       state.isRunning = running;
       document.getElementById("startDebateBtn").classList.toggle("hidden", running);
       document.getElementById("stopDebateBtn").classList.toggle("hidden", !running);
@@ -857,10 +1004,35 @@
       if (running) {
         pill.className = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
         pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ${escapeHtml(statusText)}`;
+      } else if (tone === "error") {
+        pill.className = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300";
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> ${escapeHtml(statusText)}`;
+      } else if (tone === "warn") {
+        pill.className = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ${escapeHtml(statusText)}`;
       } else {
         pill.className = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
         pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${escapeHtml(statusText)}`;
       }
+    }
+
+    function renderInlineErrorBox(containerEl, message, onRetry) {
+      const cleanMsg = sanitizeUserError(message);
+      containerEl.classList.remove("text-rose-600", "dark:text-rose-400");
+      containerEl.innerHTML = `
+        <div class="rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/70 dark:bg-rose-950/30 p-3 space-y-2.5">
+          <p class="text-xs sm:text-sm text-rose-800 dark:text-rose-200 leading-relaxed">${escapeHtml(cleanMsg)}</p>
+          <div class="flex flex-wrap items-center gap-2">
+            ${onRetry ? `<button type="button" class="inline-retry-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 hover:bg-rose-50 dark:hover:bg-slate-700 transition"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i><span>Tekrar Dene</span></button>` : ""}
+            <button type="button" class="inline-connect-api-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white transition"><i data-lucide="key-round" class="w-3.5 h-3.5"></i><span>10 Saniyede Ücretsiz API Bağla</span></button>
+          </div>
+        </div>
+      `;
+      const retryBtn = containerEl.querySelector(".inline-retry-btn");
+      if (retryBtn && onRetry) retryBtn.addEventListener("click", onRetry);
+      const apiBtn = containerEl.querySelector(".inline-connect-api-btn");
+      if (apiBtn) apiBtn.addEventListener("click", openProvidersModal);
+      if (window.lucide) lucide.createIcons();
     }
 
     function createSpeakerCard(seatObj, isUser = false) {
@@ -1057,11 +1229,12 @@
       const userCard = createSpeakerCard(null, true);
       userCard.bodyEl.textContent = `→ ${seatObj.name}: Daha detaylı anlatır mısın?`;
       state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: opPrompt });
+      upsertCurrentSessionHistory();
       if (state.sessionId) {
         fetch("/api/session/record_message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: state.sessionId, seat: "OP", speaker_name: "Masa Başkanı", content: opPrompt })
+          body: JSON.stringify({ session_id: state.sessionId, seat: "OP", character_id: "operator", role: "operator", speaker_name: "Masa Başkanı", content: opPrompt })
         }).catch(() => {});
       }
 
@@ -1071,7 +1244,7 @@
       ui.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
       const messages = [
-        { role: "system", content: getExpertSystemPrompt(seatObj) + "\n\nŞimdi senden kapsamlı ama okunması kolay bir derinleştirme istendi: 2-3 kısa paragraf veya net maddeler halinde somut örnek, rakam ve uygulanabilir adımlarla açıkla." },
+        { role: "system", content: getExpertSystemPrompt(seatObj) + "\n\nŞimdi senden kapsamlı ama okunması kolay bir derinleştirme istendi: 2-3 kısa paragraf veya net maddeler halinde somut örnek, oran/kural hesabı ve uygulanabilir adımlarla açıkla." },
         {
           role: "user",
           content: `Ana konu: ${state.activeQuestion}${buildSharedTranscriptContext()}\n\nMasa Başkanı senin şu sözünü beğendi ve daha detaylı anlatmanı istedi: "${previousText.slice(0, 500)}"\n\nDiğer koltukların söylediklerini de dikkate alarak fikrini derinleştir, somut örnek ve net adımlar ver.`
@@ -1083,6 +1256,7 @@
           seat: seatObj.seat,
           characterId: seatObj.id,
           messages,
+          maxTokens: 820,
           onMeta: meta => { if (meta && meta.provider) ui.providerEl.textContent = meta.provider; },
           onDelta: txt => { if (state.runId === myRun) ui.bodyEl.textContent = txt; }
         });
@@ -1090,20 +1264,66 @@
         const cleanText = finalText || "Detaylı yanıt üretilemedi.";
         ui.bodyEl.textContent = cleanText;
         state.transcript.push({ seat: seatObj.seat, speaker: seatObj.name, role: seatObj.role, content: cleanText });
+        upsertCurrentSessionHistory();
         if (state.sessionId) {
           fetch("/api/session/record_message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_id: state.sessionId, seat: seatObj.seat, speaker_name: seatObj.name, content: cleanText })
+            body: JSON.stringify({ session_id: state.sessionId, seat: seatObj.seat, character_id: seatObj.id, role: "seat", speaker_name: seatObj.name, content: cleanText })
           }).catch(() => {});
         }
         bindCardActionButtons(ui, seatObj, cleanText);
-        setRunningUI(false, `${seatObj.name} detaylandırdı · tüm koltuklar gördü`);
+        setRunningUI(false, `${seatObj.name} detaylandırdı · tüm koltuklar gördü`, "ok");
       } catch (err) {
         if (state.runId === myRun && err && err.name !== "AbortError") {
-          ui.bodyEl.textContent = `Yanıt alınamadı: ${err.message}`;
-          ui.bodyEl.classList.add("text-rose-600", "dark:text-rose-400");
-          setRunningUI(false, "Hata");
+          renderInlineErrorBox(ui.bodyEl, err.message, () => askSeatElaborate(seatObj, previousText));
+          setRunningUI(false, `${seatObj.name} yanıt veremedi`, "error");
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function retrySingleSeat(seatObj, ui, question, extraCondition) {
+      const myRun = cancelActiveRun();
+      state.isRunning = true;
+      setRunningUI(true, `${seatObj.name} yeniden yanıtlıyor...`);
+      ui.bodyEl.innerHTML = `<span class="inline-flex items-center gap-1 text-xs text-slate-400">Düşünüyor <span class="w-1.5 h-1.5 rounded-full bg-slate-400 typing-dot"></span><span class="w-1.5 h-1.5 rounded-full bg-slate-400 typing-dot"></span><span class="w-1.5 h-1.5 rounded-full bg-slate-400 typing-dot"></span></span>`;
+      const priorContext = buildSharedTranscriptContext();
+      const condLine = extraCondition ? `\n\nMasa Başkanının son yönlendirmesi / yeni şartı: ${extraCondition}` : "";
+      const messages = [
+        { role: "system", content: getExpertSystemPrompt(seatObj) },
+        {
+          role: "user",
+          content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}\n\nMasada şimdiye kadar konuşulan her şeyi dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
+        }
+      ];
+      try {
+        const finalText = await streamSeatCompletion({
+          seat: seatObj.seat,
+          characterId: seatObj.id,
+          messages,
+          maxTokens: 450,
+          onMeta: meta => { if (meta && meta.provider) ui.providerEl.textContent = meta.provider; },
+          onDelta: txt => { if (state.runId === myRun) ui.bodyEl.textContent = txt; }
+        });
+        if (state.runId !== myRun) return;
+        const cleanText = finalText || "Bu açıdan yanıt üretilemedi.";
+        ui.bodyEl.textContent = cleanText;
+        state.transcript.push({ seat: seatObj.seat, speaker: seatObj.name, role: seatObj.role, content: cleanText });
+        upsertCurrentSessionHistory();
+        if (state.sessionId) {
+          fetch("/api/session/record_message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: state.sessionId, seat: seatObj.seat, character_id: seatObj.id, role: "seat", speaker_name: seatObj.name, content: cleanText })
+          }).catch(() => {});
+        }
+        bindCardActionButtons(ui, seatObj, cleanText);
+        setRunningUI(false, `${seatObj.name} yanıtladı`, "ok");
+      } catch (err) {
+        if (state.runId === myRun && err && err.name !== "AbortError") {
+          renderInlineErrorBox(ui.bodyEl, err.message, () => retrySingleSeat(seatObj, ui, question, extraCondition));
+          setRunningUI(false, `${seatObj.name} yanıt veremedi`, "error");
         }
       }
       if (window.lucide) lucide.createIcons();
@@ -1111,11 +1331,28 @@
 
     async function runExpertRound(question, seats, extraCondition = "", myRun = state.runId) {
       const wantInner = document.getElementById("optInnerVoice").checked;
+      let successCount = 0;
+      let failCount = 0;
+      let sharedPoolBlocked = false;
+
       for (let i = 0; i < seats.length; i++) {
         if (!state.isRunning || state.runId !== myRun) break;
         const s = seats[i];
-        setRunningUI(true, `${s.name} konuşuyor (${i + 1}/${seats.length})...`);
+        const hasPersonalKey = Boolean(getPersonalSeatConfig(s.seat) && getPersonalSeatConfig(s.seat).api_key);
         const ui = createSpeakerCard(s);
+
+        // Ortak deneme havuzu 45 sn IP sınırına takıldıysa kalan deneme koltuklarını boşuna bekletme
+        if (sharedPoolBlocked && !hasPersonalKey) {
+          failCount += 1;
+          renderInlineErrorBox(
+            ui.bodyEl,
+            "Ücretsiz deneme havuzu arka arkaya gelen istekleri kısıtladığı için bu uzman beklemeye alındı. Kendi ücretsiz Groq / Gemini anahtarını bağlayarak veya biraz sonra Tekrar Dene'ye basarak bu koltuğu hemen konuşturabilirsin.",
+            () => retrySingleSeat(s, ui, question, extraCondition)
+          );
+          continue;
+        }
+
+        setRunningUI(true, `${s.name} konuşuyor (${i + 1}/${seats.length})...`);
 
         const priorContext = buildSharedTranscriptContext();
         const condLine = extraCondition ? `\n\nMasa Başkanının son yönlendirmesi / yeni şartı: ${extraCondition}` : "";
@@ -1133,6 +1370,7 @@
             seat: s.seat,
             characterId: s.id,
             messages,
+            maxTokens: 450,
             onMeta: meta => {
               if (meta && meta.provider) ui.providerEl.textContent = meta.provider;
             },
@@ -1143,6 +1381,8 @@
           const cleanText = finalText || "Bu açıdan yanıt üretilemedi.";
           ui.bodyEl.textContent = cleanText;
           state.transcript.push({ seat: s.seat, speaker: s.name, role: s.role, content: cleanText });
+          upsertCurrentSessionHistory();
+          successCount += 1;
 
           if (state.sessionId) {
             fetch("/api/session/record_message", {
@@ -1151,6 +1391,8 @@
               body: JSON.stringify({
                 session_id: state.sessionId,
                 seat: s.seat,
+                character_id: s.id,
+                role: "seat",
                 speaker_name: s.name,
                 content: cleanText
               })
@@ -1165,15 +1407,21 @@
         } catch (err) {
           if (err && err.name === "AbortError") break;
           if (state.runId !== myRun) break;
-          ui.bodyEl.textContent = `Bu uzman şu an yanıt veremedi: ${err.message || "bağlantı hatası"}`;
-          ui.bodyEl.classList.add("text-rose-600", "dark:text-rose-400");
+          failCount += 1;
+          if (!hasPersonalKey && (err.errorCode === "pool_rate_limit" || err.errorCode === "pool_timeout")) {
+            sharedPoolBlocked = true;
+          }
+          renderInlineErrorBox(ui.bodyEl, err.message, () => retrySingleSeat(s, ui, question, extraCondition));
         }
       }
       if (window.lucide) lucide.createIcons();
+      return { successCount, failCount, sharedPoolBlocked };
     }
 
     async function runJudgeVerdict(question) {
-      if (!state.isRunning || !state.transcript.length) return;
+      if (!state.isRunning || !state.transcript.length) {
+        return { ok: false, aborted: true, error: "Henüz değerlendirilecek uzman görüşü yok." };
+      }
       setRunningUI(true, "Karar Hakemi net özeti çıkarıyor...");
       const verdictCard = document.getElementById("verdictCard");
       const verdictBody = document.getElementById("verdictBody");
@@ -1182,30 +1430,59 @@
 
       const summaryPrompt = `Gündem: ${question}\n\nMasadaki uzman görüşleri:\n` +
         state.transcript.map(t => `- ${t.speaker} (${t.role}): ${t.content}`).join("\n") +
-        `\n\nŞimdi kullanıcı için yalın, net ve doğrudan uygulanabilir bir karar özeti yaz. Tam olarak şu 3 başlığı kullan:\n1) NET KARAR: (tek net yön + hangi şartta)\n2) EN BÜYÜK RİSK / KÖR NOKTA: (masada ortaya çıkan en kritik uyarı)\n3) 48 SAATTE İLK ADIM: (hemen yarın yapabileceği somut ilk hamle)`;
+        `\n\nŞimdi kullanıcı için yalın, net ve doğrudan uygulanabilir bir karar özeti yaz. Güncel faiz/enflasyon/döviz oranı uydurma; oran/kural mantığıyla konuş. Tam olarak şu 3 başlığı kullan:\n1) NET KARAR: (tek net yön + hangi şartta)\n2) EN BÜYÜK RİSK / KÖR NOKTA: (masada ortaya çıkan en kritik uyarı)\n3) 48 SAATTE İLK ADIM: (hemen yarın yapabileceği somut ilk hamle)`;
 
       try {
         const finalVerdict = await streamSeatCompletion({
           seat: "K",
           characterId: "karar_hakemi",
           temperature: 0.4,
+          maxTokens: 780,
           messages: [
             { role: "system", content: getExpertSystemPrompt({ id: "karar_hakemi", name: "Karar Hakemi", role: "Özet" }) },
             { role: "user", content: summaryPrompt }
           ],
           onDelta: txt => { verdictBody.textContent = txt; }
         });
-        verdictBody.textContent = finalVerdict;
+        const cleanVerdict = (finalVerdict || "").trim();
+        if (!cleanVerdict) {
+          throw new Error("Karar Hakemi boş yanıt döndürdü.");
+        }
+        verdictBody.textContent = cleanVerdict;
+        upsertCurrentSessionHistory(cleanVerdict);
         if (state.sessionId) {
           fetch("/api/session/conclude", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_id: state.sessionId, synthesis: finalVerdict })
+            body: JSON.stringify({ session_id: state.sessionId, verdict: cleanVerdict, topic: state.activeQuestion })
           }).catch(() => {});
         }
+        return { ok: true, text: cleanVerdict };
       } catch (err) {
-        if (err && err.name !== "AbortError") {
-          verdictBody.textContent = `Karar özeti alınamadı: ${err.message}`;
+        if (err && err.name === "AbortError") {
+          return { ok: false, aborted: true };
+        }
+        const cleanErr = sanitizeUserError(err && err.message, err && err.errorCode);
+        renderInlineErrorBox(verdictBody, cleanErr, () => triggerRefreshVerdict());
+        return { ok: false, aborted: false, error: cleanErr, errorCode: err && err.errorCode };
+      }
+    }
+
+    async function triggerRefreshVerdict() {
+      if (!state.transcript.length) {
+        showToast("Önce masada en az bir uzman görüşü oluşmalı.");
+        return;
+      }
+      const myRun = cancelActiveRun();
+      state.isRunning = true;
+      const vRes = await runJudgeVerdict(state.activeQuestion);
+      if (state.runId === myRun) {
+        if (vRes && vRes.ok) {
+          setRunningUI(false, "Karar özeti güncellendi", "ok");
+        } else if (vRes && vRes.aborted) {
+          setRunningUI(false, "Durduruldu", "warn");
+        } else {
+          setRunningUI(false, "Karar özeti alınamadı", "error");
         }
       }
     }
@@ -1249,7 +1526,8 @@
       state.activeQuestion = question;
       state.transcript = [];
       state.envelopes = {};
-      state.sessionId = null;
+      state.sessionId = "ses_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6);
+      upsertCurrentSessionHistory("");
 
       document.getElementById("activeTableBadge").textContent = tbl.label;
       document.getElementById("activeQuestionTitle").textContent = question;
@@ -1264,39 +1542,67 @@
       setRunningUI(true, "Masa toplanıyor...");
 
       try {
-        const sResp = await fetch("/api/session/start", {
+        fetch("/api/session/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            topic: `[${tbl.label}] ${question}`,
-            seats: seats.map(s => ({ seat: s.seat, name: s.name, character_id: s.id }))
+            session_id: state.sessionId,
+            topic: `[${tbl.label}] ${question}`
           })
-        }).then(r => r.json()).catch(() => ({}));
-        if (sResp && sResp.session_id) state.sessionId = sResp.session_id;
-        if (state.runId !== myRun) return;
+        }).catch(() => {});
 
         if (document.getElementById("optEnvelope").checked && state.isRunning) {
           await runSealEnvelopes(question, seats);
         }
         if (state.runId !== myRun) return;
 
-        await runExpertRound(question, seats, "", myRun);
+        const roundRes = await runExpertRound(question, seats, "", myRun);
         if (state.runId !== myRun) return;
 
-        if (state.isRunning) {
-          await runJudgeVerdict(question);
-          if (state.runId !== myRun) return;
-          if (document.getElementById("optEnvelope").checked) {
-            renderEnvelopeComparison(seats);
+        if (!state.isRunning) {
+          setRunningUI(false, "Durduruldu", "warn");
+          return;
+        }
+
+        if (!state.transcript.length) {
+          setRunningUI(false, "Uzmanlardan yanıt alınamadı", "error");
+          return;
+        }
+
+        const hasPersonalJudge = Boolean(getPersonalSeatConfig("K") && getPersonalSeatConfig("K").api_key);
+        if (roundRes && roundRes.sharedPoolBlocked && !hasPersonalJudge) {
+          const verdictCard = document.getElementById("verdictCard");
+          const verdictBody = document.getElementById("verdictBody");
+          verdictCard.classList.remove("hidden");
+          renderInlineErrorBox(
+            verdictBody,
+            "Ücretsiz deneme havuzu yoğunluk sınırına ulaştığı için Hakem özeti beklemeye alındı. Kendi ücretsiz Groq / Gemini anahtarını bağlayıp veya biraz sonra Tekrar Dene'ye basarak özeti hemen alabilirsin.",
+            () => triggerRefreshVerdict()
+          );
+          setRunningUI(false, "Deneme havuzu yoğun · Kısmi yanıt", "warn");
+          return;
+        }
+
+        const vRes = await runJudgeVerdict(question);
+        if (state.runId !== myRun) return;
+        if (document.getElementById("optEnvelope").checked) {
+          renderEnvelopeComparison(seats);
+        }
+        if (vRes && vRes.ok) {
+          if (roundRes && roundRes.failCount > 0) {
+            setRunningUI(false, "Kısmi özet hazır (bazı uzmanlar yanıtlayamadı)", "warn");
+          } else {
+            setRunningUI(false, "Karar özeti hazır", "ok");
           }
-          setRunningUI(false, "Karar özeti hazır");
+        } else if (vRes && vRes.aborted) {
+          setRunningUI(false, "Durduruldu", "warn");
         } else {
-          setRunningUI(false, "Durduruldu");
+          setRunningUI(false, "Karar özeti alınamadı", "error");
         }
       } catch (err) {
         if (state.runId === myRun) {
-          setRunningUI(false, "Tamamlandı");
-          showToast(err.message || "Bir hata oluştu");
+          setRunningUI(false, "Bir sorun oluştu", "error");
+          showToast(sanitizeUserError(err && err.message));
         }
       }
     }
@@ -1322,34 +1628,64 @@
       userCard.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
       state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: `[${labelPrefix} için] ${clean}` });
+      upsertCurrentSessionHistory();
       if (state.sessionId) {
         fetch("/api/session/record_message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: state.sessionId, seat: "OP", speaker_name: "Masa Başkanı", content: clean })
+          body: JSON.stringify({ session_id: state.sessionId, seat: "OP", character_id: "operator", role: "operator", speaker_name: "Masa Başkanı", content: clean })
         }).catch(() => {});
       }
 
       if (target === "K") {
-        await runJudgeVerdict(state.activeQuestion + " — Masa Başkanı yönlendirmesi: " + clean);
-        if (state.runId === myRun) setRunningUI(false, "Karar özeti güncellendi");
+        const vRes = await runJudgeVerdict(state.activeQuestion + " — Masa Başkanı yönlendirmesi: " + clean);
+        if (state.runId === myRun) {
+          if (vRes && vRes.ok) setRunningUI(false, "Karar özeti güncellendi", "ok");
+          else if (vRes && vRes.aborted) setRunningUI(false, "Durduruldu", "warn");
+          else setRunningUI(false, "Karar özeti alınamadı", "error");
+        }
         return;
       }
 
       const seatsToSpeak = targetSeatObj ? [targetSeatObj] : allSeats;
       setRunningUI(true, targetSeatObj ? `${targetSeatObj.name} yanıtlıyor...` : "Tüm masa yönlendirmene yanıt veriyor...");
-      await runExpertRound(state.activeQuestion, seatsToSpeak, clean, myRun);
+      const roundRes = await runExpertRound(state.activeQuestion, seatsToSpeak, clean, myRun);
       if (state.runId !== myRun) return;
 
-      if (state.isRunning) {
-        if (!targetSeatObj) {
-          await runJudgeVerdict(state.activeQuestion + " (Ek yönlendirme: " + clean + ")");
+      if (!state.isRunning) {
+        setRunningUI(false, "Durduruldu", "warn");
+        return;
+      }
+
+      if (targetSeatObj) {
+        if (roundRes && roundRes.successCount > 0) {
+          setRunningUI(false, `${targetSeatObj.name} yanıtladı · tüm masa takip ediyor`, "ok");
+        } else {
+          setRunningUI(false, `${targetSeatObj.name} yanıt veremedi`, "error");
         }
-        if (state.runId === myRun) {
-          setRunningUI(false, targetSeatObj ? `${targetSeatObj.name} yanıtladı · tüm masa takip ediyor` : "Güncel karar hazır");
+        return;
+      }
+
+      if (roundRes && roundRes.successCount === 0) {
+        setRunningUI(false, "Uzmanlar yanıt veremedi", "error");
+        return;
+      }
+
+      const hasPersonalJudge = Boolean(getPersonalSeatConfig("K") && getPersonalSeatConfig("K").api_key);
+      if (roundRes && roundRes.sharedPoolBlocked && !hasPersonalJudge) {
+        setRunningUI(false, "Deneme havuzu yoğun · Kısmi yanıt", "warn");
+        return;
+      }
+
+      const vRes = await runJudgeVerdict(state.activeQuestion + " (Ek yönlendirme: " + clean + ")");
+      if (state.runId === myRun) {
+        if (vRes && vRes.ok) {
+          setRunningUI(false, roundRes && roundRes.failCount > 0 ? "Kısmi özet güncellendi" : "Güncel karar hazır", roundRes && roundRes.failCount > 0 ? "warn" : "ok");
+        } else if (vRes && vRes.aborted) {
+          setRunningUI(false, "Durduruldu", "warn");
+        } else {
+          setRunningUI(false, "Karar özeti alınamadı", "error");
         }
-      } else {
-        setRunningUI(false, "Durduruldu");
       }
     }
 
@@ -1439,46 +1775,84 @@
     }
 
     // =========================================================================
-    // GEÇMİŞ OTURUMLAR
+    // GEÇMİŞ OTURUMLAR (KİŞİSEL TARAYICI ARŞİVİ — ANINDA YÜKLENİR, ASLA TAKILMAZ)
     // =========================================================================
     async function loadHistory() {
       const listEl = document.getElementById("historyList");
       const detailEl = document.getElementById("historyDetail");
       detailEl.classList.add("hidden");
-      listEl.innerHTML = `<div class="text-sm text-slate-500 p-4">Yükleniyor...</div>`;
       try {
-        const res = await fetch("/api/sessions").then(r => r.json());
-        const sessions = res.sessions || [];
+        const sessions = loadLocalHistory();
         if (!sessions.length) {
-          listEl.innerHTML = `<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center text-sm text-slate-500">Henüz kayıtlı bir tartışma yok. Karar Masası'ndan ilk sorunu sorabilirsin.</div>`;
+          listEl.innerHTML = `
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-3">
+              <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Henüz kayıtlı bir görüşmeniz yok.</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Karar Masası'nda başlattığın tüm görüşmeler yalnızca senin tarayıcında, gizli biçimde burada saklanır.</p>
+              <button type="button" id="goToDebateFromHistory" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                <span>Karar Masası'na Git</span>
+              </button>
+            </div>
+          `;
+          const goBtn = document.getElementById("goToDebateFromHistory");
+          if (goBtn) goBtn.addEventListener("click", () => switchTab("debate"));
+          if (window.lucide) lucide.createIcons();
           return;
         }
-        listEl.innerHTML = sessions.slice(0, 25).map(s => `
-          <button type="button" data-sid="${escapeHtml(s.id)}" class="hist-item w-full text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-400 rounded-2xl p-4 shadow-sm transition flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(s.topic || "Konusuz oturum")}</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(s.created_at || "")}</div>
+        listEl.innerHTML = sessions.map(s => {
+          const msgCount = Array.isArray(s.messages) ? s.messages.length : 0;
+          return `
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-400 rounded-2xl p-4 shadow-sm transition flex items-center justify-between gap-3">
+              <button type="button" data-sid="${escapeHtml(s.id)}" class="hist-item flex-1 min-w-0 text-left">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                  ${s.tableLabel ? `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 dark:bg-indigo-500/15 dark:text-indigo-300">${escapeHtml(s.tableLabel)}</span>` : ""}
+                  <span class="text-[11px] text-slate-400 dark:text-slate-500">${escapeHtml(formatTrDate(s.createdAt))} · ${msgCount} mesaj</span>
+                  ${s.verdict ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Karar özeti var</span>` : ""}
+                </div>
+                <div class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(s.topic || "Konusuz oturum")}</div>
+              </button>
+              <button type="button" data-del-sid="${escapeHtml(s.id)}" title="Oturumu sil" class="hist-del p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition shrink-0">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
             </div>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
-          </button>
-        `).join("");
+          `;
+        }).join("");
+
+        listEl.querySelectorAll(".hist-del").forEach(btn => {
+          btn.addEventListener("click", () => {
+            deleteLocalHistoryItem(btn.getAttribute("data-del-sid"));
+            showToast("Görüşme geçmişten silindi.");
+            loadHistory();
+          });
+        });
+
         listEl.querySelectorAll(".hist-item").forEach(btn => {
-          btn.addEventListener("click", async () => {
+          btn.addEventListener("click", () => {
             const sid = btn.getAttribute("data-sid");
-            const mRes = await fetch(`/api/session/${encodeURIComponent(sid)}/messages`).then(r => r.json());
-            const msgs = mRes.messages || [];
+            const s = loadLocalHistory().find(x => x.id === sid);
+            if (!s) return;
+            const msgs = Array.isArray(s.messages) ? s.messages : [];
             detailEl.innerHTML = `
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Oturum Kaydı (${msgs.length} mesaj)</h3>
-                <button type="button" id="closeHistDetail" class="text-xs font-semibold text-brand-600 hover:underline">Kapat</button>
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <h3 class="text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(s.topic)}</h3>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">${escapeHtml(formatTrDate(s.createdAt))} · ${msgs.length} mesaj</p>
+                </div>
+                <button type="button" id="closeHistDetail" class="text-xs font-semibold text-brand-600 dark:text-indigo-400 hover:underline shrink-0">Kapat</button>
               </div>
+              ${s.verdict ? `
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-500/30 space-y-1">
+                  <div class="text-xs font-extrabold text-brand-700 dark:text-indigo-300">Masanın Net Kararı</div>
+                  <div class="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed">${escapeHtml(s.verdict)}</div>
+                </div>
+              ` : ""}
               <div class="space-y-2.5">
-                ${msgs.map(m => `
+                ${msgs.length ? msgs.map(m => `
                   <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
-                    <div class="text-xs font-bold text-slate-900 dark:text-white mb-1">${escapeHtml(m.speaker_name || m.seat)}</div>
-                    <div class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line">${escapeHtml(m.content)}</div>
+                    <div class="text-xs font-bold text-slate-900 dark:text-white mb-1">${escapeHtml(m.speaker || m.seat)} ${m.role ? `<span class="font-normal text-slate-400">· ${escapeHtml(m.role)}</span>` : ""}</div>
+                    <div class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">${escapeHtml(m.content)}</div>
                   </div>
-                `).join("")}
+                `).join("") : `<div class="text-xs text-slate-500 p-2">Bu oturumda kaydedilmiş uzman mesajı yok.</div>`}
               </div>
             `;
             detailEl.classList.remove("hidden");
@@ -1488,7 +1862,7 @@
         });
         if (window.lucide) lucide.createIcons();
       } catch (_) {
-        listEl.innerHTML = `<div class="text-sm text-rose-500 p-4">Geçmiş yüklenemedi.</div>`;
+        listEl.innerHTML = `<div class="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 rounded-2xl p-4 text-sm text-rose-700 dark:text-rose-200">Geçmiş oturumlar şu an okunamadı. Tarayıcı depolama izinlerini kontrol edip Yenile'ye bas.</div>`;
       }
     }
 
@@ -1719,7 +2093,6 @@
     }
     document.getElementById("openProvidersBtn").addEventListener("click", openProvidersModal);
     document.getElementById("openProvidersInlineBtn").addEventListener("click", openProvidersModal);
-    document.getElementById("bannerOpenProvidersBtn").addEventListener("click", openProvidersModal);
     document.getElementById("clearAllLocalKeysBtn").addEventListener("click", () => {
       clearAllPersonalSeats();
       showToast("Bu tarayıcıdaki tüm API anahtarların silindi.");
@@ -1754,7 +2127,7 @@
 
     document.getElementById("stopDebateBtn").addEventListener("click", () => {
       cancelActiveRun();
-      setRunningUI(false, "Durduruldu");
+      setRunningUI(false, "Durduruldu", "warn");
     });
 
     document.getElementById("resetDebateBtn").addEventListener("click", () => {
@@ -1768,11 +2141,8 @@
       handleFollowUp("Tartışmayı bir tur daha ilerletin; birbirinizin az önce söylediği güçlü ve zayıf noktalara doğrudan yanıt verip netleşin.", "ALL");
     });
 
-    document.getElementById("refreshVerdictBtn").addEventListener("click", async () => {
-      const myRun = cancelActiveRun();
-      state.isRunning = true;
-      await runJudgeVerdict(state.activeQuestion);
-      if (state.runId === myRun) setRunningUI(false, "Karar özeti güncellendi");
+    document.getElementById("refreshVerdictBtn").addEventListener("click", () => {
+      triggerRefreshVerdict();
     });
 
     document.getElementById("copyVerdictBtn").addEventListener("click", async () => {

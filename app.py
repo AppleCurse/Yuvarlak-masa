@@ -37,6 +37,7 @@ import json
 import os
 import re
 import threading
+import uuid
 import webbrowser
 from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
@@ -60,7 +61,7 @@ HOST = os.environ.get("KONSUL_HOST", "127.0.0.1")
 PORT = int(os.environ.get("KONSUL_PORT") or os.environ.get("PORT") or "8888")
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
-CLIENT_TIMEOUT = httpx.Timeout(300.0, connect=8.0)
+CLIENT_TIMEOUT = httpx.Timeout(28.0, connect=8.0, read=25.0, write=10.0)
 
 # SSRF kilidi: yerel hedeflere yalnızca bu portlarda izin (OpenAI-uyumlu yerel uçlar)
 _LOCAL_PORTS = {
@@ -164,14 +165,63 @@ def _auth_headers(api_key: str) -> dict:
     return headers
 
 
-def _friendly_error(exc: Exception) -> str:
+def _friendly_error(exc: Exception, is_pool: bool = False) -> str:
     if isinstance(exc, httpx.ConnectError):
-        return "Uç sunucuya bağlanılamadı. Model sunucusu (9Router / Ollama / LM Studio) çalışıyor mu?"
-    if isinstance(exc, httpx.ConnectTimeout):
-        return "Bağlantı zaman aşımına uğradı. Base URL adresini kontrol edin."
-    if isinstance(exc, httpx.ReadTimeout):
-        return "Model yanıtı çok geç geldi (zaman aşımı)."
-    return f"Bağlantı hatası: {exc.__class__.__name__}"
+        if is_pool:
+            return "Ücretsiz deneme havuzuna şu an bağlanılamadı. Tekrar deneyebilir veya kendi ücretsiz API anahtarını bağlayabilirsin."
+        return "Yapay zeka sunucusuna bağlanılamadı. Bağlantını veya seçili sağlayıcıyı kontrol et."
+    if isinstance(exc, (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.TimeoutException, asyncio.TimeoutError)):
+        if is_pool:
+            return "Ücretsiz deneme havuzu yanıt süresini aştı. Birkaç saniye sonra tekrar dene ya da sağ üstten 10 saniyede kendi ücretsiz API anahtarını (Groq / Gemini / OpenRouter) bağla."
+        return "Model yanıtı zaman aşımına uğradı (25 sn). Lütfen tekrar dene."
+    if is_pool:
+        return "Ücretsiz deneme havuzunda geçici bir bağlantı sorunu oluştu. Tekrar deneyebilir veya kendi ücretsiz API anahtarını bağlayabilirsin."
+    return "Yapay zeka sunucusuyla geçici bir bağlantı sorunu oluştu. Lütfen tekrar dene."
+
+
+def _is_pollinations(url: str) -> bool:
+    return "pollinations.ai" in (url or "").lower()
+
+
+def _clean_upstream_error(status_code: int, raw_detail: str = "", is_pool: bool = False) -> tuple[str, str]:
+    """Ham HTTP/JSON hatalarını kullanıcıya asla sızdırmadan anlaşılır Türkçe mesaja çevirir.
+    (mesaj, hata_kodu) döndürür."""
+    low = (raw_detail or "").lower()
+    if status_code in (429, 402) or "rate_limited" in low or "free_limit" in low or "still running" in low:
+        if is_pool:
+            return (
+                "Ücretsiz deneme havuzu şu an bekleme/yoğunluk sınırında (ortak havuz arka arkaya hızlı istekleri kısıtlıyor). "
+                "Sağ üstteki 'Ücretsiz API Bağla' düğmesinden 10 saniyede kendi ücretsiz Groq, Google Gemini veya OpenRouter anahtarını bağlayarak 4 uzmanı kesintisiz konuşturabilirsin.",
+                "pool_rate_limit",
+            )
+        if status_code == 402:
+            return (
+                "Bağlı API hesabının ücretsiz kullanım kotası dolmuş görünüyor. Sağlayıcı ayarlarından başka bir ücretsiz servis seçebilirsin.",
+                "quota_exceeded",
+            )
+        return (
+            "Bağlı API anahtarının anlık hız sınırına ulaşıldı. Birkaç saniye bekleyip tekrar dene.",
+            "rate_limit",
+        )
+    if status_code in (401, 403):
+        return (
+            "API anahtarı geçersiz veya yetkisiz görünüyor. Sağ üstteki 'Ücretsiz API Bağla' ekranından anahtarını kontrol et.",
+            "auth_error",
+        )
+    if status_code == 404:
+        return (
+            "Seçili yapay zeka modeli şu an kullanılamıyor. Sağlayıcı ayarlarından farklı bir model seçebilirsin.",
+            "model_not_found",
+        )
+    if is_pool:
+        return (
+            "Ücretsiz deneme havuzu şu an geçici olarak yanıt veremedi. Tekrar deneyebilir ya da kendi ücretsiz API anahtarını bağlayabilirsin.",
+            "pool_unavailable",
+        )
+    return (
+        "Yapay zeka sunucusu şu an geçici olarak yanıt veremedi. Birkaç saniye sonra tekrar dene.",
+        "upstream_error",
+    )
 
 
 def _validate_base_url(url: str) -> str | None:
@@ -445,15 +495,24 @@ def _extract_retry_seconds(status_code: int, body_text: str) -> int:
     """HTTP 402/429 yanıtındaki 'Retry after Xs' bilgisinden güvenli bekleme süresini çıkarır."""
     m = re.search(r"Retry after\s+(\d+)\s*s", body_text or "", re.IGNORECASE)
     if m:
-        return min(50, int(m.group(1)) + 2)
-    return 20 if status_code == 402 else 3
+        return int(m.group(1))
+    return 45 if status_code == 402 else 4
 
 
-def _pollinations_guard(base_url: str):
-    """Pollinations tek-IP eşzamanlılık sınırını aşmamak için istekleri sıraya koyar."""
-    if "pollinations.ai" in (base_url or "").lower():
-        return _POLLINATIONS_LOCK
-    return nullcontext()
+@asynccontextmanager
+async def _pollinations_guard(base_url: str, max_wait: float = 10.0):
+    """Pollinations tek-IP eşzamanlılık sınırını aşmamak için istekleri sınırlı bekleme ile sıraya koyar."""
+    if not _is_pollinations(base_url):
+        yield
+        return
+    await asyncio.wait_for(_POLLINATIONS_LOCK.acquire(), timeout=max_wait)
+    try:
+        yield
+    finally:
+        try:
+            await asyncio.sleep(0.6)
+        finally:
+            _POLLINATIONS_LOCK.release()
 
 
 def _prepare_cognitive_messages(messages: list[dict], seat: str, character_id: str = "", session_id: str = "") -> list[dict]:
@@ -498,6 +557,7 @@ class ChatPayload(BaseModel):
     cognitive_character_id: str = Field(default="", max_length=200)
     cognitive_session_id: str = Field(default="", max_length=200)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=520, ge=0, le=2048)
 
 
 @app.get("/api/providers")
@@ -665,52 +725,63 @@ async def chat(payload: ChatPayload, request: Request):
     if payload.use_pool and not payload.base_url:
         targets.extend(_fallback_candidates(payload.seat, base))
 
-    last_err = "Uç sunucudan yanıt alınamadı."
+    last_err = "Yapay zeka sunucusundan yanıt alınamadı."
+    last_code = "upstream_error"
     for idx, (t_base, t_key, t_model, t_label) in enumerate(targets):
         if _validate_base_url(t_base):
             continue
+        is_pool_target = _is_pollinations(t_base) or (payload.use_pool and not payload.base_url)
         body = {
             "model": t_model,
             "messages": prepared_messages,
             "temperature": payload.temperature,
             "stream": False,
         }
+        if payload.max_tokens and payload.max_tokens > 0:
+            body["max_tokens"] = payload.max_tokens
+        req_timeout_s = 22.0 if _is_pollinations(t_base) else 28.0
         try:
             resp = None
-            max_tries = 2 if (payload.use_pool and idx < len(targets) - 1) else 5
-            async with _pollinations_guard(t_base):
+            max_tries = 2
+            async with _pollinations_guard(t_base, max_wait=10.0):
                 for attempt in range(max_tries):
-                    resp = await _get_http().post(
-                        _clean_base(t_base) + "/chat/completions",
-                        json=body,
-                        headers=_auth_headers(t_key),
+                    resp = await asyncio.wait_for(
+                        _get_http().post(
+                            _clean_base(t_base) + "/chat/completions",
+                            json=body,
+                            headers=_auth_headers(t_key),
+                        ),
+                        timeout=req_timeout_s,
                     )
                     if resp.status_code in (429, 402) and attempt < max_tries - 1:
-                        wait_s = min(8, _extract_retry_seconds(resp.status_code, resp.text)) if payload.use_pool else _extract_retry_seconds(resp.status_code, resp.text)
-                        await asyncio.sleep(wait_s)
-                        continue
+                        retry_s = _extract_retry_seconds(resp.status_code, resp.text)
+                        if retry_s <= 6:
+                            await asyncio.sleep(retry_s)
+                            continue
                     break
-            if resp.status_code != 200:
-                detail = resp.text[:300].replace("\n", " ")
-                last_err = f"Uç sunucu HTTP {resp.status_code} döndürdü: {detail}"
+            if resp is None or resp.status_code != 200:
+                code = resp.status_code if resp is not None else 502
+                detail = resp.text[:400] if resp is not None else ""
+                last_err, last_code = _clean_upstream_error(code, detail, is_pool=is_pool_target)
                 if idx < len(targets) - 1:
                     continue
-                return JSONResponse({"ok": False, "error": last_err}, status_code=502)
+                return JSONResponse({"ok": False, "error": last_err, "error_code": last_code}, status_code=502)
             data = resp.json()
             raw_content = data["choices"][0]["message"]["content"]
             content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
             return {"ok": True, "content": content, "provider_label": t_label, "model": t_model}
         except KeyError:
-            last_err = "Uç sunucu beklenmeyen biçimde yanıt verdi."
+            last_err, last_code = "Yapay zeka sunucusu beklenmeyen biçimde yanıt verdi.", "invalid_response"
             if idx < len(targets) - 1:
                 continue
-            return JSONResponse({"ok": False, "error": last_err}, status_code=502)
+            return JSONResponse({"ok": False, "error": last_err, "error_code": last_code}, status_code=502)
         except Exception as exc:  # noqa: BLE001
-            last_err = _friendly_error(exc)
+            last_err = _friendly_error(exc, is_pool=is_pool_target)
+            last_code = "pool_timeout" if (is_pool_target and isinstance(exc, (httpx.TimeoutException, asyncio.TimeoutError))) else "connection_error"
             if idx < len(targets) - 1:
                 continue
-            return JSONResponse({"ok": False, "error": last_err}, status_code=502)
-    return JSONResponse({"ok": False, "error": last_err}, status_code=502)
+            return JSONResponse({"ok": False, "error": last_err, "error_code": last_code}, status_code=502)
+    return JSONResponse({"ok": False, "error": last_err, "error_code": last_code}, status_code=502)
 
 
 # ── Ana proxy: SSE streaming motoru ─────────────────────────────────────
@@ -734,116 +805,183 @@ async def chat_stream(payload: ChatPayload, request: Request):
         targets.extend(_fallback_candidates(payload.seat, base))
 
     async def event_generator():
-        last_err = "Yanıt alınamadı"
+        last_err = "Yanıt alınamadı."
+        last_code = "upstream_error"
         for idx, (t_base, t_key, t_model, t_label) in enumerate(targets):
             if _validate_base_url(t_base):
                 continue
-            body = {
-                "model": t_model,
-                "messages": prepared_messages,
-                "temperature": payload.temperature,
-                "stream": True,
-            }
+            is_poll = _is_pollinations(t_base)
+            is_pool_target = is_poll or (payload.use_pool and not payload.base_url)
             headers = _auth_headers(t_key)
             resp = None
             acc_chunks: list[str] = []
             try:
-                max_tries = 2 if (payload.use_pool and idx < len(targets) - 1) else 5
-                async with _pollinations_guard(t_base):
-                    for attempt in range(max_tries):
-                        req = _get_http().build_request(
-                            "POST", t_base + "/chat/completions", json=body, headers=headers, timeout=60.0
-                        )
-                        resp = await _get_http().send(req, stream=True)
-                        if resp.status_code in (429, 402) and attempt < max_tries - 1:
-                            code = resp.status_code
-                            err_text = (await resp.aread()).decode("utf-8", "ignore")
-                            await resp.aclose()
-                            resp = None
-                            wait_s = min(6, _extract_retry_seconds(code, err_text)) if payload.use_pool else _extract_retry_seconds(code, err_text)
-                            for _ in range(wait_s):
-                                if await request.is_disconnected():
-                                    return
-                                await asyncio.sleep(1.0)
-                            continue
-                        break
+                # Pollinations Classic SSE sık sık takıldığı/koptuğu için tek parça hızlı istek + sıkı 22 sn zaman aşımı kullan
+                if is_poll:
+                    body = {
+                        "model": t_model,
+                        "messages": prepared_messages,
+                        "temperature": payload.temperature,
+                        "stream": False,
+                    }
+                    if payload.max_tokens and payload.max_tokens > 0:
+                        body["max_tokens"] = payload.max_tokens
+                    poll_timeout = httpx.Timeout(22.0, connect=6.0, read=22.0, write=10.0)
+                    async with _pollinations_guard(t_base, max_wait=10.0):
+                        for attempt in range(2):
+                            if await request.is_disconnected():
+                                return
+                            resp = await _get_http().post(
+                                t_base + "/chat/completions",
+                                json=body,
+                                headers=headers,
+                                timeout=poll_timeout,
+                            )
+                            if resp.status_code in (429, 402) and attempt == 0:
+                                retry_s = _extract_retry_seconds(resp.status_code, resp.text)
+                                if retry_s <= 6:
+                                    for _ in range(retry_s * 2):
+                                        if await request.is_disconnected():
+                                            return
+                                        await asyncio.sleep(0.5)
+                                    continue
+                            break
 
                     if resp is None or resp.status_code != 200:
                         code = resp.status_code if resp is not None else 502
-                        detail = (await resp.aread()).decode("utf-8", "ignore")[:300] if resp is not None else "Yanıt alınamadı"
-                        if resp is not None:
-                            await resp.aclose()
-                            resp = None
-                        last_err = f"Uç sunucu HTTP {code}: {detail}"
+                        detail = resp.text[:400] if resp is not None else ""
+                        last_err, last_code = _clean_upstream_error(code, detail, is_pool=True)
                         if idx < len(targets) - 1:
                             continue
-                        yield "data: " + json.dumps({"error": last_err}, ensure_ascii=False) + "\n\n"
+                        yield "data: " + json.dumps({"error": last_err, "error_code": last_code}, ensure_ascii=False) + "\n\n"
                         return
 
                     yield "data: " + json.dumps({"meta": {"provider": t_label, "model": t_model}}, ensure_ascii=False) + "\n\n"
-                    ctype = resp.headers.get("content-type", "")
-
-                    # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
-                    if "application/json" in ctype:
-                        raw = (await resp.aread()).decode("utf-8", "ignore")
-                        await resp.aclose()
-                        resp = None
-                        try:
-                            raw_content = json.loads(raw)["choices"][0]["message"]["content"]
-                            content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
-                            yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
-                        except Exception:  # noqa: BLE001
-                            if idx < len(targets) - 1:
-                                continue
-                            yield "data: " + json.dumps({"error": "Uç sunucu geçersiz JSON döndürdü."}, ensure_ascii=False) + "\n\n"
+                    try:
+                        raw_content = resp.json()["choices"][0]["message"]["content"]
+                        content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
+                        if not content.strip():
+                            raise ValueError("empty")
+                        yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
                         yield "data: [DONE]\n\n"
                         return
-
-                    buffer = ""
-                    done_seen = False
-                    stream_error = None
-                    async for chunk in resp.aiter_text():
-                        if await request.is_disconnected():
-                            await resp.aclose()
-                            resp = None
-                            return
-                        buffer += chunk
-                        while "\n" in buffer:
-                            line, buffer = buffer.split("\n", 1)
-                            line = line.strip()
-                            if not line.startswith("data:"):
-                                continue
-                            data = line[5:].strip()
-                            if data == "[DONE]":
-                                done_seen = True
-                                break
-                            try:
-                                obj = json.loads(data)
-                            except json.JSONDecodeError:
-                                continue
-                            if obj.get("error"):
-                                stream_error = obj["error"].get("message", str(obj["error"]))
-                                break
-                            try:
-                                delta = obj["choices"][0]["delta"].get("content")
-                            except (KeyError, IndexError, AttributeError):
-                                delta = None
-                            if delta:
-                                acc_chunks.append(delta)
-                                yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
-                        if done_seen or stream_error:
-                            break
-
-                    if resp is not None:
-                        await resp.aclose()
-                        resp = None
-
-                    if stream_error and not acc_chunks:
-                        last_err = stream_error
+                    except Exception:  # noqa: BLE001
+                        last_err, last_code = _clean_upstream_error(502, "", is_pool=True)
                         if idx < len(targets) - 1:
                             continue
-                        yield "data: " + json.dumps({"error": stream_error}, ensure_ascii=False) + "\n\n"
+                        yield "data: " + json.dumps({"error": last_err, "error_code": last_code}, ensure_ascii=False) + "\n\n"
                         return
+
+                # Gerçek sağlayıcılar (Groq, Gemini, OpenRouter, NVIDIA, Mistral, Arena, yerel): gerçek SSE akışı
+                body = {
+                    "model": t_model,
+                    "messages": prepared_messages,
+                    "temperature": payload.temperature,
+                    "stream": True,
+                }
+                if payload.max_tokens and payload.max_tokens > 0:
+                    body["max_tokens"] = payload.max_tokens
+                stream_timeout = httpx.Timeout(28.0, connect=8.0, read=25.0, write=10.0)
+                for attempt in range(2):
+                    if await request.is_disconnected():
+                        return
+                    req = _get_http().build_request(
+                        "POST", t_base + "/chat/completions", json=body, headers=headers, timeout=stream_timeout
+                    )
+                    resp = await _get_http().send(req, stream=True)
+                    if resp.status_code in (429, 402) and attempt == 0:
+                        code = resp.status_code
+                        err_text = (await resp.aread()).decode("utf-8", "ignore")
+                        await resp.aclose()
+                        resp = None
+                        retry_s = _extract_retry_seconds(code, err_text)
+                        if retry_s <= 6:
+                            for _ in range(retry_s * 2):
+                                if await request.is_disconnected():
+                                    return
+                                await asyncio.sleep(0.5)
+                            continue
+                        last_err, last_code = _clean_upstream_error(code, err_text, is_pool=is_pool_target)
+                        break
+                    break
+
+                if resp is None or resp.status_code != 200:
+                    if resp is not None:
+                        code = resp.status_code
+                        detail = (await resp.aread()).decode("utf-8", "ignore")[:400]
+                        await resp.aclose()
+                        resp = None
+                        last_err, last_code = _clean_upstream_error(code, detail, is_pool=is_pool_target)
+                    if idx < len(targets) - 1:
+                        continue
+                    yield "data: " + json.dumps({"error": last_err, "error_code": last_code}, ensure_ascii=False) + "\n\n"
+                    return
+
+                yield "data: " + json.dumps({"meta": {"provider": t_label, "model": t_model}}, ensure_ascii=False) + "\n\n"
+                ctype = resp.headers.get("content-type", "")
+
+                # Bazı uçlar stream bayrağını yok sayıp düz JSON döndürür → tek parça yayınla
+                if "application/json" in ctype:
+                    raw = (await resp.aread()).decode("utf-8", "ignore")
+                    await resp.aclose()
+                    resp = None
+                    try:
+                        raw_content = json.loads(raw)["choices"][0]["message"]["content"]
+                        content = neuro_bridge.clean_human_speech(engine.filter_persona_text(raw_content))
+                        yield "data: " + json.dumps({"delta": content}, ensure_ascii=False) + "\n\n"
+                    except Exception:  # noqa: BLE001
+                        if idx < len(targets) - 1:
+                            continue
+                        yield "data: " + json.dumps({"error": "Yapay zeka sunucusu geçersiz yanıt döndürdü.", "error_code": "invalid_response"}, ensure_ascii=False) + "\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+
+                buffer = ""
+                done_seen = False
+                stream_error = None
+                async for chunk in resp.aiter_text():
+                    if await request.is_disconnected():
+                        await resp.aclose()
+                        resp = None
+                        return
+                    buffer += chunk
+                    while "\n" in buffer:
+                        line, buffer = buffer.split("\n", 1)
+                        line = line.strip()
+                        if not line.startswith("data:"):
+                            continue
+                        data = line[5:].strip()
+                        if data == "[DONE]":
+                            done_seen = True
+                            break
+                        try:
+                            obj = json.loads(data)
+                        except json.JSONDecodeError:
+                            continue
+                        if obj.get("error"):
+                            raw_e = obj["error"].get("message", str(obj["error"])) if isinstance(obj["error"], dict) else str(obj["error"])
+                            stream_error, last_code = _clean_upstream_error(502, raw_e, is_pool=is_pool_target)
+                            break
+                        try:
+                            delta = obj["choices"][0]["delta"].get("content")
+                        except (KeyError, IndexError, AttributeError):
+                            delta = None
+                        if delta:
+                            acc_chunks.append(delta)
+                            yield "data: " + json.dumps({"delta": delta}, ensure_ascii=False) + "\n\n"
+                    if done_seen or stream_error:
+                        break
+
+                if resp is not None:
+                    await resp.aclose()
+                    resp = None
+
+                if stream_error and not acc_chunks:
+                    last_err = stream_error
+                    if idx < len(targets) - 1:
+                        continue
+                    yield "data: " + json.dumps({"error": stream_error, "error_code": last_code}, ensure_ascii=False) + "\n\n"
+                    return
 
                 full_raw = "".join(acc_chunks)
                 if full_raw:
@@ -858,12 +996,13 @@ async def chat_stream(payload: ChatPayload, request: Request):
                         await resp.aclose()
                     except Exception:
                         pass
-                last_err = _friendly_error(exc)
+                last_err = _friendly_error(exc, is_pool=is_pool_target)
+                last_code = "pool_timeout" if (is_pool_target and isinstance(exc, (httpx.TimeoutException, asyncio.TimeoutError))) else "connection_error"
                 if not acc_chunks and idx < len(targets) - 1:
                     continue
-                yield "data: " + json.dumps({"error": last_err}, ensure_ascii=False) + "\n\n"
+                yield "data: " + json.dumps({"error": last_err, "error_code": last_code}, ensure_ascii=False) + "\n\n"
                 return
-        yield "data: " + json.dumps({"error": last_err}, ensure_ascii=False) + "\n\n"
+        yield "data: " + json.dumps({"error": last_err, "error_code": last_code}, ensure_ascii=False) + "\n\n"
 
     return StreamingResponse(
         event_generator(),
@@ -1005,21 +1144,19 @@ async def character_architect(payload: dict, request: Request):
 # ── Oturum & Mesaj Kayıt Rotaları ───────────────────────────────────────
 @app.post("/api/session/start")
 async def session_start(payload: dict):
-    sid = payload.get("session_id", "")
-    topic = payload.get("topic", "")
-    if not sid:
-        return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
+    sid = (payload.get("session_id") or "").strip() or ("ses_" + uuid.uuid4().hex[:10])
+    topic = (payload.get("topic") or "").strip() or "Yeni Tartışma"
     engine.create_session(sid, topic)
     return {"ok": True, "session_id": sid}
 
 
 @app.post("/api/session/record_message")
 async def session_record_message(payload: dict):
-    sid = payload.get("session_id", "")
-    seat = payload.get("seat", "")
-    cid = payload.get("character_id", "")
-    role = payload.get("role", "seat")
-    content = payload.get("content", "")
+    sid = (payload.get("session_id") or "").strip()
+    seat = (payload.get("seat") or "").strip()
+    cid = (payload.get("character_id") or payload.get("speaker_name") or "").strip()
+    role = (payload.get("role") or "seat").strip()
+    content = (payload.get("content") or "").strip()
     inner = payload.get("inner_thought", "")
     rebuttal_to = payload.get("rebuttal_target_id", "")
     if sid and content:
@@ -1030,8 +1167,8 @@ async def session_record_message(payload: dict):
 
 @app.post("/api/session/conclude")
 async def session_conclude(payload: dict):
-    sid = payload.get("session_id", "")
-    verdict = payload.get("verdict", "")
+    sid = (payload.get("session_id") or "").strip()
+    verdict = (payload.get("verdict") or payload.get("synthesis") or "").strip()
     seated_characters = payload.get("seated_characters", [])
     topic = payload.get("topic", "")
 
