@@ -95,6 +95,20 @@
     <span id="toastMsg">İşlem tamamlandı</span>
   </div>
 
+  <!-- Kişisel Ücretsiz API Davet Şeridi (Yalnızca kullanıcı henüz kendi anahtarını eklemediyse görünür) -->
+  <div id="byokPromptBanner" class="hidden max-w-5xl mx-auto px-3 sm:px-4 pt-4">
+    <div class="bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div class="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-indigo-950 dark:text-indigo-100">
+        <i data-lucide="shield-check" class="w-4 h-4 text-brand-600 dark:text-indigo-400 shrink-0 mt-0.5 sm:mt-0"></i>
+        <span><strong>Kendi ücretsiz yapay zekanı bağla:</strong> Groq, Gemini, OpenRouter, NVIDIA veya Mistral'den 10 saniyede ücretsiz anahtar al — <strong>anahtarın sadece senin tarayıcında saklanır, kimseyle paylaşılmaz.</strong></span>
+      </div>
+      <button id="bannerOpenProvidersBtn" type="button" class="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shrink-0 transition">
+        <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+        <span>Ücretsiz Anahtar Bağla</span>
+      </button>
+    </div>
+  </div>
+
   <!-- =================================================================== -->
   <!-- SEKME 1: KARAR MASASI                                                -->
   <!-- =================================================================== -->
@@ -352,13 +366,16 @@
 
         <!-- Alt Sekme 2: Her Koltuğa Ayrı Sağlayıcı -->
         <div id="ptab-seats" class="hidden space-y-3">
-          <p class="text-xs text-slate-600 dark:text-slate-400">Her koltuğa farklı bir ücretsiz sağlayıcı (Groq, Google Gemini, OpenRouter, NVIDIA, Mistral) seçip kendi anahtarını ekleyebilirsin. Anahtarlar tarayıcıda tutulmaz, sunucu kasasında saklanır.</p>
+          <p class="text-xs text-slate-600 dark:text-slate-400">Her koltuğa farklı bir ücretsiz sağlayıcı (Groq, Google Gemini, OpenRouter, NVIDIA, Mistral) seçip kendi anahtarını ekleyebilirsin. <strong>Anahtarların yalnızca senin tarayıcında saklanır, sunucuda tutulmaz ve başka kimseyle paylaşılmaz.</strong></p>
           <div id="perSeatConfigList" class="space-y-3"></div>
         </div>
 
-        <div class="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Hazır sunucu havuzu: <strong id="serverPoolCountLabel">kontrol ediliyor...</strong></span>
-          <a href="/classic" class="hover:text-slate-600 dark:hover:text-slate-300 underline">Eski gelişmiş konsol</a>
+        <div class="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+          <span>🔒 Anahtarların yalnızca bu tarayıcıda tutulur, kimseyle paylaşılmaz.</span>
+          <div class="flex items-center gap-3">
+            <button id="clearAllLocalKeysBtn" type="button" class="text-rose-500 hover:text-rose-600 font-semibold">Anahtarlarımı Temizle</button>
+            <a href="/classic" class="hover:text-slate-600 dark:hover:text-slate-300 underline">Eski konsol</a>
+          </div>
         </div>
       </div>
     </div>
@@ -530,6 +547,71 @@
     }
 
     // =========================================================================
+    // KİŞİSEL ANAHTAR SAKLAMA (YALNIZCA KULLANICININ KENDİ TARAYICISINDA)
+    // =========================================================================
+    const LOCAL_KEYS_STORAGE = "ym_personal_seats_v2";
+
+    function loadPersonalSeats() {
+      try {
+        const raw = localStorage.getItem(LOCAL_KEYS_STORAGE);
+        return raw ? JSON.parse(raw) : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function savePersonalSeat(seat, cfg) {
+      const all = loadPersonalSeats();
+      all[seat] = cfg;
+      try { localStorage.setItem(LOCAL_KEYS_STORAGE, JSON.stringify(all)); } catch (_) {}
+      refreshSeatStatusFromLocal();
+    }
+
+    function deletePersonalSeat(seat) {
+      const all = loadPersonalSeats();
+      delete all[seat];
+      try { localStorage.setItem(LOCAL_KEYS_STORAGE, JSON.stringify(all)); } catch (_) {}
+      refreshSeatStatusFromLocal();
+    }
+
+    function clearAllPersonalSeats() {
+      try { localStorage.removeItem(LOCAL_KEYS_STORAGE); } catch (_) {}
+      refreshSeatStatusFromLocal();
+    }
+
+    function refreshSeatStatusFromLocal() {
+      const local = loadPersonalSeats();
+      const status = {};
+      ["A", "B", "C", "D", "K"].forEach(s => {
+        if (local[s] && local[s].api_key && local[s].base_url) {
+          const k = local[s].api_key;
+          status[s] = {
+            source: "personal",
+            provider_label: local[s].provider_name || "Kişisel API",
+            model: local[s].model || "",
+            has_key: true,
+            key_hint: "…" + k.slice(-4)
+          };
+        } else {
+          status[s] = {
+            source: "free_fallback",
+            provider_label: "Deneme Havuzu",
+            model: "otomatik",
+            has_key: false,
+            key_hint: ""
+          };
+        }
+      });
+      state.seatStatus = status;
+      updateProviderBadges();
+    }
+
+    function getPersonalSeatConfig(seat) {
+      const local = loadPersonalSeats();
+      return local[seat] || null;
+    }
+
+    // =========================================================================
     // BACKEND İLETİŞİMİ
     // =========================================================================
     async function loadInitialData() {
@@ -543,47 +625,49 @@
         }
         if (provResp && provResp.ok) {
           state.providersCatalog = provResp.providers || [];
-          state.seatStatus = provResp.seat_status || {};
           state.serverPoolCount = provResp.server_pool_count || 0;
-          updateProviderBadges();
         }
       } catch (_) {}
+      refreshSeatStatusFromLocal();
       renderTableUI();
     }
 
     function updateProviderBadges() {
-      const customCount = Object.values(state.seatStatus).filter(s => s.source === "user_vault").length;
+      const customCount = Object.values(state.seatStatus).filter(s => s.source === "personal").length;
       const lbl = document.getElementById("providerBtnLabel");
       if (customCount > 0) {
-        lbl.textContent = `${customCount} Özel API`;
-      } else if (state.serverPoolCount > 0) {
-        lbl.textContent = `${state.serverPoolCount} Hazır AI`;
+        lbl.textContent = `${customCount}/5 Kendi API'n`;
       } else {
-        lbl.textContent = "API Bağla";
+        lbl.textContent = "Ücretsiz API Bağla";
       }
-      const poolLbl = document.getElementById("serverPoolCountLabel");
-      if (poolLbl) {
-        poolLbl.textContent = state.serverPoolCount > 0
-          ? `${state.serverPoolCount} ücretsiz sağlayıcı sunucuda aktif`
-          : "varsayılan ücretsiz havuz aktif (kendi anahtarınla hızlandırabilirsin)";
+      const banner = document.getElementById("byokPromptBanner");
+      if (banner) {
+        banner.classList.toggle("hidden", customCount > 0);
       }
     }
 
     async function streamSeatCompletion({ seat, characterId, messages, temperature = 0.7, onDelta, onMeta }) {
       const controller = new AbortController();
       state.abortController = controller;
+      const personal = getPersonalSeatConfig(seat);
+      const bodyPayload = {
+        seat,
+        use_pool: true,
+        messages,
+        cognitive_character_id: characterId || "",
+        cognitive_session_id: state.sessionId || "",
+        temperature
+      };
+      if (personal && personal.base_url && personal.api_key) {
+        bodyPayload.base_url = personal.base_url;
+        bodyPayload.api_key = personal.api_key;
+        bodyPayload.model = personal.model || "";
+      }
       const resp = await fetch("/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
-        body: JSON.stringify({
-          seat,
-          use_pool: true,
-          messages,
-          cognitive_character_id: characterId || "",
-          cognitive_session_id: state.sessionId || "",
-          temperature
-        })
+        body: JSON.stringify(bodyPayload)
       });
 
       if (!resp.ok) {
@@ -629,10 +713,17 @@
     }
 
     async function quickChat({ seat, messages, temperature = 0.5 }) {
+      const personal = getPersonalSeatConfig(seat);
+      const bodyPayload = { seat, use_pool: true, messages, temperature };
+      if (personal && personal.base_url && personal.api_key) {
+        bodyPayload.base_url = personal.base_url;
+        bodyPayload.api_key = personal.api_key;
+        bodyPayload.model = personal.model || "";
+      }
       const resp = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seat, use_pool: true, messages, temperature })
+        body: JSON.stringify(bodyPayload)
       });
       const data = await resp.json();
       if (!resp.ok || !data.ok) throw new Error(data.error || "Yanıt alınamadı");
@@ -909,14 +1000,21 @@
             ui.verifyOut.textContent = "İddia araştırılıyor...";
             ui.verifyOut.classList.remove("hidden");
             try {
+              const kCfg = getPersonalSeatConfig("K") || getPersonalSeatConfig("A");
+              const vrBody = {
+                claim: cleanText.slice(0, 350),
+                session_id: state.sessionId || "",
+                seat: "K"
+              };
+              if (kCfg && kCfg.base_url && kCfg.api_key) {
+                vrBody.base_url = kCfg.base_url;
+                vrBody.api_key = kCfg.api_key;
+                vrBody.model = kCfg.model || "";
+              }
               const vr = await fetch("/api/research/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  claim: cleanText.slice(0, 350),
-                  session_id: state.sessionId || "",
-                  seat: "K"
-                })
+                body: JSON.stringify(vrBody)
               }).then(r => r.json());
               ui.verifyOut.textContent = vr.ok ? (vr.report || vr.verdict || "Araştırma tamamlandı.") : (vr.error || "Doğrulama yapılamadı.");
             } catch (_) {
@@ -1330,25 +1428,28 @@
           const p = list.find(x => x.id === provSel.value);
           const key = keyInp.value.trim();
           if (!p || !key) { showToast("Önce API anahtarını yapıştır."); return; }
-          const r = await fetch("/api/credentials", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seat, base_url: p.base_url, api_key: key, model: modelSel.value })
-          }).then(x => x.json());
-          if (r.ok) {
-            keyInp.value = "";
-            showToast(`${seat} koltuğu ${p.name} ile kaydedildi.`);
-            await loadInitialData();
-            renderProvidersModal();
-          } else {
-            showToast(r.error || "Kaydedilemedi.");
+          const ping = await fetch(`/api/ping?url=${encodeURIComponent(p.base_url)}&key=${encodeURIComponent(key)}`).then(x => x.json()).catch(() => ({ ok: true }));
+          if (ping && ping.ok === false) {
+            showToast(`Anahtar doğrulanamadı: ${ping.error || "geçersiz anahtar"}`);
+            return;
           }
+          savePersonalSeat(seat, {
+            provider_id: p.id,
+            provider_name: p.name,
+            base_url: p.base_url,
+            api_key: key,
+            model: modelSel.value
+          });
+          keyInp.value = "";
+          showToast(`${seat} koltuğu kendi ${p.name} anahtarınla kaydedildi (sadece bu tarayıcıda).`);
+          renderTableUI();
+          renderProvidersModal();
         });
 
         row.querySelector(".seat-reset-btn").addEventListener("click", async () => {
-          await fetch(`/api/credentials/${seat}`, { method: "DELETE" });
-          showToast(`${seat} koltuğu sunucu havuzuna döndürüldü.`);
-          await loadInitialData();
+          deletePersonalSeat(seat);
+          showToast(`${seat} koltuğunun kişisel anahtarı kaldırıldı.`);
+          renderTableUI();
           renderProvidersModal();
         });
       });
@@ -1365,7 +1466,7 @@
         statusEl.textContent = "Önce yukarıdaki butondan anahtar alıp kutuya yapıştır.";
         return;
       }
-      statusEl.textContent = "Bağlantı test ediliyor...";
+      statusEl.textContent = "Anahtarın test ediliyor...";
       try {
         const ping = await fetch(`/api/ping?url=${encodeURIComponent(sel.base_url)}&key=${encodeURIComponent(key)}`).then(r => r.json());
         if (!ping.ok) {
@@ -1376,16 +1477,18 @@
         const models = sel.models && sel.models.length ? sel.models : [sel.default_model];
         for (let i = 0; i < seats.length; i++) {
           const m = sel.multi_model ? models[i % models.length] : sel.default_model;
-          await fetch("/api/credentials", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seat: seats[i], base_url: sel.base_url, api_key: key, model: m })
+          savePersonalSeat(seats[i], {
+            provider_id: sel.id,
+            provider_name: sel.name,
+            base_url: sel.base_url,
+            api_key: key,
+            model: m
           });
         }
         document.getElementById("quickApiKeyInput").value = "";
-        statusEl.textContent = `Başarılı! ${sel.name} tüm 5 koltuğa bağlandı${sel.multi_model ? " (her koltuğa ayrı model atandı)" : ""}.`;
-        showToast(`${sel.name} tüm masaya bağlandı!`);
-        await loadInitialData();
+        statusEl.textContent = `Tamam! Kendi ${sel.name} anahtarın sadece bu tarayıcıda 5 koltuğa bağlandı${sel.multi_model ? " (her koltuğa ayrı model atandı)" : ""}.`;
+        showToast(`${sel.name} anahtarın kendi tarayıcına kaydedildi!`);
+        renderTableUI();
         renderProvidersModal();
       } catch (e) {
         statusEl.textContent = `Hata: ${e.message}`;
@@ -1439,6 +1542,13 @@
     }
     document.getElementById("openProvidersBtn").addEventListener("click", openProvidersModal);
     document.getElementById("openProvidersInlineBtn").addEventListener("click", openProvidersModal);
+    document.getElementById("bannerOpenProvidersBtn").addEventListener("click", openProvidersModal);
+    document.getElementById("clearAllLocalKeysBtn").addEventListener("click", () => {
+      clearAllPersonalSeats();
+      showToast("Bu tarayıcıdaki tüm API anahtarların silindi.");
+      renderTableUI();
+      renderProvidersModal();
+    });
     document.getElementById("closeProvidersBtn").addEventListener("click", closeProvidersModal);
     document.getElementById("providersModal").addEventListener("click", e => {
       if (e.target.id === "providersModal") closeProvidersModal();

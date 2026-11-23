@@ -411,12 +411,15 @@ def _fallback_candidates(seat: str, primary_base: str) -> list[tuple[str, str, s
 # (seat) gönderir, anahtar + base_url sunucu tarafı kâsadan (api_credentials)
 # veya sunucu ortam havuzundan çözülür.
 def _resolve_endpoint(base_url: str, api_key: str, model: str, seat: str, use_pool: bool = False):
-    """(base_url, api_key, model, error) döndürür."""
+    """(base_url, api_key, model, error) döndürür.
+    use_pool=True (halka açık v2 arayüz): her ziyaretçi kendi anahtarını gövdede gönderir;
+    ortak sunucu kasası (api_credentials) paylaşılmaz. Anahtar gönderilmemişse yalnız
+    anahtarsız ücretsiz havuz (Pollinations) veya isteğe bağlı ortam havuzu kullanılır."""
     b = (base_url or "").strip()
     k = (api_key or "").strip()
     m = (model or "").strip()
     s = (seat or "").strip().upper()
-    if s in engine.VALID_CRED_SEATS:
+    if not use_pool and s in engine.VALID_CRED_SEATS:
         cred = engine.get_api_credential(s)
         if cred:
             b = b or (cred.get("base_url") or "")
