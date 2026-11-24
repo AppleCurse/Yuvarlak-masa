@@ -1519,15 +1519,22 @@ async def persona_clean_endpoint(payload: dict):
     return {"ok": True, "cleaned": cleaned, "report": report}
 
 
+_NO_CACHE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
 @app.get("/")
 async def index():
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(STATIC_DIR / "index.html", headers=_NO_CACHE_HEADERS)
 
 
 @app.get("/classic")
 async def classic_index():
     classic = STATIC_DIR / "classic.html"
-    return FileResponse(classic if classic.exists() else STATIC_DIR / "index.html")
+    return FileResponse(classic if classic.exists() else STATIC_DIR / "index.html", headers=_NO_CACHE_HEADERS)
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
