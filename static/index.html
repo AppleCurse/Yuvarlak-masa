@@ -48,6 +48,17 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
+    .table-ring-glow {
+      box-shadow: 0 0 60px rgba(79, 70, 229, 0.25), inset 0 0 32px rgba(16, 185, 129, 0.14);
+    }
+    @keyframes seatPulse {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+    .seat-float { animation: seatPulse 5.2s ease-in-out infinite; }
+    .seat-float-delay-1 { animation-delay: -1.3s; }
+    .seat-float-delay-2 { animation-delay: -2.6s; }
+    .seat-float-delay-3 { animation-delay: -3.9s; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased min-h-screen transition-colors duration-200">
@@ -100,8 +111,98 @@
   <!-- =================================================================== -->
   <main id="view-debate" class="max-w-5xl mx-auto px-3 sm:px-4 py-5 sm:py-8 space-y-5">
 
+    <!-- Güçlü Giriş Sahnesi (İlk 3 saniyede burası ne, neden var, nasıl çalışır?) -->
+    <section id="landingHero" class="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-8 shadow-xl border border-indigo-500/20 relative overflow-hidden">
+      <div class="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-indigo-500/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-24 -right-20 w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
+        <!-- Sol Sütun: Net Değer Önerisi -->
+        <div class="lg:col-span-7 space-y-4">
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-indigo-200 border border-white/10">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            4 Zıt Uzman + 1 Karar Hakemi · Günde 2 Ücretsiz Tam Oturum
+          </span>
+
+          <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight text-white">
+            Tek yapay zeka seni pohpohlar.
+            <span class="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300">Yuvarlak Masa gerçeği tartışır.</span>
+          </h1>
+
+          <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+            Büyük bir karar vermeden önce konunu 4 farklı uzmanın önüne bırak. Birbirine itiraz ederek senin görmediğin riskleri çıkarsınlar; Karar Hakemi sonunda 3 maddede net yol haritasını yazsın.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-2.5 pt-1">
+            <button id="heroFocusQuestionBtn" type="button" class="bg-white hover:bg-indigo-50 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm inline-flex items-center gap-2 transition">
+              <i data-lucide="arrow-down" class="w-4 h-4 text-brand-600"></i>
+              <span>Sorunu Masaya Koy</span>
+            </button>
+            <button id="heroDemoBtn" type="button" class="bg-white/10 hover:bg-white/15 text-white border border-white/15 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl inline-flex items-center gap-2 transition">
+              <i data-lucide="play" class="w-4 h-4 text-emerald-300"></i>
+              <span id="heroDemoLabel">Canlı Örnek Başlat (Ev mi, Kira mı?)</span>
+            </button>
+          </div>
+
+          <div class="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
+            <span>✓ Üyelik gerekmez</span>
+            <span>✓ Tartışmaya istediğin an müdahale et</span>
+            <span>✓ Görüşmelerin sadece sende saklanır</span>
+          </div>
+        </div>
+
+        <!-- Sağ Sütun: Canlı Görsel Yuvarlak Masa -->
+        <div class="lg:col-span-5">
+          <div id="visualRoundTable" class="relative mx-auto w-full max-w-[320px] aspect-square flex items-center justify-center">
+            <div class="rounded-full border border-dashed border-indigo-400/35 w-[82%] h-[82%] absolute"></div>
+            <div class="table-ring-glow w-[44%] h-[44%] rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-500/20 border border-indigo-300/35 backdrop-blur-md flex flex-col items-center justify-center text-center p-3 z-10">
+              <span class="text-[10px] uppercase tracking-wider font-bold text-indigo-200">Yuvarlak Masa</span>
+              <span id="visualTableName" class="text-xs font-extrabold text-white mt-0.5 leading-tight">Para, Ev &amp; Yatırım</span>
+              <span class="text-[10px] text-emerald-300 font-semibold mt-1">+ Karar Hakemi</span>
+            </div>
+
+            <div id="visualSeat0" class="seat-float absolute top-2 left-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
+            <div id="visualSeat1" class="seat-float seat-float-delay-1 absolute top-2 right-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
+            <div id="visualSeat2" class="seat-float seat-float-delay-2 absolute bottom-2 left-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
+            <div id="visualSeat3" class="seat-float seat-float-delay-3 absolute bottom-2 right-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Adımda Nasıl Çalışır Şeridi -->
+    <section id="howItWorksStrip" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-indigo-500/15 text-brand-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
+          <i data-lucide="message-square" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">1. Konunu Masaya Bırak</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Para, iş, kira, ilişki ya da iş fikri... Tek cümleyle derdini yaz veya hazır senaryoya tıkla.</p>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+          <i data-lucide="users" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">2. 4 Uzman Çarpışsın</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Farklı bakış açıları birbirine itiraz eder. İstediğin an araya girip yönü değiştirebilirsin.</p>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+          <i data-lucide="gavel" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">3. 3 Maddede Net Karar</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Tarafsız Karar Hakemi sonunda Net Karar, En Büyük Risk ve 48 Saatte İlk Adım özetini verir.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Giriş & Soru Kartı -->
-    <section class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+    <section id="questionCard" class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
 
       <!-- 5 Gerçek Hayat Masası Seçici -->
       <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1" id="tableTabs"></div>
@@ -877,6 +978,32 @@
       document.getElementById("heroSubtitle").textContent = tbl.subtitle;
       document.getElementById("questionInput").placeholder = tbl.placeholder;
 
+      // Görsel Yuvarlak Masa koltuklarını kategoriye göre canlı güncelle
+      const vTableName = document.getElementById("visualTableName");
+      if (vTableName) vTableName.textContent = tbl.label;
+      for (let i = 0; i < 4; i++) {
+        const chip = document.getElementById(`visualSeat${i}`);
+        const s = tbl.seats[i];
+        if (!chip) continue;
+        if (!s) {
+          chip.classList.add("hidden");
+          continue;
+        }
+        chip.classList.remove("hidden");
+        chip.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full ${s.dot} shrink-0"></span>
+            <span class="text-[11px] font-bold text-white truncate">${escapeHtml(s.name)}</span>
+          </div>
+          <div class="text-[10px] text-slate-300 truncate mt-0.5">${escapeHtml(s.role)}</div>
+        `;
+      }
+      const demoLbl = document.getElementById("heroDemoLabel");
+      if (demoLbl && tbl.scenarios && tbl.scenarios[0]) {
+        const shortLbl = tbl.id === "para" ? "Ev mi, Kira mı?" : tbl.scenarios[0].label;
+        demoLbl.textContent = `Canlı Örnek Başlat (${shortLbl})`;
+      }
+
       // Hazır Senaryo Çipleri
       const chipsEl = document.getElementById("scenarioChips");
       chipsEl.innerHTML = tbl.scenarios.map((s, idx) => `
@@ -1551,6 +1678,8 @@
       document.getElementById("verdictCard").classList.add("hidden");
       document.getElementById("envelopeResultCard").classList.add("hidden");
       populateFollowUpTargets(seats);
+      document.getElementById("landingHero").classList.add("hidden");
+      document.getElementById("howItWorksStrip").classList.add("hidden");
       document.getElementById("followUpBox").classList.remove("hidden");
       document.getElementById("debateWorkspace").classList.remove("hidden");
       document.getElementById("debateWorkspace").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2091,7 +2220,30 @@
     document.querySelectorAll(".nav-tab").forEach(btn => {
       btn.addEventListener("click", () => switchTab(btn.getAttribute("data-tab")));
     });
-    document.getElementById("logoHomeBtn").addEventListener("click", () => switchTab("debate"));
+    document.getElementById("logoHomeBtn").addEventListener("click", () => {
+      switchTab("debate");
+      if (!state.isRunning) {
+        document.getElementById("landingHero").classList.remove("hidden");
+        document.getElementById("howItWorksStrip").classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("heroFocusQuestionBtn").addEventListener("click", () => {
+      const qc = document.getElementById("questionCard");
+      if (qc) qc.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        const inp = document.getElementById("questionInput");
+        if (inp) inp.focus();
+      }, 220);
+    });
+
+    document.getElementById("heroDemoBtn").addEventListener("click", () => {
+      const tbl = currentTable();
+      const firstScenario = tbl.scenarios && tbl.scenarios[0];
+      if (!firstScenario) return;
+      document.getElementById("questionInput").value = firstScenario.q;
+      startDebate(firstScenario.q);
+    });
 
     document.getElementById("themeToggleBtn").addEventListener("click", () => {
       document.documentElement.classList.toggle("dark");
@@ -2158,6 +2310,8 @@
     document.getElementById("resetDebateBtn").addEventListener("click", () => {
       cancelActiveRun();
       document.getElementById("debateWorkspace").classList.add("hidden");
+      document.getElementById("landingHero").classList.remove("hidden");
+      document.getElementById("howItWorksStrip").classList.remove("hidden");
       document.getElementById("questionInput").value = "";
       document.getElementById("questionInput").focus();
     });
