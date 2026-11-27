@@ -70,6 +70,11 @@ def init_database():
             conn.execute("ALTER TABLE sessions ADD COLUMN owner_hash TEXT")
         except sqlite3.OperationalError:
             pass  # sütun zaten var
+        # Faz 5: paylaşım zamanı — yalnızca paylaşıma açılmış oturum herkese açık özet verir
+        try:
+            conn.execute("ALTER TABLE sessions ADD COLUMN shared_at TIMESTAMP")
+        except sqlite3.OperationalError:
+            pass  # sütun zaten var
         conn.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id TEXT PRIMARY KEY,
@@ -344,6 +349,40 @@ def list_sessions(limit: int = 50, owner_token: Optional[str] = None) -> List[Di
                 (limit,),
             ).fetchall()
         return [dict(r) for r in rows]
+
+def share_session(session_id: str) -> bool:
+    """Karar özetini paylaşmaya aç (yalnızca sahibi çağırır). İdempotent."""
+    with get_db() as conn, conn:
+        row = conn.execute("SELECT 1 FROM sessions WHERE id=?", (session_id,)).fetchone()
+        if not row:
+            return False
+        conn.execute(
+            "UPDATE sessions SET shared_at=CURRENT_TIMESTAMP WHERE id=? AND shared_at IS NULL",
+            (session_id,),
+        )
+        return True
+
+
+def get_public_session(session_id: str) -> Optional[dict]:
+    """Yalnızca paylaşıma açılmış oturumun HERKESE AÇIK yüzü.
+
+    Mesajlar/tutanak asla döndürülmez; yalnızca topic + referee_verdict + tarih.
+    """
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT topic, referee_verdict, started_at, ended_at FROM sessions "
+            "WHERE id=? AND shared_at IS NOT NULL",
+            (session_id,),
+        ).fetchone()
+    if not row:
+        return None
+    return {
+        "topic": row["topic"] or "",
+        "verdict": row["referee_verdict"] or "",
+        "started_at": row["started_at"],
+        "ended_at": row["ended_at"],
+    }
+
 
 def close_session(session_id: str, verdict: str):
     with get_db() as conn:

@@ -32,6 +32,7 @@ PY="$REPO/.venv/bin/python"
 [ -x "$PY" ] || PY="$(command -v python3)"
 run "nörodinamik: karakter ve oturum izolasyonu" "$PY" test_neuro_integration.py
 run "faz4: beğeni/kanıt ayrımı + tahmin geriye değerlendirmesi" "$PY" test_faz4_backtest.py
+run "faz5: paylaşılabilir karar linki (sahiplik + sızıntı yok)" "$PY" test_faz5_share.py
 run "gizlilik kilidi: sahiplik anahtarı + arşiv persist" "$PY" test_archive_lock.py
 run "e2e: kâsa (gerçek uvicorn + mock upstream)" "$PY" e2e_vault.py
 run "hız sınırı (gerçek uvicorn, düşük limit)"  "$PY" test_ratelimit.py
