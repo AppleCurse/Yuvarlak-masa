@@ -496,6 +496,35 @@
           </button>
         </div>
 
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" id="objectionBtn" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 dark:text-rose-200 transition">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            <span>İtiraz Et</span>
+          </button>
+          <button type="button" id="evidenceToggleBtn" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 dark:text-amber-200 transition">
+            <i data-lucide="file-plus-2" class="w-3.5 h-3.5"></i>
+            <span>Ek Bilgi / Belge Ekle</span>
+          </button>
+          <button type="button" id="interventionLogBtn" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+            <span>Müdahale Günlüğü (<span id="interventionCount">0</span>)</span>
+          </button>
+        </div>
+
+        <div id="evidencePanel" class="hidden space-y-2 rounded-xl border border-dashed border-amber-300 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/5 p-3">
+          <p class="text-[11px] text-amber-800 dark:text-amber-200">Kendi verini ekle: faiz oranın, gelirin, teklif belgesi, tarih... Koltuklar bunu <b>sonradan eklenen kullanıcı bilgisi</b> olarak okur, tahminle karıştırmaz.</p>
+          <textarea id="evidenceInput" rows="2" placeholder="Örn: Bankamın teklifi: 60 ay %2.9 faiz, aylık taksit 28.000 TL; erken kapama cezası %2." class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+          <div class="flex gap-2">
+            <button type="button" id="saveEvidenceBtn" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition">Kaydet</button>
+            <button type="button" id="evidenceCloseBtn" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition">Kapat</button>
+          </div>
+        </div>
+        <ul id="evidenceList" class="hidden space-y-1.5"></ul>
+        <div id="interventionLog" class="hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-3">
+          <p class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1.5">Müdahale günlüğü — her müdahaleden sonra kaç söz geldi:</p>
+          <ul id="interventionLogList" class="space-y-1.5"></ul>
+        </div>
+
         <form id="followUpForm" class="flex flex-col sm:flex-row gap-2">
           <select id="followUpTarget" class="sm:w-52 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0">
             <option value="ALL">Tüm Masa (Hepsi)</option>
@@ -830,7 +859,9 @@
       envelopes: {},
       // Faz 2: soru bağlamı (isteğe bağlı seçiciler + tek netleştirme)
       qctx: { time: null, risk: null, priority: null, clarifyDismissed: false },
-      questionContext: ""
+      questionContext: "",
+      evidenceLog: [],
+      interventions: []
     };
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1001,6 +1032,58 @@
       if (q.priority) picks.push(`- Etkilenen/öncelik: ${q.priority}`);
       if (!picks.length) return "";
       return `\n\n[KULLANICI BAĞLAMI — kullanıcının seçtiği bu detayları cevapların ve önceliklerin için bağlayıcı kabul et]\n` + picks.join("\n");
+    }
+
+    // ── Faz 3 — Müdahale altyapısı: ek bilgi kanalı, itiraz, etki günlüğü ──
+    const INTERVENTION_LABELS = { guidance: "Yönlendirme", objection: "İtiraz", evidence: "Ek bilgi", "extra-round": "Ek tur" };
+
+    function buildEvidenceBlock() {
+      const items = state.evidenceLog || [];
+      if (!items.length) return "";
+      return "\n\n[KULLANICI EK BİLGİSİ — kullanıcının tartışmaya sonradan eklediği veri; tahmin değil, kullanıcının kendi verdiği bilgi olarak işle.]\n" +
+        items.map(e => "- " + e.text).join("\n");
+    }
+
+    function refreshUserContext() {
+      state.questionContext = buildQuestionContext() + buildEvidenceBlock();
+    }
+
+    function recordIntervention(kind, text) {
+      if (!state.interventions) state.interventions = [];
+      state.interventions.push({ kind: kind, text: String(text || "").slice(0, 300), at: state.transcript.length, ts: Date.now() });
+      renderInterventionLog();
+    }
+
+    function renderInterventionLog() {
+      const box = document.getElementById("interventionLog");
+      const listEl = document.getElementById("interventionLogList");
+      const countEl = document.getElementById("interventionCount");
+      const items = state.interventions || [];
+      if (countEl) countEl.textContent = String(items.length);
+      if (!box || !listEl) return;
+      if (!items.length) { box.classList.add("hidden"); listEl.innerHTML = ""; return; }
+      box.classList.remove("hidden");
+      listEl.innerHTML = items.map((it, i) => {
+        const after = Math.max(0, state.transcript.length - it.at);
+        const label = INTERVENTION_LABELS[it.kind] || "Müdahale";
+        return `<li class="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
+          <span class="shrink-0 px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold">${i + 1}. ${escapeHtml(label)}</span>
+          <span class="flex-1 break-words">${escapeHtml(it.text)}</span>
+          <span class="shrink-0 font-bold text-brand-600 dark:text-indigo-300">→ sonrası: ${after} söz</span>
+        </li>`;
+      }).join("");
+    }
+
+    function renderEvidenceList() {
+      const listEl = document.getElementById("evidenceList");
+      if (!listEl) return;
+      const items = state.evidenceLog || [];
+      listEl.classList.toggle("hidden", !items.length);
+      listEl.innerHTML = items.map((e, i) => `
+        <li class="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-900 dark:text-amber-100">
+          <span class="flex-1 break-words">📄 ${escapeHtml(e.text)}</span>
+          <button type="button" class="evidence-remove shrink-0 font-bold text-amber-700 dark:text-amber-300 hover:text-rose-600" data-index="${i}" aria-label="Bu bilgiyi kaldır">✕</button>
+        </li>`).join("");
     }
 
     function renderContextUI() {
@@ -2111,6 +2194,14 @@
         `- DOĞRULANMAMIŞ İDDİALAR bölümünde kanıtı olmayan her iddiayı açıkça işaretle.\n` +
         `- Uzun düşünme yapma; düşünmeyi uzatmadan doğrudan bölümleri sırayla yaz, her maddeyi tek cümlede tut.`;
 
+      let finalSummaryPrompt = summaryPrompt;
+      const ivList = state.interventions || [];
+      if (ivList.length) {
+        finalSummaryPrompt += "\n\n[MÜDAHALE KAYDI — masa başkanı tartışmaya müdahale etti]\n" +
+          ivList.map((it, i) => `${i + 1}) ${INTERVENTION_LABELS[it.kind] || "Müdahale"}: ${it.text}`).join("\n") +
+          "\n\nTutanığın sonuna ayrıca şu başlıkla 1-2 cümlelik bir bölüm ekle: `## MÜDAHALE SONRASI DEĞİŞİM` — hangi öneri/idddia bu müdahalelerden sonra değişti ya da değişmedi (yalnızca tutanaktan oku, uydurma).";
+      }
+
       try {
         const finalVerdict = await streamSeatCompletion({
           seat: "K",
@@ -2121,7 +2212,7 @@
           timeoutMs: 45000,
           messages: [
             { role: "system", content: getExpertSystemPrompt({ id: "karar_hakemi", name: "Karar Hakemi", role: "Çıktı" }) },
-            { role: "user", content: summaryPrompt }
+            { role: "user", content: finalSummaryPrompt }
           ],
           onDelta: txt => { verdictBody.textContent = txt; }
         });
@@ -2216,7 +2307,9 @@
       const tbl = currentTable();
       const seats = activeSeatsList();
       state.activeQuestion = question;
-      state.questionContext = buildQuestionContext();
+      refreshUserContext();
+      state.interventions = [];
+      renderInterventionLog();
       state.transcript = [];
       state.envelopes = {};
       state.sessionId = "ses_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6);
@@ -2326,7 +2419,7 @@
       }
     }
 
-    async function handleFollowUp(text, forcedTarget = null) {
+    async function handleFollowUp(text, forcedTarget = null, kind = "guidance") {
       const clean = (text || "").trim();
       if (!clean) return;
       const myRun = cancelActiveRun();
@@ -2342,8 +2435,15 @@
         ? "Tüm Masa"
         : (target === "K" ? "Karar Hakemi" : (targetSeatObj ? targetSeatObj.name : "Masa"));
 
+      const isObjection = kind === "objection";
+      const roundText = isObjection
+        ? "RESMİ İTİRAZ — Masa Başkanı şu ifadeye itiraz ediyor: \"" + clean + "\". İtiraza doğrudan yanıt verin: ya itirazı somut gerekçeyle çürütün ya da konumunuzu açıkça güncelleyin."
+        : clean;
+
       const userCard = createSpeakerCard(null, true);
-      userCard.bodyEl.textContent = `[→ ${labelPrefix}] ${clean}`;
+      userCard.bodyEl.textContent = isObjection
+        ? `[İTİRAZ → ${labelPrefix}] ${clean}`
+        : `[→ ${labelPrefix}] ${clean}`;
       userCard.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
       state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: `[${labelPrefix} için] ${clean}` });
@@ -2355,6 +2455,7 @@
           body: JSON.stringify({ session_id: state.sessionId, seat: "OP", character_id: "operator", role: "operator", speaker_name: "Masa Başkanı", content: clean })
         }).catch(() => {});
       }
+      recordIntervention(isObjection ? "objection" : kind, clean);
 
       if (target === "K") {
         const vRes = await runJudgeVerdict(state.activeQuestion + " — Masa Başkanı yönlendirmesi: " + clean);
@@ -2368,7 +2469,7 @@
 
       const seatsToSpeak = targetSeatObj ? [targetSeatObj] : allSeats;
       setRunningUI(true, targetSeatObj ? `${targetSeatObj.name} yanıtlıyor...` : "Tüm masa yönlendirmene yanıt veriyor...");
-      const roundRes = await runExpertRound(state.activeQuestion, seatsToSpeak, clean, myRun);
+      const roundRes = await runExpertRound(state.activeQuestion, seatsToSpeak, roundText, myRun);
       if (state.runId !== myRun) return;
 
       if (!state.isRunning) {
@@ -2397,7 +2498,7 @@
         return;
       }
 
-      const vRes = await runJudgeVerdict(state.activeQuestion + " (Ek yönlendirme: " + clean + ")");
+      const vRes = await runJudgeVerdict(state.activeQuestion + (isObjection ? " (Resmi itiraz: " + clean + ")" : " (Ek yönlendirme: " + clean + ")"));
       if (state.runId === myRun) {
         if (vRes && vRes.ok) {
           setRunningUI(false, roundRes && roundRes.failCount > 0 ? "Kısmi özet güncellendi" : "Güncel karar hazır", roundRes && roundRes.failCount > 0 ? "warn" : "ok");
@@ -3085,11 +3186,52 @@
     });
 
     document.getElementById("continueRoundBtn").addEventListener("click", () => {
-      handleFollowUp("Tartışmayı bir tur daha ilerletin; birbirinizin az önce söylediği güçlü ve zayıf noktalara doğrudan yanıt verip netleşin.", "ALL");
+      handleFollowUp("Tartışmayı bir tur daha ilerletin; birbirinizin az önce söylediği güçlü ve zayıf noktalara doğrudan yanıt verip netleşin.", "ALL", "extra-round");
     });
 
     document.getElementById("refreshVerdictBtn").addEventListener("click", () => {
       triggerRefreshVerdict();
+    });
+
+    document.getElementById("objectionBtn").addEventListener("click", () => {
+      const inp = document.getElementById("followUpInput");
+      const txt = (inp.value || "").trim();
+      if (!txt) { showToast("İtiraz etmek için önce kutuya bir cümle yaz."); inp.focus(); return; }
+      handleFollowUp(txt, null, "objection");
+    });
+
+    document.getElementById("evidenceToggleBtn").addEventListener("click", () => {
+      const panel = document.getElementById("evidencePanel");
+      panel.classList.toggle("hidden");
+      if (!panel.classList.contains("hidden")) document.getElementById("evidenceInput").focus();
+    });
+    document.getElementById("evidenceCloseBtn").addEventListener("click", () => {
+      document.getElementById("evidencePanel").classList.add("hidden");
+    });
+    document.getElementById("saveEvidenceBtn").addEventListener("click", () => {
+      const inp = document.getElementById("evidenceInput");
+      const txt = (inp.value || "").trim();
+      if (txt.length < 5) { showToast("Biraz daha detay yaz (en az birkaç kelime)."); return; }
+      if (!state.evidenceLog) state.evidenceLog = [];
+      state.evidenceLog.push({ text: txt, ts: Date.now() });
+      inp.value = "";
+      refreshUserContext();
+      renderEvidenceList();
+      recordIntervention("evidence", txt);
+      showToast("Ek bilgi masaya eklendi — sonraki sözlerde koltuklar bunu okuyacak.");
+    });
+    document.getElementById("evidenceList").addEventListener("click", e => {
+      const btn = e.target.closest(".evidence-remove");
+      if (!btn) return;
+      const idx = Number(btn.getAttribute("data-index"));
+      if (!Number.isNaN(idx) && state.evidenceLog[idx]) {
+        state.evidenceLog.splice(idx, 1);
+        refreshUserContext();
+        renderEvidenceList();
+      }
+    });
+    document.getElementById("interventionLogBtn").addEventListener("click", () => {
+      document.getElementById("interventionLog").classList.toggle("hidden");
     });
 
     document.getElementById("copyVerdictBtn").addEventListener("click", async () => {

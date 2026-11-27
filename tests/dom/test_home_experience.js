@@ -252,6 +252,33 @@ async function runDebate(d, w, question) {
   qInp.value = "";
   qInp.dispatchEvent(new w.Event("input", { bubbles: true }));
 
+  // ── Faz 3 — Müdahale: ek bilgi kanalı, itiraz, etki günlüğü ──
+  const f3box = d.getElementById("followUpBox");
+  assert(!f3box.classList.contains("hidden"), "F3-1 müdahale çubuğu tartışmada görünür");
+
+  d.getElementById("evidenceToggleBtn").click();
+  assert(!d.getElementById("evidencePanel").classList.contains("hidden"), "F3-2 ek bilgi paneli açılıyor");
+  d.getElementById("evidenceInput").value = "Bankamın teklifi: 60 ay %2.9 faiz, aylık taksit 28.000 TL.";
+  d.getElementById("saveEvidenceBtn").click();
+  const evBlock = w.buildEvidenceBlock();
+  assert(evBlock.includes("KULLANICI EK BİLGİSİ") && evBlock.includes("28.000"), "F3-3 ek bilgi prompt bloğuna giriyor");
+  assert(d.getElementById("interventionCount").textContent === "1", "F3-4 etki günlüğü 1 kayıt gösteriyor");
+  assert(!d.getElementById("interventionLog").classList.contains("hidden"), "F3-4b günlüğü kutusu açıldı");
+
+  posts.length = 0;
+  d.getElementById("followUpInput").value = "Faizler düşerse bu teklif geçersiz olur, erken kapama cezası da var.";
+  d.getElementById("objectionBtn").click();
+  assert(d.getElementById("interventionCount").textContent === "2", "F3-5 itiraz günlüğe 2. kayıt olarak düşüyor");
+  await sleep(2600);
+  const f3msgs = JSON.stringify(posts.filter(p => p.url.includes("/api/chat/stream")).map(p => p.body.messages || []));
+  assert(f3msgs.includes("RESMİ İTİRAZ"), "F3-6 itiraz çerçeveli olarak prompta girdi");
+  assert(f3msgs.includes("KULLANICI EK BİLGİSİ"), "F3-7 itiraz turunda ek bilgi de promptta");
+  assert(f3msgs.includes("MÜDAHALE SONRASI DEĞİŞİM"), "F3-8 hakem promptu müdahale sonrası değişim bölümü istiyor");
+  const logText = d.getElementById("interventionLogList").textContent;
+  assert(logText.includes("İtiraz") && logText.includes("sonrası:"), "F3-9 günlük tür + etki sayacı gösteriyor");
+  d.querySelector("#evidenceList .evidence-remove").click();
+  assert(w.buildEvidenceBlock() === "", "F3-10 ek bilgi kaldırılınca blok boşalır");
+
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });
