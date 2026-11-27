@@ -43,12 +43,13 @@ from contextlib import asynccontextmanager, nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+from html import escape as html_escape
 
 import httpx
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -1384,6 +1385,78 @@ async def session_report_get(sid: str, request: Request):
     if not rep:
         return JSONResponse({"ok": False, "error": "Bu oturum için karar raporu yok."}, status_code=404)
     return {"ok": True, "report": rep}
+
+
+# ── Faz 5 — Paylaşılabilir karar linki + sosyal medya kartı ─────────────
+def _share_page_html(info: dict) -> str:
+    topic = html_escape((info.get("topic") or "Yuvarlak Masa kararı").strip() or "Yuvarlak Masa kararı")
+    verdict = (info.get("verdict") or "").strip()
+    flat = " ".join(verdict.split())
+    desc = html_escape((flat[:180] + "…") if len(flat) > 180 else (flat or "Yuvarlak Masa gerekçeli karar özeti."))
+    verdict_html = html_escape(verdict).replace("\n", "<br>\n") if verdict else "Bu karar metni henüz kaydedilmemiş."
+    ended = str(info.get("ended_at") or "")[:16]
+    date_line = f'<p class="date">{html_escape(ended)}</p>' if ended else ""
+    title = f"{topic} — Yuvarlak Masa Kararı"
+    return f"""<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="description" content="{desc}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:site_name" content="Yuvarlak Masa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<style>
+ body {{ margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:#12100e; color:#e9e2d6; line-height:1.6; }}
+ main {{ max-width:720px; margin:0 auto; padding:32px 18px 48px; }}
+ .brand {{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#e8b45a; font-weight:700; }}
+ h1 {{ font-size:24px; margin:10px 0 4px; color:#fff; }}
+ .date {{ font-size:12px; color:#9a917f; margin:0 0 18px; }}
+ article {{ background:#1c1916; border:1px solid #33302b; border-radius:14px; padding:18px 20px; font-size:14.5px; color:#d9d2c5; white-space:normal; }}
+ .note {{ font-size:12px; color:#9a917f; border-top:1px dashed #33302b; padding-top:14px; margin-top:20px; }}
+ footer {{ margin-top:22px; font-size:13px; }}
+ footer a {{ color:#e8b45a; text-decoration:none; font-weight:600; }}
+</style></head><body><main>
+<p class="brand">Yuvarlak Masa · Paylaşılan Karar</p>
+<h1>{title.split(" — ")[0]}</h1>
+{date_line}
+<article>{verdict_html}</article>
+<p class="note">Bu sayfa yalnızca karar özetini gösterir; tartışma tutanağı, özel mesajlar ve katılımcı iç düşünceleri paylaşılmaz. Çıktı yapay zekâ tarafından üretilmiştir — yatırım, hukuk veya psikoloji tavsiyesi değildir; son karar senindir.</p>
+<footer><a href="/">yuvarlakmasa.com.tr'ye dön</a></footer>
+</main></body></html>"""
+
+
+@app.post("/api/session/share")
+async def session_share(payload: dict, request: Request):
+    """Karar özetini paylaşmaya aç (sahibi). Paylaşım yalnızca topic + verdict içerir."""
+    sid = (payload.get("session_id") or "").strip()
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
+    if not engine.share_session(sid):
+        return JSONResponse({"ok": False, "error": "Oturum bulunamadı."}, status_code=404)
+    return {"ok": True, "share_url": f"/paylas/{sid}", "shared": True}
+
+
+@app.get("/paylas/{sid}")
+async def share_page(sid: str):
+    """Herkese açık, salt-okunur karar sayfası — yalnızca shared_at dolu oturumlar."""
+    info = engine.get_public_session(sid)
+    if info is None:
+        page = """<!doctype html><html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paylaşım yok — Yuvarlak Masa</title></head>
+<body style="margin:0;font-family:system-ui,sans-serif;background:#12100e;color:#e9e2d6;display:grid;place-items:center;min-height:100vh;text-align:center;padding:20px;">
+<div><p style="color:#e8b45a;font-weight:700;letter-spacing:.15em;">YUVARLAK MASA</p>
+<h1 style="font-size:20px;">Bu karar paylaşıma kapalı</h1>
+<p style="font-size:14px;color:#9a917f;max-width:420px;">Bağlantıyı açan kişi kararı henüz paylaşmamış. Paylaşım, yalnızca sahibi kararını paylaştığında açılır.</p>
+<p style="font-size:13px;"><a href="/" style="color:#e8b45a;">Ana sayfaya dön</a></p></div>
+</body></html>"""
+        return HTMLResponse(page, status_code=404)
+    return HTMLResponse(_share_page_html(info))
 
 
 @app.get("/api/reports")

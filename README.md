@@ -131,7 +131,7 @@ bash tests/run_all.sh
 | 2 | Soru derinliği (aciliyet/risk/etkilenen seçicileri) | ✅ Kodda — [`FAZ2_DURUM.md`](FAZ2_DURUM.md) |
 | 3 | Müdahale (ek bilgi, itiraz, etki günlüğü) | ✅ Kodda — [`FAZ3_DURUM.md`](FAZ3_DURUM.md) |
 | 4 | Özgün zekâ (beğeni/kanıt ayrımı, backtest) | ✅ Kodda — [`FAZ4_DURUM.md`](FAZ4_DURUM.md) |
-| 5 | İlk adım + paylaşım + hatırlatma | 🔜 (çıktı var) |
+| 5 | İlk adım + paylaşım + 48 saat hatırlatma | ✅ Kodda — [`FAZ5_DURUM.md`](FAZ5_DURUM.md) |
 | 6 | Konu sayfaları (`/ev-mi-kira-mi`…) | — |
 | 7 | Güven: kaynak/yorum ayrımı, sürekli ölçüm | 🔜 (temel var) |
 

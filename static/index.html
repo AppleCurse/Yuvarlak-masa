@@ -177,6 +177,9 @@
     /* Demo sahnesi (her zaman karanlık panel) */
     .stage-panel .outcome-sec h4 { color: #e8b45a; }
     .stage-panel .outcome-sec li, .stage-panel .outcome-sec p { color: #d7dbe4; }
+    .outcome-sec-key { border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.09); border-radius: 0 10px 10px 0; padding: 6px 10px; margin-left: -4px; }
+    .outcome-sec-key h4 { color: #b45309; }
+    html.dark .outcome-sec-key h4 { color: #f0b45a; }
     .demo-outcome-body { max-height: 350px; overflow-y: auto; }
     /* Nörodinamik durum çipi (canlı veri) */
     .neuro-chip {
@@ -445,6 +448,10 @@
           <button id="copyVerdictBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
             Çıktıyı Kopyala
+          </button>
+          <button id="shareVerdictBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 border border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30 text-amber-700 dark:text-amber-200 transition">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            Paylaş
           </button>
         </div>
         <div id="verdictBody" class="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line"></div>
@@ -722,7 +729,19 @@
     </div>
   </div>
 
-  <script>
+    <!-- Faz 5 — 48 saat karar hatırlatması (yalnızca bu tarayıcıda saklanır) -->
+  <div id="reminderBanner" class="hidden fixed bottom-3 left-3 right-3 sm:left-auto sm:right-3 sm:w-96 z-50 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 rounded-2xl shadow-2xl p-4 space-y-2 fade-in">
+    <p class="text-xs font-extrabold text-amber-700 dark:text-amber-300">⏳ 48 SAAT GEÇTİ</p>
+    <p id="reminderText" class="text-xs leading-relaxed text-slate-600 dark:text-slate-300"></p>
+    <div id="reminderActions" class="flex flex-wrap gap-1.5">
+      <button type="button" data-rem="1" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 transition">✅ İyi sonuç verdi</button>
+      <button type="button" data-rem="0.5" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 transition">◐ Karışık</button>
+      <button type="button" data-rem="0" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200 transition">✖ Kötü</button>
+      <button type="button" data-rem="later" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 transition">Şimdi değil</button>
+    </div>
+  </div>
+
+<script>
     // =========================================================================
     // 5 GERÇEK HAYAT KARAR MASASI (Türkiye Verilerine Göre)
     // =========================================================================
@@ -2158,7 +2177,9 @@
       let html = "";
       if (preamble.length) html += `<p class="mb-2">${esc(preamble.join(" "))}</p>`;
       for (const s of secs) {
-        html += `<div class="outcome-sec"><h4>${esc(s.title)}</h4>`;
+        const tLow = String(s.title || "").toLocaleLowerCase("tr-TR");
+        const keySec = tLow.includes("önerilen ilk adım") || tLow.includes("başarı göstergesi");
+        html += `<div class="outcome-sec${keySec ? " outcome-sec-key" : ""}"><h4>${esc(s.title)}</h4>`;
         if (s.items.length === 1 && !/[-•]/.test(s.items[0]) && s.items[0].length > 0) {
           html += `<p>${esc(s.items[0])}</p>`;
         } else {
@@ -2187,8 +2208,9 @@
         state.transcript.map(t => `- ${t.speaker} (${t.role}): ${t.content}`).join("\n") +
         `\n\nTartışmadan GEREKÇELİ bir değerlendirme çıkar. Kurallar:\n` +
         `- Tam olarak şu Markdown başlıklarını kullan (başlıklar aynen yazılır):\n` +
-        `## ÖNE ÇIKAN ARGÜMANLAR\n## UZLAŞILAN NOKTALAR\n## GÖRÜŞ AYRILIKLARI\n## DOĞRULANMAMIŞ İDDİALAR\n## RİSKLER\n## EKSİK BİLGİLER\n## OLASI KARAR YOLLARI\n` +
+        `## ÖNE ÇIKAN ARGÜMANLAR\n## UZLAŞILAN NOKTALAR\n## GÖRÜŞ AYRILIKLARI\n## DOĞRULANMAMIŞ İDDİALAR\n## RİSKLER\n## EKSİK BİLGİLER\n## OLASI KARAR YOLLARI\n## ÖNERİLEN İLK ADIM\n## BAŞARI GÖSTERGESİ\n` +
         `- Her bölümde 2-4 kısa madde (- ile). Yalnızca tutanakta geçenleri yaz; yeni iddia uydurma.\n` +
+        `- ÖNERİLEN İLK ADIM: en geç 48 saat içinde atılacak TEK somut adım (ne yapılacak, ne zaman). BAŞARI GÖSTERGESİ: 1-2 hafta içinde işe yaradığını nasıl anlarsın — ölçülebilir tek madde.\n` +
         `- Güncel faiz/enflasyon/döviz oranı uydurma; oran/kural mantığıyla konuş.\n` +
         `- Tek kesin hüküm vermek zorunda değilsin; gerekliyse 'Bu bilgiyle kesin karar verilemez' de.\n` +
         `- DOĞRULANMAMIŞ İDDİALAR bölümünde kanıtı olmayan her iddiayı açıkça işaretle.\n` +
@@ -2220,6 +2242,10 @@
         if (!cleanVerdict) {
           throw new Error("Karar Hakemi boş yanıt döndürdü.");
         }
+        try {
+          localStorage.setItem("ym_decision_" + state.sessionId, JSON.stringify({ at: Date.now(), q: state.activeQuestion || "", done: false }));
+        } catch (_) {}
+        checkDecisionReminders();
         const structuredHtml = renderStructuredOutcome(cleanVerdict);
         if (structuredHtml) {
           verdictBody.textContent = "";
@@ -3244,6 +3270,31 @@
       }
     });
 
+    document.getElementById("shareVerdictBtn").addEventListener("click", async () => {
+      if (!archiveWrites()) {
+        showToast("Paylaşım için arşivi aç: karar sunucuya kaydedilmemiş, paylaşılacak bir bağlantı yok.");
+        return;
+      }
+      try {
+        const res = await ownerFetch("/api/session/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: state.sessionId })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) { showToast((data && data.error) || "Paylaşım açılamadı."); return; }
+        const url = location.origin + data.share_url;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast("Paylaşım bağlantısı kopyalandı — bağlantı yalnızca karar özetini gösterir, tutanağı değil.");
+        } catch (_) {
+          showToast("Paylaşım hazır: " + url);
+        }
+      } catch (_) {
+        showToast("Paylaşım açılamadı.");
+      }
+    });
+
     document.querySelectorAll(".quick-followup").forEach(btn => {
       btn.addEventListener("click", () => handleFollowUp(btn.getAttribute("data-followup")));
     });
@@ -3389,9 +3440,65 @@
       renderTableUI();
     });
 
+    // ── Faz 5 — 48 saat karar hatırlatması (yalnızca bu tarayıcıda) ──
+    const REMINDER_MS = 48 * 60 * 60 * 1000;
+    function checkDecisionReminders() {
+      const banner = document.getElementById("reminderBanner");
+      const txt = document.getElementById("reminderText");
+      if (!banner || !txt) return;
+      let show = null;
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k || k.indexOf("ym_decision_") !== 0) continue;
+          let v = null;
+          try { v = JSON.parse(localStorage.getItem(k) || "null"); } catch (_) { continue; }
+          if (!v || v.done) continue;
+          if (v.snooze && Date.now() < v.snooze) continue;
+          if (Date.now() - (v.at || 0) < REMINDER_MS) continue;
+          show = { key: k, v: v };
+          break;
+        }
+      } catch (_) { show = null; }
+      if (!show) { banner.classList.add("hidden"); return; }
+      banner.dataset.key = show.key;
+      txt.textContent = "«" + String(show.v.q || "Kararın").slice(0, 140) + "» — 48 saat geçti. Kararı uyguladın mı? Sonucunu bildir; bu sonuç kanıt olarak kaydedilir (beğeni olarak değil).";
+      banner.classList.remove("hidden");
+    }
+    function dismissReminder(key, patch) {
+      try {
+        const v = JSON.parse(localStorage.getItem(key) || "{}") || {};
+        Object.assign(v, patch);
+        localStorage.setItem(key, JSON.stringify(v));
+      } catch (_) {}
+      const banner = document.getElementById("reminderBanner");
+      if (banner) banner.classList.add("hidden");
+    }
+    document.getElementById("reminderActions").addEventListener("click", e => {
+      const btn = e.target.closest("[data-rem]");
+      if (!btn) return;
+      const banner = document.getElementById("reminderBanner");
+      const key = (banner && banner.dataset.key) || "";
+      const val = btn.getAttribute("data-rem");
+      if (!key) return;
+      if (val === "later") { dismissReminder(key, { snooze: Date.now() + REMINDER_MS }); return; }
+      const sid = key.replace("ym_decision_", "");
+      const num = Number(val);
+      ownerFetch("/api/neuro/outcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ character_id: "character:karar_hakemi", session_id: sid, outcome: num, note: "48 saat hatırlatma sonucu" })
+      }).then(r => r.json()).then(dat => {
+        showToast(dat && dat.ok ? "Sonuç kanıt olarak kaydedildi." : ((dat && dat.error) || "Sonuç kaydedilemedi."));
+      }).catch(() => showToast("Sonuç kaydedilemedi."));
+      dismissReminder(key, { done: true, result: num });
+    });
+    checkDecisionReminders();
+
     // Başlat
     loadInitialData();
     playDemo();
   </script>
+
 </body>
 </html>

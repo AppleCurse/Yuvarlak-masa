@@ -279,6 +279,44 @@ async function runDebate(d, w, question) {
   d.querySelector("#evidenceList .evidence-remove").click();
   assert(w.buildEvidenceBlock() === "", "F3-10 ek bilgi kaldırılınca blok boşalır");
 
+  // ── Faz 5 — Karar çıktısı: ilk adım şeridi, paylaşım, 48 saat hatırlatma ──
+  // F5-1: hakem promptu iki yeni bölüm istiyor
+  posts.length = 0;
+  d.getElementById("refreshVerdictBtn").click();
+  await sleep(1500);
+  const f5judge = JSON.stringify(posts.filter(p => p.url.includes("/api/chat/stream")).map(p => p.body.messages || []));
+  assert(f5judge.includes("Masadaki görüşme tutanağı"), "F5-1 hakem çağrısı yapıldı");
+  assert(f5judge.includes("ÖNERİLEN İLK ADIM") && f5judge.includes("BAŞARI GÖSTERGESİ"), "F5-2 hakem promptu ilk adım + başarı göstergesi istiyor");
+
+  // F5-3: 9 bölümlü metin → ilk adım/öneri şeridi vurgulu ayrışır
+  const nine = ["ÖNE ÇIKAN ARGÜMANLAR", "UZLAŞILAN NOKTALAR", "GÖRÜŞ AYRILIKLARI", "DOĞRULANMAMIŞ İDDİALAR", "RİSKLER", "EKSİK BİLGİLER", "OLASI KARAR YOLLARI", "ÖNERİLEN İLK ADIM", "BAŞARI GÖSTERGESİ"]
+    .map(t => `## ${t}\n- madde`).join("\n");
+  const html9 = w.renderStructuredOutcome(nine);
+  assert((html9.match(/<div class="outcome-sec/g) || []).length === 9, "F5-3 dokuz bölüm ayrıştı");
+  assert(html9.includes("outcome-sec-key"), "F5-4 ilk adım/öneri şeridi vurgulu sınıfı aldı");
+
+  // F5-5: paylaş butonu → sahiplik başlıklı paylaşım çağrısı
+  posts.length = 0;
+  d.getElementById("shareVerdictBtn").click();
+  await sleep(120);
+  const sharePosts = posts.filter(p => p.url.includes("/api/session/share"));
+  assert(sharePosts.length === 1 && sharePosts[0].headers && sharePosts[0].headers["X-Owner-Token"], "F5-5 paylaşım çağrısı sahiplik anahtarıyla gitti");
+
+  // F5-6: 48 saat önce kaydedilmiş karar → hatırlatma banner'ı çıkar
+  w.localStorage.setItem("ym_decision_ses_48s_test", JSON.stringify({ at: Date.now() - 49 * 60 * 60 * 1000, q: "Ev mi kira mı kararım", done: false }));
+  w.checkDecisionReminders();
+  const rBanner = d.getElementById("reminderBanner");
+  assert(!rBanner.classList.contains("hidden"), "F5-6 48 saat sonra hatırlatma görünür");
+  assert(d.getElementById("reminderText").textContent.includes("Ev mi kira mı"), "F5-7 hatırlatma doğru kararın sorusunu gösteriyor");
+
+  // F5-8: sonuç bildirimi → /api/neuro/outcome (kanıt) + banner kapanır
+  posts.length = 0;
+  d.querySelector("#reminderActions [data-rem=\"1\"]").click();
+  await sleep(80);
+  const outcomePosts = posts.filter(p => p.url.includes("/api/neuro/outcome"));
+  assert(outcomePosts.length === 1 && outcomePosts[0].body && outcomePosts[0].body.outcome === 1, "F5-8 hatırlatma sonucu outcome uçuna gitti");
+  assert(rBanner.classList.contains("hidden"), "F5-9 bildirim sonrası banner kapandı");
+
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });
