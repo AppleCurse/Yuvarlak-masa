@@ -201,6 +201,57 @@ async function runDebate(d, w, question) {
   const histText = d.getElementById("view-history").textContent;
   assert(histText.includes("yalnızca bu tarayıcıda saklanır"), "47 geçmiş: sekme başlığı arşiv gerçeğini söylüyor");
 
+  // ── Faz 1 düzeltmeleri (canlı kalite denetimi bulguları) ──
+  const judgePost = [...posts].reverse().find(p => p.url.includes("/api/chat/stream") && p.body && p.body.cognitive_character_id === "karar_hakemi");
+  assert(judgePost && judgePost.body.max_tokens === 2048, "48 Faz1: hakem token sınırı 2048 (yarım cümle kesilmesi giderildi)");
+  const expertPrompt = w.getExpertSystemPrompt({ id: "test_koltuk", name: "Test", role: "Rol" });
+  assert(expertPrompt.includes("KANIT KURALI (Faz 1)") && expertPrompt.includes("DİL KURALI (Faz 1)"), "49 Faz1: tüm koltuklara kanıt + sade dil kuralı ekli");
+
+  // ── Faz 2 — Soru derinliği (bağlam seçicileri + tek netleştirme) ──
+  const qInp = d.getElementById("questionInput");
+  const f2box = d.getElementById("questionContextBox");
+
+  qInp.value = "3 milyon TL birikimim var, faizler yükselirken ev mi almalıyım?";
+  qInp.dispatchEvent(new w.Event("input", { bubbles: true }));
+  assert(!f2box.classList.contains("hidden"), "F2-1 bağlam: finans sorusunda seçiciler görünür");
+  assert([...d.querySelectorAll("#contextChips .ctx-chip")].some(c => c.getAttribute("data-ctx") === "risk"), "F2-2 risk seçicisi var");
+  assert(d.getElementById("clarifyBox").classList.contains("hidden"), "F2-3 uzun sorda netleştirme sorusu gizli");
+
+  const pickChip = (key, val) => [...d.querySelectorAll("#contextChips .ctx-chip")].find(c => c.getAttribute("data-ctx") === key && (val == null || c.getAttribute("data-val") === val));
+  pickChip("risk", "Kaybı neredeyse hiç göze alamam").click();
+  const ctxTxt = w.buildQuestionContext();
+  assert(ctxTxt.includes("KULLANICI BAĞLAMI") && ctxTxt.includes("Kaybı neredeyse hiç göze alamam"), "F2-4 seçim bağlam bloğuna giriyor");
+  pickChip("risk", "Kaybı neredeyse hiç göze alamam").click();
+  assert(w.buildQuestionContext() === "", "F2-5 seçim kaldırılınca bağlam boş");
+
+  qInp.value = "Acelem var, hemen karar versem";
+  qInp.dispatchEvent(new w.Event("input", { bubbles: true }));
+  assert(!d.getElementById("clarifyBox").classList.contains("hidden"), "F2-6 kısa soruda tek netleştirme görünür");
+  d.querySelector("#clarifyChips [data-clarify]").click();
+  assert(d.getElementById("clarifyBox").classList.contains("hidden"), "F2-7 cevaptan sonra netleştirme kaybolur");
+  assert([...d.querySelectorAll("#contextChips .ctx-chip.ctx-on")].some(c => c.getAttribute("data-ctx") === "time"), "F2-8 cevap zaman seçicisine işlendi");
+  const timeOn = pickChip("time", null);
+  if (timeOn) timeOn.click();
+  qInp.value = "";
+  qInp.dispatchEvent(new w.Event("input", { bubbles: true }));
+  assert(f2box.classList.contains("hidden"), "F2-9 soru temizlenince kutu gizlenir");
+
+  // F2-10/11: seçili bağlamla gerçek tartışma → prompta giriyor mu?
+  qInp.value = "İş değişikliği yapmalı mıyım, acele karar vermeliyim?";
+  qInp.dispatchEvent(new w.Event("input", { bubbles: true }));
+  const tChip = pickChip("time", null);
+  assert(!!tChip, "F2-10 zaman seçicisi görünür");
+  tChip.click();
+  posts.length = 0;
+  d.getElementById("questionForm").dispatchEvent(new w.Event("submit", { cancelable: true, bubbles: true }));
+  await sleep(1600);
+  const ctxInPrompt = posts.some(p => p.url.includes("/api/chat/stream") && JSON.stringify(p.body.messages || []).includes("KULLANICI BAĞLAMI"));
+  assert(ctxInPrompt, "F2-11 bağlam gerçekten model promptuna girdi");
+  const tOn = pickChip("time", null);
+  if (tOn) tOn.click();
+  qInp.value = "";
+  qInp.dispatchEvent(new w.Event("input", { bubbles: true }));
+
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });
