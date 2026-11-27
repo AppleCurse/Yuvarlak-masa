@@ -197,7 +197,7 @@
         <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm">
           <i data-lucide="users" class="w-4 h-4"></i>
         </div>
-        <div class="truncate">
+        <div class="hidden sm:block">
           <span class="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white">Yuvarlak Masa</span>
         </div>
       </button>
@@ -215,10 +215,6 @@
       </nav>
 
       <div class="flex items-center gap-1.5 shrink-0">
-        <button id="openProvidersBtn" type="button" title="Yapay Zeka & API Anahtarları" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
-          <i data-lucide="key-round" class="w-3.5 h-3.5 text-brand-600 dark:text-indigo-400"></i>
-          <span class="hidden sm:inline" id="providerBtnLabel">Yapay Zekalar</span>
-        </button>
         <button id="themeToggleBtn" type="button" title="Tema Değiştir" aria-label="Tema Değiştir" class="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition">
           <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
           <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
@@ -273,6 +269,10 @@
             <div class="demo-outcome-body" id="demoOutcomeBody"></div>
             <p class="text-[10px] text-slate-500 leading-snug mt-3 pt-2 border-t border-white/10">
               Demo çıktısı örnektir. Gerçek oturumlarda bu panel, tartışmadan üretilen gerekçeli değerlendirmedir.
+              Bu bir yatırım, hukuk veya psikoloji tavsiyesi değildir; senin kararındır.
+            </p>
+            <p class="text-[10px] text-slate-500 leading-snug mt-1.5">
+              Gerçek tartışmada yazdıkların seçtiğin yapay zekâ hizmetlerine gider; arşivle seçeneğini açmadıksan sunucuya kaydedilmez.
             </p>
           </div>
           <p id="demoOutcomePending" class="text-xs text-slate-500 leading-relaxed">
@@ -371,9 +371,14 @@
       <div id="expertsPanel" class="hidden pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-3 fade-in">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-xs text-slate-500 dark:text-slate-400">İstediğin uzmanı masadan kaldırabilir veya her koltuğa farklı ücretsiz yapay zeka atayabilirsin.</p>
-          <button id="openProvidersInlineBtn" type="button" class="text-xs font-semibold text-brand-600 dark:text-indigo-400 hover:underline">
-            Koltuklara API Anahtarı Bağla →
-          </button>
+          <div class="flex items-center gap-3">
+            <button id="addCustomSeatBtn" type="button" class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
+              + Kendi katılımcını ekle
+            </button>
+            <button id="openProvidersInlineBtn" type="button" class="text-xs font-semibold text-brand-600 dark:text-indigo-400 hover:underline">
+              Koltuklara API Anahtarı Bağla →
+            </button>
+          </div>
         </div>
         <div id="seatCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"></div>
         <div class="pt-2.5 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
@@ -386,7 +391,12 @@
             <input id="optInnerVoice" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
             <span>İç sesleri göster</span>
           </label>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Varsayılan kapalıdır: açıkken tartışma mesajları, zarflar ve sonuç sunucu arşivine yazılır; arşiv kayıtlarını yalnızca bu tarayıcının anahtarı okuyabilir. Kapalıyken sunucu arşivine hiçbir şey yazılmaz (mesajların yine seçtiğin yapay zekâ hizmetine iletilir).">
+            <input id="optArchive" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span>Sunucuda arşivle</span>
+          </label>
         </div>
+        <p id="archiveHint" class="text-[11px] text-slate-500 dark:text-slate-400"></p>
       </div>
     </section>
 
@@ -429,6 +439,9 @@
         </div>
         <div id="verdictBody" class="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line"></div>
         <div id="outcomeSections" class="hidden space-y-0"></div>
+        <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 border-t border-slate-200/70 dark:border-slate-700 pt-2.5">
+          Bu çıktı bir yapay zekâ değerlendirmesidir; <strong class="font-semibold text-slate-600 dark:text-slate-300">yatırım, hukuk veya psikoloji tavsiyesi değildir</strong>. Tartışmaya yazdıkların seçtiğin yapay zekâ hizmetlerine gönderilir; sunucuda arşivle seçeneğini açmadıysan kayıtlar yalnızca bu tarayıcıda kalır.
+        </p>
       </div>
 
       <!-- Mühürlü Zarf Sonucu (Kimin Fikri Değişti?) -->
@@ -531,7 +544,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">Geçmiş Oturumlar</h1>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Önceki karar masası tartışmaların burada saklanır.</p>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Önceki karar masası tartışmaların yalnızca bu tarayıcıda saklanır; sunucuya arşivlemedikçe hiçbir kayıt dışarı çıkmaz.</p>
       </div>
       <button id="refreshHistoryBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
         Yenile
@@ -540,6 +553,69 @@
     <div id="historyList" class="space-y-2.5"></div>
     <div id="historyDetail" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3"></div>
   </main>
+
+  <footer class="max-w-5xl mx-auto px-3 sm:px-4 pb-8 pt-2 text-center space-y-1.5">
+    <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+      Yuvarlak Masa bir tartışma ve düşünme aracıdır —
+      <strong class="font-semibold text-slate-600 dark:text-slate-300">yatırım, hukuk veya psikoloji tavsiyesi değildir</strong>;
+      ortaya çıkan sonuçlar yalnızca masadaki yapay zekâ karakterlerinin görüşleridir, son karar senindir.
+    </p>
+    <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+      Tartışmaya yazdıkların seçtiğin yapay zekâ hizmetlerine gönderilir (varsayılan: Pollinations);
+      "Araştırma" sonuçları için iddialar internette kaynak aranır.
+      "Sunucuda arşivle"yi açmadıysan mesajların, zarfların ve sonuçların sunucu arşivine kaydedilmez — arşiv kayıtların hepsi yalnızca bu tarayıcıda kalır.
+    </p>
+    <p class="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
+      Arşivi açarsan kayıtlar sunucuda saklanır ve yalnızca bu tarayıcının ürettiği gizli anahtarla okunur; anahtarını kaybedersen kayıtlara erişemezsin.
+    </p>
+  </footer>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: KENDİ KATILIMCINI KUR (G/H koltukları — varsayılan yalnızca   -->
+  <!-- bu tarayıcıda; istenirse mimarla paylaşılan kütüphaneye de kaydedilir)-->
+  <!-- =================================================================== -->
+  <div id="customSeatModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg fade-in">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base font-extrabold text-slate-900 dark:text-white">Kendi Katılımcını Kur</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Adını, rolünü ve nasıl düşüneceğini yaz; masaya G veya H koltuğunda otursun.</p>
+        </div>
+        <button id="closeCustomSeatBtn" type="button" aria-label="Kapat" class="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="customSeatForm" class="p-5 space-y-3">
+        <div>
+          <label for="csName" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Ad</label>
+          <input id="csName" type="text" maxlength="40" required placeholder="Örn: Emekli Denizci" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        <div>
+          <label for="csRole" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Rol</label>
+          <input id="csRole" type="text" maxlength="60" required placeholder="Örn: Uzun Vade Gözü" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        <div>
+          <label for="csBrief" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nasıl düşünsün? <span class="font-normal text-slate-400">(isteğe bağlı)</span></label>
+          <textarea id="csBrief" rows="3" maxlength="600" placeholder="Örn: Kısa vadeli kazanç yerine 10 yıllık huzur ve aile bütçesi gözetir; her tezde 'bunu kim öder?' sorusunu sorar." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"></textarea>
+        </div>
+        <label class="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+          <input id="csPersist" type="checkbox" class="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+          <span>YZ ile doldurulan tanımı paylaşılan karakter kütüphanesine de kaydet (işaretlenmezse tanım yalnızca bu tarayıcıda kalır)</span>
+        </label>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <button id="csArchitectBtn" type="button" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition inline-flex items-center gap-1.5">
+            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+            <span>YZ ile doldur</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <button id="csCancelBtn" type="button" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">Vazgeç</button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition">Masaya Ekle</button>
+          </div>
+        </div>
+        <p id="csStatus" class="text-[11px] text-slate-500 dark:text-slate-400 hidden"></p>
+      </form>
+    </div>
+  </div>
 
   <!-- =================================================================== -->
   <!-- MODAL: KOLAY API ANAHTARI & ÇOKLU SAĞLAYICI KURULUMU                -->
@@ -744,6 +820,55 @@
       envelopes: {}
     };
 
+    // ═══════════════════════════════════════════════════════════════════
+    // v2.7 GİZLİLİK — arşiv tercihi (varsayılan KAPALI) ve tarayıcıya
+    // özel sahiplik anahtarı. Arşiv kapalıyken sunucuya tek bir bayt bile
+    // yazılmaz; açıksa yazılan kayıtları yalnızca bu tarayıcının anahtarı okur.
+    // ═══════════════════════════════════════════════════════════════════
+    const ARCHIVE_KEY = "ym_archive_opt_v1";
+    const OWNER_TOKEN_KEY = "ym_owner_token";
+    const CUSTOM_SEATS_KEY = "ym_custom_seats_v1";
+
+    function archiveOn() {
+      try { return localStorage.getItem(ARCHIVE_KEY) === "1"; } catch (_) { return false; }
+    }
+    function setArchiveOn(v) {
+      try { localStorage.setItem(ARCHIVE_KEY, v ? "1" : "0"); } catch (_) {}
+    }
+    function ensureOwnerToken() {
+      let t = "";
+      try { t = localStorage.getItem(OWNER_TOKEN_KEY) || ""; } catch (_) { t = ""; }
+      if (!t) {
+        t = "owner_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        try { localStorage.setItem(OWNER_TOKEN_KEY, t); } catch (_) {}
+      }
+      return t;
+    }
+    function ownerFetch(url, opts) {
+      opts = opts || {};
+      opts.headers = Object.assign({}, opts.headers || {}, { "X-Owner-Token": ensureOwnerToken() });
+      return fetch(url, opts);
+    }
+    // Sunucuya yazma izni: arşiv açık olmalı VE oturum kimliği bulunmalı
+    function archiveWrites() {
+      return archiveOn() && !!state.sessionId;
+    }
+
+    // v2.7: kullanıcının kendi kurduğu katılımcılar (G/H — varsayılan yalnızca bu tarayıcıda)
+    function customSeats() {
+      try {
+        const v = JSON.parse(localStorage.getItem(CUSTOM_SEATS_KEY) || "[]");
+        return Array.isArray(v) ? v.filter(c => c && c.seat && c.name) : [];
+      } catch (_) { return []; }
+    }
+    function saveCustomSeats(list) {
+      try { localStorage.setItem(CUSTOM_SEATS_KEY, JSON.stringify(list || [])); } catch (_) {}
+    }
+    function nextCustomSeatLetter() {
+      const taken = customSeats().map(c => c.seat);
+      return ["G", "H"].find(L => taken.indexOf(L) === -1) || null;
+    }
+
     // =========================================================================
     // YARDIMCILAR
     // =========================================================================
@@ -775,8 +900,9 @@
     // Masadaki tüm katılımcılar: masa uzmanları (A-D) + Moderatör (E) + Nörodinamik Ajan (F)
     function activeSeatsList() {
       const base = currentTable().seats.filter(s => !state.disabledSeats.has(s.seat));
+      const custom = customSeats().filter(s => !state.disabledSeats.has(s.seat));
       const shared = SHARED_SEATS.filter(s => !state.disabledSeats.has(s.seat));
-      return [...base, ...shared];
+      return [...base, ...custom, ...shared];
     }
     // Tur atacak koltuklar (Moderatör ayrı fazlarda konuşur)
     function roundSeatsList() {
@@ -795,6 +921,11 @@
       "\nKESİN GERÇEKLİK KURALI: Güncel Türkiye faiz oranlarını, enflasyonu, döviz kurunu, asgari ücreti, kira/kredi yüzdelerini veya değişen mevzuat rakamlarını ASLA ezberden veya eski/yabancı verilere bakarak uydurma. Kullanıcının vermediği güncel bir oran gerekiyorsa kesin sayı uydurmak yerine oran/kural mantığıyla analiz yap (ör. taksit/gelir oranı, nakit yastığı ayı, maliyet-getiri farkı) ve gerekirse kullanıcıdan güncel oranı yazmasını iste.";
 
     function getExpertSystemPrompt(seatObj) {
+      if (seatObj && seatObj.prompt) {
+        // v2.7: kullanıcının kurduğu katılımcı — kendi yazdığı/ürettirdiği istem
+        const own = seatObj.prompt;
+        return own.includes("KESİN GERÇEKLİK KURALI") ? own : (own + TR_REALITY_RULE);
+      }
       const dbChar = state.charactersById[seatObj.id];
       const base = (dbChar && dbChar.system_prompt)
         ? dbChar.system_prompt
@@ -918,8 +1049,9 @@
     }
 
     function updateProviderBadges() {
-      const customCount = Object.values(state.seatStatus).filter(s => s.source === "personal").length;
       const lbl = document.getElementById("providerBtnLabel");
+      if (!lbl) return; // v2.7: başlıktaki API butonu kaldırıldı — rozet artık ayarlar panelinde
+      const customCount = Object.values(state.seatStatus).filter(s => s.source === "personal").length;
       if (customCount > 0) {
         lbl.textContent = `${customCount}/7 Kendi API'n`;
       } else {
@@ -1138,29 +1270,47 @@
       const activeCount = activeSeatsList().length;
       document.getElementById("expertsToggleLabel").textContent = `${activeCount} Katılımcı · Masa Ayarları`;
       const grid = document.getElementById("seatCardsGrid");
-      grid.innerHTML = tbl.seats.concat(SHARED_SEATS).map(s => {
+      grid.innerHTML = tbl.seats.concat(customSeats(), SHARED_SEATS).map(s => {
         const enabled = !state.disabledSeats.has(s.seat);
         const st = state.seatStatus[s.seat] || {};
-        const provLabel = st.provider_label || "Hazır AI";
-        return `
+        const provLabel = s.custom ? "Senin kurduğun katılımcı · hazır model" : (st.provider_label || "Hazır AI");
+        const card = `
           <label class="flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
             enabled
               ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
               : "bg-slate-50 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800 opacity-55"
-          }">
+          } ${s.custom ? "ring-1 ring-emerald-200 dark:ring-emerald-500/30" : ""}">
             <input type="checkbox" data-seat-toggle="${s.seat}" ${enabled ? "checked" : ""} class="seat-toggle mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full ${s.dot} shrink-0"></span>
                 <span class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(s.name)}</span>
                 <span class="text-[9px] font-extrabold px-1.5 py-px rounded border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 shrink-0" title="Bu katılımcı bir yapay zekâ karakteridir">YZ</span>
+                ${s.custom ? `<span class="text-[9px] font-extrabold px-1.5 py-px rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 shrink-0" title="Bu katılımcıyı sen kurdun; tanımı yalnızca bu tarayıcıda">SENİN</span>` : ""}
               </div>
               <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(s.role)}</p>
               <span class="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${escapeHtml(provLabel)}</span>
             </div>
-          </label>
-        `;
+          </label>`;
+        if (!s.custom) return card;
+        return `<div class="relative">${card}
+          <button type="button" data-seat-remove="${s.seat}" title="Bu katılımcıyı masadan kaldır" class="absolute top-2 right-2 p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>`;
       }).join("");
+
+      grid.querySelectorAll("[data-seat-remove]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const letter = btn.getAttribute("data-seat-remove");
+          saveCustomSeats(customSeats().filter(c => c.seat !== letter));
+          state.disabledSeats.delete(letter);
+          showToast("Özel katılımcı masadan kaldırıldı (tarayıcı kaydın da silindi).");
+          renderTableUI();
+        });
+      });
 
       grid.querySelectorAll(".seat-toggle").forEach(cb => {
         cb.addEventListener("change", () => {
@@ -1385,8 +1535,8 @@
           });
           const text = (res.content || "").trim();
           state.envelopes[s.seat] = { name: s.name, initial: text };
-          if (state.sessionId) {
-            await fetch("/api/envelope/seal", {
+          if (archiveWrites()) {
+            await ownerFetch("/api/envelope/seal", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1483,7 +1633,8 @@
           const kCfg = getPersonalSeatConfig("K") || getPersonalSeatConfig("A");
           const vrBody = {
             claim: cleanText.slice(0, 350),
-            session_id: state.sessionId || "",
+            session_id: archiveOn() ? (state.sessionId || "") : "",
+            persist: archiveOn(),
             seat: "K"
           };
           if (kCfg && kCfg.base_url && kCfg.api_key) {
@@ -1491,7 +1642,7 @@
             vrBody.api_key = kCfg.api_key;
             vrBody.model = kCfg.model || "";
           }
-          const vr = await fetch("/api/research/verify", {
+          const vr = await ownerFetch("/api/research/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(vrBody)
@@ -1524,8 +1675,8 @@
       userCard.bodyEl.textContent = `→ ${seatObj.name}: Daha detaylı anlatır mısın?`;
       state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: opPrompt });
       upsertCurrentSessionHistory();
-      if (state.sessionId) {
-        fetch("/api/session/record_message", {
+      if (archiveWrites()) {
+        ownerFetch("/api/session/record_message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: state.sessionId, seat: "OP", character_id: "operator", role: "operator", speaker_name: "Masa Başkanı", content: opPrompt })
@@ -1559,8 +1710,8 @@
         ui.bodyEl.textContent = cleanText;
         state.transcript.push({ seat: seatObj.seat, speaker: seatObj.name, role: seatObj.role, content: cleanText });
         upsertCurrentSessionHistory();
-        if (state.sessionId) {
-          fetch("/api/session/record_message", {
+        if (archiveWrites()) {
+          ownerFetch("/api/session/record_message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: state.sessionId, seat: seatObj.seat, character_id: seatObj.id, role: "seat", speaker_name: seatObj.name, content: cleanText })
@@ -1605,8 +1756,8 @@
         ui.bodyEl.textContent = cleanText;
         state.transcript.push({ seat: seatObj.seat, speaker: seatObj.name, role: seatObj.role, content: cleanText });
         upsertCurrentSessionHistory();
-        if (state.sessionId) {
-          fetch("/api/session/record_message", {
+        if (archiveWrites()) {
+          ownerFetch("/api/session/record_message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: state.sessionId, seat: seatObj.seat, character_id: seatObj.id, role: "seat", speaker_name: seatObj.name, content: cleanText })
@@ -1690,8 +1841,8 @@
           successCount += 1;
           if (s.neuro) attachNeuroState(ui);
 
-          if (state.sessionId) {
-            fetch("/api/session/record_message", {
+          if (archiveWrites()) {
+            ownerFetch("/api/session/record_message", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1765,8 +1916,8 @@
         if (clean) {
           state.transcript.push({ seat: "E", speaker: "Moderatör", role: `Operatör · ${phaseLabel}`, content: clean });
           upsertCurrentSessionHistory();
-          if (state.sessionId) {
-            fetch("/api/session/record_message", {
+          if (archiveWrites()) {
+            ownerFetch("/api/session/record_message", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ session_id: state.sessionId, seat: "E", character_id: "moderator", role: "moderator", speaker_name: "Moderatör", content: clean })
@@ -1873,8 +2024,8 @@
           verdictBody.textContent = cleanVerdict;
         }
         upsertCurrentSessionHistory(cleanVerdict);
-        if (state.sessionId) {
-          fetch("/api/session/conclude", {
+        if (archiveWrites()) {
+          ownerFetch("/api/session/conclude", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: state.sessionId, verdict: cleanVerdict, topic: state.activeQuestion })
@@ -1967,14 +2118,17 @@
       setRunningUI(true, "Masa toplanıyor...");
 
       try {
-        fetch("/api/session/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_id: state.sessionId,
-            topic: `[${tbl.label}] ${question}`
-          })
-        }).catch(() => {});
+        if (archiveOn()) {
+          fetch("/api/session/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_id: state.sessionId,
+              topic: `[${tbl.label}] ${question}`,
+              owner_token: ensureOwnerToken()
+            })
+          }).catch(() => {});
+        }
 
         if (document.getElementById("optEnvelope").checked && state.isRunning) {
           await runSealEnvelopes(question, seats.filter(s => s.seat !== "E"));
@@ -2075,8 +2229,8 @@
 
       state.transcript.push({ seat: "OP", speaker: "Masa Başkanı (Sen)", role: "Operatör", content: `[${labelPrefix} için] ${clean}` });
       upsertCurrentSessionHistory();
-      if (state.sessionId) {
-        fetch("/api/session/record_message", {
+      if (archiveWrites()) {
+        ownerFetch("/api/session/record_message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: state.sessionId, seat: "OP", character_id: "operator", role: "operator", speaker_name: "Masa Başkanı", content: clean })
@@ -2234,7 +2388,7 @@
           listEl.innerHTML = `
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-3">
               <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Henüz kayıtlı bir görüşmeniz yok.</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Karar Masası'nda başlattığın tüm görüşmeler yalnızca senin tarayıcında, gizli biçimde burada saklanır.</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Karar Masası'nda başlattığın görüşmeler varsayılan olarak yalnızca senin tarayıcında saklanır. "Sunucuda arşivle"yi açmadıysan hiçbir tartışmanın arşivi sunucuya yazılmaz.</p>
               <button type="button" id="goToDebateFromHistory" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition">
                 <i data-lucide="play" class="w-3.5 h-3.5"></i>
                 <span>Karar Masası'na Git</span>
@@ -2374,6 +2528,8 @@
         { seat: "D", title: "4. Uzman Koltuğu" },
         { seat: "E", title: "Moderatör (Operatör)" },
         { seat: "F", title: "Nörodinamik Ajan" },
+        { seat: "G", title: "Özel Katılımcı G (senin kurduğun)" },
+        { seat: "H", title: "Özel Katılımcı H (senin kurduğun)" },
         { seat: "K", title: "Karar Hakemi (Çıktı)" }
       ];
       const perSeatEl = document.getElementById("perSeatConfigList");
@@ -2511,11 +2667,11 @@
     const DEMO_SCRIPT = [
       {
         who: "mod",
-        text: "Gündem net: “Kendine ait bir hayat kurmak için mevcut düzenini bozmalı mısın?” Kurallar: her söz önceki söze yanıt verecek; kanıtsız kesin hüküm yok. İlk teyi Güvenli Bölge Planlayıcı açsın."
+        text: "Gündem net: “Kendine ait bir hayat kurmak için mevcut düzenini bozmalı mısın?” Kurallar: her söz önceki söze yanıt verecek; kanıtsız kesin hüküm yok. İlk sözü Güvenli Bölge Planlayıcı açsın."
       },
       {
         who: "plan",
-        text: "Önce bozma. 12 aylık gider tamponu kur, borcu kapat, sonra karar ver. Düzeni bir gecede bozanların çoğu ilk6 ay içinde geri dönmek zorunda kalıyor — istikrar bir tercih değil, sigortadır."
+        text: "Önce bozma. 12 aylık gider tamponu kur, borcu kapat, sonra karar ver. Düzeni bir gecede bozanların çoğu ilk 6 ay içinde geri dönmek zorunda kalıyor — istikrar bir tercih değil, sigortadır."
       },
       {
         who: "real",
@@ -2539,7 +2695,7 @@
       {
         who: "mod",
         reply: "↳ Masadaki çelişkileri görünür kılıyor",
-        text: "İki çelişki: (1) Planlayıcı 12 aylık tampon dedi, sen 3 aylık nakit verdin — Planlayıcı cevaplamadı. (2) Karşı Görüş “düzen senin mi” sorusuna yanıt beklemedi. Derinleştirme sorusu: Düzeni bozduğunda ilk6 ayın giderini hangi kesin gelir karşılayacak?"
+        text: "İki çelişki: (1) Planlayıcı 12 aylık tampon dedi, sen 3 aylık nakit verdin — Planlayıcı cevaplamadı. (2) Karşı Görüş “düzen senin mi” sorusuna yanıt beklemedi. Derinleştirme sorusu: Düzeni bozduğunda ilk 6 ayın giderini hangi kesin gelir karşılayacak?"
       },
       {
         who: "real",
@@ -2551,7 +2707,7 @@
     const DEMO_OUTCOME = `## ÖNE ÇIKAN ARGÜMANLAR
 - Temkin: 12 aylık tampon bir güvenlik şartı olarak sunuldu, ama masaya gider tablosu gelmedi.
 - Gerçekçilik: “Düzen içinde erime” maliyeti ilk kez düzene karşı bir argüman olarak kondu.
-- Çeleştirel açı: “Ne istediğini biliyor musun?” sorusu hiçbir tarafça cevaplanmadı.
+- Eleştirel açı: “Ne istediğini biliyor musun?” sorusu hiçbir tarafça cevaplanmadı.
 ## UZLAŞILAN NOKTALAR
 - Mevcut gider tablosu olmadan iki tarafın da kesin hüküm vermesi zayıf.
 - Hemen, hazırlıksız bir bozuculuk herkesçe riskli bulundu.
@@ -2737,7 +2893,6 @@
       m.classList.add("hidden");
       m.classList.remove("flex");
     }
-    document.getElementById("openProvidersBtn").addEventListener("click", openProvidersModal);
     document.getElementById("openProvidersInlineBtn").addEventListener("click", openProvidersModal);
     document.getElementById("clearAllLocalKeysBtn").addEventListener("click", () => {
       clearAllPersonalSeats();
@@ -2818,6 +2973,136 @@
     });
 
     document.getElementById("refreshHistoryBtn").addEventListener("click", loadHistory);
+
+    // ── v2.7: arşiv tercihi (varsayılan kapalı) ──
+    const optArchiveEl = document.getElementById("optArchive");
+    const archiveHintEl = document.getElementById("archiveHint");
+    function refreshArchiveHint() {
+      if (!optArchiveEl || !archiveHintEl) return;
+      archiveHintEl.textContent = optArchiveEl.checked
+        ? "Açık: mesajların, zarfların ve sonucun sunucuya yazılır; kayıtları yalnızca bu tarayıcının gizli anahtarıyla okuyabilirsin."
+        : "Kapalı (önerilen): tartışma yalnızca bu tarayıcıda kalır; sunucu arşivine hiçbir mesaj yazılmaz.";
+    }
+    if (optArchiveEl) {
+      optArchiveEl.checked = archiveOn();
+      refreshArchiveHint();
+      optArchiveEl.addEventListener("change", () => {
+        setArchiveOn(optArchiveEl.checked);
+        refreshArchiveHint();
+        showToast(optArchiveEl.checked
+          ? "Sunucu arşivi açıldı: kayıtlar yalnızca senin anahtarınla okunur."
+          : "Sunucu arşivi kapatıldı: arşiv kayıtların yalnızca bu tarayıcında kalır.");
+      });
+    }
+
+    // ── v2.7: kendi katılımcını kur (G/H koltukları) ──
+    const customSeatModal = document.getElementById("customSeatModal");
+    function openCustomSeatModal() {
+      const letter = nextCustomSeatLetter();
+      if (!letter) {
+        showToast("En fazla 2 özel katılımcı ekleyebilirsin (G ve H dolu).");
+        return;
+      }
+      document.getElementById("csName").value = "";
+      document.getElementById("csRole").value = "";
+      document.getElementById("csBrief").value = "";
+      document.getElementById("csPersist").checked = false;
+      const st = document.getElementById("csStatus");
+      st.classList.add("hidden");
+      st.textContent = "";
+      customSeatModal.classList.remove("hidden");
+      customSeatModal.classList.add("flex");
+      document.getElementById("csName").focus();
+    }
+    function closeCustomSeatModal() {
+      customSeatModal.classList.add("hidden");
+      customSeatModal.classList.remove("flex");
+    }
+    document.getElementById("addCustomSeatBtn").addEventListener("click", openCustomSeatModal);
+    document.getElementById("closeCustomSeatBtn").addEventListener("click", closeCustomSeatModal);
+    document.getElementById("csCancelBtn").addEventListener("click", closeCustomSeatModal);
+    customSeatModal.addEventListener("click", e => {
+      if (e.target.id === "customSeatModal") closeCustomSeatModal();
+    });
+
+    // YZ ile doldur: karakter mimarı (persist bayrağı açıkça seçili)
+    document.getElementById("csArchitectBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("csArchitectBtn");
+      const st = document.getElementById("csStatus");
+      const brief = document.getElementById("csBrief").value.trim();
+      const name = document.getElementById("csName").value.trim();
+      const role = document.getElementById("csRole").value.trim();
+      const seed = [name && `Ad: ${name}`, role && `Rol: ${role}`, brief && `Brief: ${brief}`]
+        .filter(Boolean).join("\n") ||
+        "Masaya kendi ekleyeceğim bir katılımcı; brief verilmedi, genel bir tartışma karakteri tasarla.";
+      btn.disabled = true;
+      st.classList.remove("hidden");
+      st.textContent = "YZ karakter mimarı çalışıyor…";
+      try {
+        const r = await fetch("/api/character/architect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: seed,
+            persist: document.getElementById("csPersist").checked === true
+          })
+        }).then(x => x.json());
+        const c = r && r.character;
+        if (!r || !r.ok || !c) {
+          st.textContent = "Mimar yanıt veremedi: " + ((r && r.error) || "bilinmeyen hata");
+          return;
+        }
+        if (!document.getElementById("csName").value.trim()) {
+          document.getElementById("csName").value = (c.name || "").slice(0, 40) || "Özel Katılımcı";
+        }
+        if (!document.getElementById("csRole").value.trim()) {
+          document.getElementById("csRole").value = (c.title || c.argument_style || "Özel Bakış").slice(0, 60);
+        }
+        if (c.system_prompt) document.getElementById("csBrief").value = String(c.system_prompt).slice(0, 600);
+        st.textContent = document.getElementById("csPersist").checked
+          ? "Profil hazır — tanım ayrıca paylaşılan karakter kütüphanesine de kaydedildi."
+          : "Profil hazır — tanım yalnızca bu tarayıcıya geldi (kütüphaneye yazılmadı).";
+      } catch (_) {
+        st.textContent = "Mimar servisi şu an yanıt veremedi; elle de doldurabilirsin.";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("customSeatForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const letter = nextCustomSeatLetter();
+      if (!letter) {
+        showToast("En fazla 2 özel katılımcı ekleyebilirsin (G ve H dolu).");
+        closeCustomSeatModal();
+        return;
+      }
+      const name = document.getElementById("csName").value.trim();
+      const role = document.getElementById("csRole").value.trim();
+      const brief = document.getElementById("csBrief").value.trim();
+      if (!name || !role) return;
+      const prompt = brief && brief.length > 120
+        ? `Sen masadaki "${name}" adlı katılımcısın. Rolün: ${role}. şu sistemine sadık kal: ${brief} Önceki sözlere doğrudan yanıt ver; 3-4 kısa, somut Türkçe cümleyle konuş; kesin hüküm kurmadan kanıt durumunu söyle.`
+        : `Sen Yuvarlak Masa'da oturan ${name} (${role}) katılımcısısın.${brief ? " " + brief : ""} Önceki konuşmacının kör noktasına doğrudan değin; 3-4 kısa, somut ve net Türkçe cümleyle konuş; kanıtsız kesin hüküm kurma. Kendi adını başa yazma.`;
+      const palette = {
+        G: { dot: "bg-teal-600", badge: "bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300" },
+        H: { dot: "bg-fuchsia-600", badge: "bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/15 dark:text-fuchsia-300" }
+      };
+      const list = customSeats();
+      list.push({
+        seat: letter,
+        id: "custom_" + letter.toLowerCase() + "_" + Math.random().toString(36).slice(2, 8),
+        name, role, prompt,
+        custom: true,
+        dot: palette[letter].dot,
+        badge: palette[letter].badge
+      });
+      saveCustomSeats(list);
+      state.disabledSeats.delete(letter);
+      closeCustomSeatModal();
+      showToast(`${name} ${letter} koltuğuna oturdu — yalnızca bu tarayıcında saklanır.`);
+      renderTableUI();
+    });
 
     // Başlat
     loadInitialData();
