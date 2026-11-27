@@ -322,6 +322,139 @@ def enqueue_feedback(
         return False
 
 
+def record_outcome(
+    character_id: str, session_id: str, outcome: Any, stance: str | None = None,
+    note: str = "",
+) -> Dict[str, Any]:
+    """Explicit real-world outcome of the user's decision: evidence, not a like.
+
+    Trains the evidence-namespace predictor and stores a backtest row whose
+    `expectation` is captured BEFORE the observation. Subjective ratings go
+    through enqueue_feedback and never reach this path (Faz 4 separation).
+    """
+    import engine
+    value = _validate_observed_reward(outcome)
+    if value is None:
+        raise ValueError("outcome is required (explicit number in [0, 1])")
+    character_id = (character_id or "").strip()
+    session_id = (session_id or "").strip()
+    if not character_id or len(character_id) > 200:
+        raise ValueError("character_id must be 1-200 characters")
+    if not session_id or len(session_id) > 200:
+        raise ValueError("session_id must be 1-200 characters")
+    note = str(note or "")[:500]
+    key = (session_id, character_id)
+    with _LOCK:
+        agent = _AGENTS.get(key)
+        if agent is None:
+            agent = SeatCognitiveAgent("A")
+            _AGENTS[key] = agent
+            if len(_AGENTS) > _MAX_AGENTS:
+                _AGENTS.popitem(last=False)
+        _AGENTS.move_to_end(key)
+        chosen = stance if stance in STANCE_DEFINITIONS else agent._last_stance
+        with closing(engine.get_db()) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS neuro_evidence_estimates_v1 "
+                "(character_id TEXT PRIMARY KEY, estimates TEXT NOT NULL)"
+            )
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
+                "session_id TEXT NOT NULL, stance TEXT NOT NULL, expectation REAL NOT NULL, "
+                "outcome REAL NOT NULL, note TEXT NOT NULL DEFAULT '', "
+                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+            )
+            row = conn.execute(
+                "SELECT estimates FROM neuro_evidence_estimates_v1 WHERE character_id=?",
+                (character_id,),
+            ).fetchone()
+            agent.predictor.import_observations(json.loads(row[0]) if row else {})
+            st = agent.predictor.state(chosen)
+            expectation = float(st.expected_reward)
+            observations_before = int(st.observations)
+            evt = agent.predictor.observe(chosen, value)
+            conn.execute(
+                "INSERT INTO neuro_backtest_v1(character_id, session_id, stance, expectation, outcome, note) "
+                "VALUES (?,?,?,?,?,?)",
+                (character_id, session_id, chosen, expectation, value, note),
+            )
+            conn.execute(
+                "INSERT INTO neuro_evidence_estimates_v1(character_id, estimates) VALUES (?, ?) "
+                "ON CONFLICT(character_id) DO UPDATE SET estimates=excluded.estimates",
+                (character_id, json.dumps(agent.predictor.export_observations())),
+            )
+    return {
+        "ok": True,
+        "learning": True,
+        "source": "explicit_outcome",
+        "character_id": character_id,
+        "session_id": session_id,
+        "stance": chosen,
+        "expectation": round(expectation, 6),
+        "outcome": value,
+        "prediction_error": round(float(evt.prediction_error), 6),
+        "observations_before": observations_before,
+        "observations_after": observations_before + 1,
+        "note": note,
+    }
+
+
+def evaluate_backtest(character_id: str | None = None, limit: int = 50) -> Dict[str, Any]:
+    """Backtest: recorded expectations vs later explicit outcomes (evidence only)."""
+    import engine
+    try:
+        limit = max(1, min(int(limit or 50), 200))
+    except (TypeError, ValueError):
+        limit = 50
+    with closing(engine.get_db()) as conn, conn:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
+            "session_id TEXT NOT NULL, stance TEXT NOT NULL, expectation REAL NOT NULL, "
+            "outcome REAL NOT NULL, note TEXT NOT NULL DEFAULT '', "
+            "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        )
+        if character_id:
+            rows = conn.execute(
+                "SELECT character_id, session_id, stance, expectation, outcome, note, created_at "
+                "FROM neuro_backtest_v1 WHERE character_id=? ORDER BY id DESC LIMIT ?",
+                (character_id, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT character_id, session_id, stance, expectation, outcome, note, created_at "
+                "FROM neuro_backtest_v1 ORDER BY id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+    items = [dict(r) for r in rows]
+    count = len(items)
+    mae = baseline_mae = None
+    by_stance: Dict[str, Dict[str, Any]] = {}
+    if count:
+        mae = sum(abs(i["expectation"] - i["outcome"]) for i in items) / count
+        baseline_mae = sum(abs(0.5 - i["outcome"]) for i in items) / count
+        for i in items:
+            b = by_stance.setdefault(i["stance"], {"count": 0, "mae_sum": 0.0})
+            b["count"] += 1
+            b["mae_sum"] += abs(i["expectation"] - i["outcome"])
+        by_stance = {
+            k: {"count": v["count"], "mae": round(v["mae_sum"] / v["count"], 6)}
+            for k, v in by_stance.items()
+        }
+    return {
+        "ok": True,
+        "count": count,
+        "mae": round(mae, 6) if mae is not None else None,
+        "baseline_mae": round(baseline_mae, 6) if baseline_mae is not None else None,
+        "skill_vs_baseline": (round(baseline_mae - mae, 6) if mae is not None else None),
+        "by_stance": by_stance,
+        "recent": items,
+        "note": "Yalnızca açık sonuç geri bildirimleri (kanıt) değerlendirilir; beğeniler dahil edilmez.",
+    }
+
+
 def get_all_states() -> Dict[str, Dict[str, Any]]:
     with _LOCK:
         return {f"{session}:{character}": agent.snapshot()

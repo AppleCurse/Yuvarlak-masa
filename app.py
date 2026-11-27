@@ -1590,6 +1590,27 @@ async def neuro_feedback(payload: dict):
         "note": "Öznel geri bildirim kaydedildi; kanıt olmadığı için öğrenmede kullanılmaz.",
     }
 
+@app.post("/api/neuro/outcome")
+async def neuro_outcome(payload: dict):
+    """Açık gerçek sonuç (kanıt) → tahmin eğitimi + geriye değerlendirme. Beğeni değildir."""
+    try:
+        res = neuro_bridge.record_outcome(
+            payload.get("character_id", ""),
+            payload.get("session_id", ""),
+            payload.get("outcome"),
+            payload.get("stance"),
+            payload.get("note", ""),
+        )
+    except (TypeError, ValueError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    res["note_tr"] = "Sonuç açık geri bildirim olarak kaydedildi; bu bir beğeni değil, kanıttır."
+    return res
+
+@app.get("/api/neuro/backtest")
+async def neuro_backtest_endpoint(character_id: str = "", limit: int = 50):
+    """Tahminlerin geriye değerlendirilmesi: beklenti × açık sonuç (kanıt)."""
+    return neuro_bridge.evaluate_backtest(character_id or None, limit)
+
 @app.get("/api/neuro/state")
 async def neuro_state_endpoint():
     return {"ok": True, "seats": neuro_bridge.get_all_states()}
