@@ -1,224 +1,178 @@
-# YUVARLAK MASA (KONSÜL AI)
-### Çoklu Yapay Zeka, Gerçek İnsan Karakter Simülasyonu ve Açık Oturum Platformu
+# YUVARLAK MASA
 
-Yuvarlak Masa; birbirinden bağımsız yapay zeka modellerini veya kullanıcının sıfırdan tanımladığı kanlı canlı insan profillerini aynı müzakere masasında buluşturan, profesyonel karar alma, felsefi denetim ve açık oturum istasyonudur.
+### İnsanın getirdiği mesele üzerinde farklı zekâlar birlikte düşünsün; insan yön versin; sonunda gerekçeli bir karar çerçevesi çıksın.
 
-Sistemde sıradan asistan kalıpları, yapay nezaket cümleleri veya hazır chatbot şablonları bulunmaz. Masaya oturan her delege; yaşı, mesleki formasyonu, inancı, fikir katılığı (at gözlüğü) ve kırmızı çizgileriyle yaşayan gerçek bir insan kimliğini benimser. Persona Guard (v2) sızıntıları yalnızca **kendini-tanımlama** kalıplarında yakalar, metnin markdown yapısını korur ve konusal ifadeleri (masada AI'dan bahsetmek) sansürlemez.
+Yuvarlak Masa bir "cevap makinesi" değildir. Bir soruyla gelirsin; masada farklı uzmanlıklar ve farklı yapay zekâlar birbirinin sözünü kesmeden, doğrudan birbirine yanıt vererek tartışır; sen müdahale edersin; sonunda **iddiaları, anlaşmazlıkları ve bilinmeyenleri açıkça gösteren** bir karar çıktısı alırsın.
 
-> **Denetim & Yol Haritası:** Bu depoda `DENETIM_RAPORU.md` bulunur — kanlı kod bulguları, güvenlik kilidi ve Faz 2/3 vizyonu (Mühürlü Zarf + İkna Deltası, İç Ses Modu, Arşiv Odası, Sesli Masa…).
+Masada dört unsur var:
 
----
-
-## ⏱️ İlk 5 dakika (v1.3)
-
-1. `python app.py` ile sunucuyu başlatın — tarayıcı kendisi açılır.
-2. Açılan **3 adımlı rehber** ne yapmak istediğinizi sorar: tartıştırın, karşılaştırın ya da karar özeti çıkarın.
-3. Bilmediğiniz terim mi var? Üstteki **SÖZLÜK** düğmesi (veya odalardaki ⓘ) 13 terimi sade dille açıklar.
-4. Konuyu yazın, sandalye sayısını seçin (2–8), **Tartışmayı Başlat** deyin. Ne olup bittiğini **işlem günlüğü** satır satır söyler.
-
-### Gerçek mi, demo mu?
-
-| Ekran | Anlamı |
+| unsur | Rolü |
 |---|---|
-| `GERÇEK MODEL · <model> @ <uç>` | Yanıtlar gerçek modelden geliyor, arşive yazılıyor. Her sözün başında `model @ uç` etiketi var. |
-| `DEMO · GERÇEK MODEL YOK` + sarı bant | Yanıtlar **örnek metindir**, arşive **yazılmaz**. Sözlerde `DEMO` rozeti var. |
-| `SUNUCU YOK` | `app.py` çalışmıyor. Sahte yanıt üretilmez; dürüst hata gösterilir. |
+| **Sen (İnsan)** | Masanın sahibi: soruyu getirirsin, katılımcı seçersin, müdahale edersin, yön verirsin. |
+| **Diğer yapay zekâlar** | Farklı bakış açıları: birbirini tekrar etmez, doğrudan yanıt verir, gerekçe savunur, gerektiğinde fikrini değiştirir. |
+| **Nörodinamik Ajan** | Ürünün özgün zekâsı: kendi bilişsel durumu (enerji, yorgunluk, belirsizlik) ve belleğiyle konuşur; her model çağrısına bilişsel direktifi gerçekten eklenir. |
+| **Hakem** | Tartışmayı özetleyen dekor değil; görüşleri değil **gerekçeleri** değerlendiren, belirsizliği saklamayan karar sentezi. |
 
-### Neyi ciddiye almalı?
+> **Yol haritası ve doğrulanmış durum tablosu:** [`FAZ0_DURUM_RAPORU.md`](FAZ0_DURUM_RAPORU.md) — 8 fazlık plan, hangi fazın ne durumda olduğu ve kanıtları. Denetim geçmişi: [`DENETIM_RAPORU.md`](DENETIM_RAPORU.md), güvenlik: [`GUVENLIK_NOTU.md`](GUVENLIK_NOTU.md).
 
-| Çıktı | Statüsü |
+---
+
+## 👁️ Ziyaretçi ne görüyor? (ana sayfa — `/`)
+
+1. **Demo sahnesi** — Sayfa açılır açılmaz örnek bir tartışma kendiliğinden oynar (8 söz, DEMO rozeti, YZ KARAKTER / İNSAN etiketleri). Bu **örnek metindir, canlı model değildir, hiçbir yere yazılmaz**; ürünün çalışma biçimini gösterir.
+2. **3 adım** — Konunu belirle → Masanı kur → Tartıştır & müdahale et.
+3. **Kendi konunu yaz** — Soru kartına yazarsın veya hazır senaryolardan seçersin.
+4. **Masayı kur** — Önerilen katılımcıları açıp kapatabilir, **"+ Kendi katılımcını ekle"** ile ad/rol/tanım yazıp G veya H koltuğuna oturtabilirsin (istersen YZ mimarıyla doldurursun — tanım varsayılan olarak **yalnızca senin tarayıcında** kalır).
+5. **Tartışmayı izle ve müdahale et** — Her söz önceki söze bağlanır; "Masaya Müdahale Et" çubuğundan yazabilir, bir koltuğa sorabilir, tur sürdürabilir, karar özetini yenileyebilirsin.
+6. **Gerekçeli çıktı** — 7 bölümlük değerlendirme: öne çıkan argümanlar, uzlaşılan noktalar, görüş ayrılıkları, **doğrulanamamış iddialar**, riskler, eksik bilgiler, olası karar yolları — ve gerektiğinde açık açık **"bu bilgiyle kesin karar verilemez"** der.
+7. **Geçmiş** — Görüşmelerin varsayılan olarak **yalnızca bu tarayıcında** saklanır.
+
+Ayrıca: **Kör Jüri** sekmesi (modeller birbirini görmeden aynı soruya yanıt verir, hakem kimliksiz değerlendirir) ve eski tam konsol **`/classic`** (kapsamlı klasik arayüz — arşiv uçları eskisi gibi token'sız çalışır).
+
+---
+
+## 🔒 Gizlilik ve güvenlik (ne söz veriyoruz, neyi teknik olarak kanıtladık)
+
+| Söz | Nasıl sağlanıyor |
 |---|---|
-| Konsey sözleri, jüri yanıtları | Gerçek model çıktısı (demo değilse) — ama yine de model sözüdür, kanıt değildir. |
-| Karar özeti, kör değerlendirme, ikna deltası, başhakem hükmü | **Model değerlendirmesi** — bağımsız doğrulama yok; ekranda da böyle yazar. |
-| `KAYNAK YOK — DOĞRULANMADI` hükmü | Araştırma ajanı kaynak bulamadı — iddia doğrulanmış sayılmaz. |
-| Mühürlü zarf SHA-256 mührü | Yalnız **metin bütünlüğü** — kimlik veya doğruluk kanıtı değil. |
-| Demo modundaki her şey | Örnek metin — hiçbir hükmü yok, arşive yazılmaz. |
+| **Arşiv varsayılan KAPALI** | "Sunucuda arşivle" işaretlenmeden start/record/conclude/zarf/araştırma kayıtlarının **hiçbiri** sunucuya yazılmaz (jsdom testi 23 ile kanıtlı: 0 yazma). |
+| **Arşiv açılsan bile yalnızca senin** | Her oturum için tarayıcıda gizli anahtar üretilir; sunucuya özeti (sha256) gider. Yanlış/eksik anahtarla okuma-yazma **403**. |
+| **Kilitsiz (eski/classic) kayıtlar** | Token'sız erişim korunur — eski konsol bozulmaz. |
+| **Oturum devralma yok** | Bilinen oturum numarasıyla tekrar açmak sahipliği değiştiremez, kilidi silemez (PR #16). |
+| **Hayalet oturuma yazma yok** | Olmayan oturum kayıtları **404** (PR #16). |
+| **Özel oturum ortak hafızaya sızmaz** | Kilitli oturumların konusu/kararı karakter hafızasına damıtılır (PR #16). |
+| **API anahtarların** | Yeni arayüzde anahtarın **sunucuya hiç gitmez**, yalnızca kendi tarayıcında durur. (Eski sunucu-kasa özelliği düz metin saklar — yeni arayüz kullanmaz.) |
 
-> Güvenlik notu: API'de giriş koruması yoktur ve anahtarlar düz metin SQLite'ta durur. Ayrıntı: `GUVENLIK_NOTU.md`. Dış ağa açmayın; varsayılan `127.0.0.1` en güvenli seçenektir.
-
----
-
-## 🏛️ Çalışma Odaları (7)
-
-### 1. Ana Müzakere Masası (Konsey Arenası)
-* 5 bağımsız sandalye + 1 İnsan Operatör koltuğu.
-* Kullanıcı ister hazır modelleri, ister kendi oluşturduğu insan karakterlerini (Karakter Kütüphanesi'nden bir tıkla) karşı karşıya oturtur.
-* Katılımcılar önceki konuşmaları analiz ederek sırayla tez üretir, karşı argüman geliştirir.
-* **İtiraz Motoru:** Her sözdten sonra bir hakem modeli, masadakilerin kırmızı çizgilerinin tetiklenip tetiklenmediğini tartar; operatör "Sözü Ver" ile sıra hakkını devredebilir.
-* **İç Ses Modu (Director's Cut):** Her sözün ardından aynı model, izole bir geçişte *masadaki kimsenin duymadığı* 1-2 cümlelik iç monolog üretir; kırmızı kesikli blok olarak mesajın altında durur, tek toggle ile kapatılır. Demo modda sahte iç ses üretilmez.
-* **Gerilim Metresi:** İtiraz hakemi her taramada masanın ısısını da 0-100 ölçer; sağ konsolda canlı gauge olarak akar (mavi → amber → kırmızı).
-* **Yakınsama Radarı:** Tam her tur bitince 5 sandalyenin pozisyon örtüşmesi hakem modeliyle 0-100 puanlanır (yanıt yoksa mekani̇k çift-benzerlik); tur tur sparkline ile izlenir.
-* **İddia Defteri:** Her model mesajının altında "🔍 İDDİAYI DOĞRULA" — canlı web araştırma ajanı (Hakem kanalı) iddiayı tarar; tam kaynaklı rapor deftere, tutanağa darbe vuran hüküm düşer.
-* **Zorunlu Oylama (Başkan Yetkisi):** Operatör tek tuşla beş delegeden *0-10 puan + tek kelime pozisyon + 1 cümle gerekçe* ister; şerit canlı dolar, 5/5 oyla ortalama ve çoğunluk kelimesi tutanağa geçer.
-* **Oturumu Kapat & Hatırlat:** Hakem modeli resmî **karar metni** dökülür; karar oturuma damgalanır ve beş karakterin *Yaşayan Hafıza*'sına damıtılır (bir sonraki oturumda "geçen oturumda…" diye atıfta bulunurlar).
-* **Karar Raporu & Muhalefet Şerhleri (Faz 3):** "⚖ KARAR RAPORU & ŞERHLER" — Başhakem, Türk kurum kültüründeki resmî karar raporları üslubunda 8 bölümlü belgeyi döküyor (GÖREV / SÜREÇ / **KANIT RAPORU — İddia Defteri'nden beslenir** / KARAR / **MUHALEFET ŞERHLERİ** / EYLEM PLANI / BAŞARI METRİKLERİ / RİSK KAYDI). Kararın gerekçesiyle çelişen her sandalye **kendi sesiyle** resmî şerh yazar (paralel, izole çağrılar). Belge `SHA-256` parmak izi + 5 sandalye mührü + başkan onayıyla imzalanır, arşive yazılır, `.md` indirilir.
-* **Sesli Masa (Faz 3):** Ses tamamen tarayıcıda üretilir (Web Speech API — harici TTS servisi yok, sunucuya ses gitmez). Her mesajda `🔊` tek söz okuma; konsoldaki **CANLI SES** ile sözler bitince karakterin kendi sesiyle otomatik akar; her sandalyeye modalda kalıcı ses ataması + `🎭 SESLİ TANITIM` (5 koltuk kendini tanıtır); operatör barındaki `🎙` ile sesli komut (tr-TR dikte) müdahale kutusuna dökülür.
-* **Zaman Makinesi (Faz 3b):** Konsolun altındaki sinematik şerit, tutanağın her sözünü bir kareye çizer (renk = sandalye; yükseklik = söz uzunluğu; tur ayracı her 5 sözde). Kareye tıklamak konsolu o ana *geri sarar*: "SÖZ i/n · konuşmacı · saat · tur" çubuğuyla kare kare (◀ ▶) gezinilir, `ŞİMDİYE DÖN` ile anında bugün. Geçmişte gezinirken yeni söz gelirse masa otomatik olarak şimdiki zamana sarılır.
-* **Başkan Kontrolleri (Faz 3b):** Operatör artık masanın gerçek başkanına dönüyor — her konuşmacı satırında `🔇 SESSİZE AL` (sıradaki söz hakkı atlanır, tek tıkla geri açılır), sandalye modalında `⛔ OTURUMDAN İHRAÇ ET` (aktif oturumda; modal açık kalır ki karakter kütüphanesinden yenisini oturtsun, `↻ GERİ OTURT` ile affedilir) ve konsoldaki `⚡ SÖZÜ KES` (streaming söz yarıda kesilir, operatör müdahalesi tutanağa damgalanır).
-* **Güvenirlilik Rozeti (Faz 3b):** Her sözün iç ses geçişinde model, söylenenle hissedilenin uyumunu 0-100 puanlar; sandalye satırındaki `GÜV` rozeti bu son puanı taşır (kırmızı < 40 ikiyüzlülük alarmı, amber < 70, yeşil dürüst).
-* **Söz Süresi Kısıtı — K6 (Faz 6):** Gündem panelindeki **SÖZ SÜRESİ (SN)** seçicisiyle (KAPALI/30/60/90/120) başkan, her model sözünün azami süresini koyar; seçim kalıcıdır (localStorage). Süresi dolan söz `⏱ [SİSTEM: söz N sn süre kısıtında kesildi]` damgasıyla tutanağa düşer — operatör müdahalesi değildir, masa kuralıdır: **otomatik paslaşma süre kesmesinden sonra devam eder** (operatörün ⚡ SÖZÜ KES / ■ Durdur'u zinciri durdurmaya devam eder).
-* **Bağlam Bütçesi (Faz 6):** Model her turda *sınırsız* tutanak almıyordu — artık her söz için **kayan pencere** (son 14 dolu kayıt + konu; kırpma varsa tutanağa `[SİSTEM NOTU: İlk N söz pencere dışında]` işlenir). Sentez ve karar raporu için tek atımlık malzemede **karakter bütçesi** (baş + kuyruk korunur, ortası marker'la işaretlenir). UI (konsol, zaman makinesi, film şeridi, arşiv) tam tutanağı kullanmaya devam eder.
-* **Dinamik Masa — 2–8 Koltuk (Faz 4):** Masa artık sabit 5 değil: sağ paneldeki **MASA KOLTUKLARI** seçicisiyle 2–8 yapay zeka koltuğu (A–H) kurulur; seçim kalıcıdır (localStorage). Yeni koltuklarda hazır karakterler: **F = Frank Abagnale Jr.** (Efsane Sahtekâr), **G = Prof. Dr. İlber Ortaylı** (Tarihçi), **H = Nelson Mandela** (Uzlaşma Mimarı); hakem koltuğu artık **K** anahtarında. Koltuk sayısına uyan her şey: söz sırası (tur = N söz), holografik masa ve delege kartları (sütun sayısı dahil), zorunlu oylama, mühürlü zarf (N zarf), kör jüri (ilk 5 koltuk, üst sınır 5), karar raporu mührleri, sesli tanıtım, zaman makinesi tur ayraçları ve yakınsama radarı. Karakter kütüphanesindeki "sandalyeye oturt" butonları da aktif koltuklara göre üretilir.
-* **Müdahale Taktikleri:** Operatör çubuğundan hazır operatör sözleri (delil iste, çelişkiyi vur, uzlaşma çağrısı, 5 modele meydan oku).
-* Otomatik paslaşma: 1/2/3/5 tur; tek tek söz verme modu.
-* Operatör müdahaleleri artık `record_message` ile tutanağa da yazılır — arşiv ve film şeridi tam sürüktür.
-
-### 2. Kör Jüri İstasyonu (2.0)
-* Jüri, konseyin **ilk 5 koltuğunu** (2–8 koltuklu masada da üst sınır 5) kullanır; modeller birbirini ne görür ne duyar, aynı soruya **izole kanallardan** paralel, anonim yanıt verir.
-* **Kör Değerlendirme (2.0):** Başhakem, yanıtları adlandırılmış halde (*JÜRİ 1..5*, her çalıştırmada yeniden karılır; isim metinden soyulur) okur ve **yalnız argüman niteliğine** bakarak sıralama + en güçlü/zayıf argümanlar + sentez raporlar. Rapor bitince **Kimlik Açılışı** şeridi hakemin bilmediği eşlemeyi gösterir.
-* **Operatörün Kör Oyu (Faz 5):** Operatör, jüriyi çalıştırmadan önce kendi konumunu (≥30 karakter) panele yazıp **`✉ MÜHÜRLE → JÜRİ N+1`** ile mühürler. Tarayıcıda `SHA-256` parmak izi alınır; metin `localStorage`'da kalır ama jüriye **yalnızca karışım işlemi** onu `JÜRİ 1..N+1` etiketli bir katılımcı olarak sokar — model adı, "operatör/insan" ipuçları metinden soyulur. Hakem, insan oyu olduğunu *bilemez* (kör). Yanıtlar dökülmüşse mühür **GEÇ OY** damgası alır (yine de karışıma girer, dürüstlük etiketiyle); soru değişirse mühür bu çalıştırmaya girmez. Kimlik açılışında insan koltuğu `👑 OPERATÖR — İNSAN KOLTUĞU` çipiyle işaretlenir.
-* **Kazanan/Kaybeden Diff (Faz 5):** Raporun `## SIRALAMA` bölümünden kazanan (1) ve kaybeden (son) çıkarıldıktan sonra (bozuk/eksik sıralamada "ilk/son listede" güvenle geri düşer), Başhakem ikisinin tam metnini okuyup dört bölümlü bir diff dökümler: **EN BÜYÜK FARK / KAZANANIN YAPTIĞI / KAYBEDENİN EKSİĞİ / DÖNÜŞÜM ÖNERİSİ** (kaybedenin metnini kazananın standardına taşıyacak somut düzenlemeler). Operatör kazandıysa `👑 Operatörün kör oyu kazandı!`, kaybettiyse *hangi argümanların geride bıraktığı* vurgulanır.
-* Yanıtlar Sentez Odası'na tek tıkla aktarılır.
-
-### 3. Başhakem ve Karar Sentez Odası
-* Konsey tutanağını veya jüri yanıtlarını çeker; Hakem modeli üç eksende raporlar:
-  * **KONSENSÜS** — ortaklaşılan konular
-  * **ANLAŞMAZLIKLAR VE RİSKLER** — çelişkiler ve kanıt boşlukları
-  * **EYLEM PLANI VE NİHAİ KARAR** — bağlayıcı hüküm
-* **Sentez Kanıta Bağlanır (Faz 6, K5 tamamlama):** Konseyden çekilen sentezde İddia Defteri'nde kayıt varsa hakeme **KANIT DEFTERİ** bloğu enjekte edilir: doğrulanmış iddialara numaralarıyla atıf zorunlu (`[1], [2]…`), "KISMEN DOĞRULANDI/ÇÜRÜTÜLDÜ" iddialar güven seviyesiyle işlenir, defterde karşılığı olmayan kritik iddia **"kanıt boşluğu"** olarak işaretlenir.
-
-### 4. Karakter Kütüphanesi & Mimar Ajanı
-* 10 derin karakter dosyası hazır: Sülün Osman, Frank Abagnale Jr., Nikola Tesla, Baba Vanga, Nelson Mandela, Güç Radikali (Arketip), Prof. Dr. İlber Ortaylı, Niccolò Machiavelli, Sigmund Freud, Sokrates.
-* **Karakter Mimarı Ajanı:** "Kimi inşa etmek istiyorsunuz?" yazın — dünya görüşü, kırmızı çizgiler, tartışma üslubu ve tam sistem istemiyle zihinsel dosya üretir.
-* Her karttan karakter tek tıkla aktif koltuklara (A–H) veya Hakem sandalyesine (K) oturtulur — butonlar masa koltuk sayısına göre üretilir.
-
-### 5. Mühürlü Zarf & İkna Deltası (ürünün taç özelliği)
-* **Mühürleme:** Konsey başlamadan önce her sandalye, diğerlerinden habersiz **izole kanaldan** nihai pozisyonunu + tek kelimesini yazar; zarf `SHA-256` ile mühürlenir (zaman damgalı, değiştirilemez). Zarf sayısı Masa 01'deki koltuk sayısına (2–8) otomatik uyarlanır.
-* **Açılış töreni:** Konsey bitince "Zarfları Aç" — 5 zarf aynı saniyede açılır, mühürlü ve nihai pozisyonlar yan yana durur.
-* **İkna Deltası:** Hakem modeli her sandalye için **0-100 delta skoru**, **ikna eden sandalye** ve **tetikleyen kanıt/cümle**yi raporlar; ayrıca "kim → kimi" **İkna Haritası** çizilir. Model yanıt veremezse özellik ölmez: mekani̇k metin benzerliği (difflib) ile delta hesaplanır.
-* Akış: `✉ Mühürle` → Masa 01'de aynı konuyu tartış → `⚖ Aç` → `◆ İkna Deltası Hesapla`.
-
-### 6. Arşiv & Tutanak Odası
-* Tüm oturumlar yerel veritabanında birikir: konu, durum (AKTİF/KAPALI), kayıt sayısı, karar metni.
-* Konu filtresiyle tarayın; bir oturuma tıklayınca **tam tutanak** açılır — her sözün yanı sıra damıtılmış **iç ses** katmanı ve itiraz bağları da görünür.
-* `⬇ MARKDOWN İNDİR` tutanağı tek dosya olarak kaydeder; `↻ MASAYA TAŞI` konuyu Masa 01'e geri koyar (karakterler Yaşayan Hafızalarıyla döner).
-* **Film Şeridi (Faz 3b):** `🎬 FİLM ŞERİDİ (.html)` — oturumu sinematik, tek dosyalık bir `.html` film olarak dışa aktarır: açılış kartı (konu + dosya numarası), her söz için tam ekran sayfa (sandalye rengi dev harfi, konuşmacı şeridi, markdown gövde, kırmızı kesikli **iç ses** bloğu), resmî karar raporu sayfası (SHA-256 bandıyla) ve jenerik. Dosya internetsiz açılır; `Ctrl+P` ile her sayfa ayrı sayfaya basar.
-
-### 7. Sıfır Sığınak — Arena 1v1 (Faz 3b)
-* İki sandalye seçilir (A ve B, farklı karakterler), bir **iddia** yazılır, salvo sayısı 1/2/3/5 belirlenir.
-* Düello protokolü: **A "iddia GEÇERSİZ"i, B "iddia GEÇERLİDİR"i** savunur; her salvo, rakibin *önceki sözünü adıyla ve içeriğiyle* çürütmek zorundadır (anti-tekrar kuralları istemde sabittir), 60-120 kelime, birinci şahıs, tam persona.
-* Salvolar gerçek zamanlı akar (A→B), `■ KES` düellosunu her iki kanaldan da anında durdurur.
-* Bitişte **Başhakem** (H sandalyesi) düello tutanağını okuyup `⚖ BAŞHAKEM HÜKMÜ` döküyor: **KAZANAN** (A/B) · **EN GÜÇLÜ DARBE** · **EN ZAYIF AN** · **NİHAİ HÜKMÜ**. Kazanan sandalye altın çerçeveye, kaybeden soluklaşır.
-* Düello `arena_…` dosya numarasıyla arşive yazılır — Masa 06'da film şeridine de dökülebilir.
-* Masanın **Küskünlük Defteri (Faz 3b):** Oturum kapatılırken (Masa 01 "Oturumu Kapat") hakem modeli tutanağı tarayıp kimin kiminle sert çeliştiğini JSON olarak çıkarır; her tarafla ilgili girdi *o karakterin* Yaşayan Hafıza'sının **rivalries** defterine damıtılır. Bir sonraki oturumda karakter, kişisel istem bloğundaki "KİŞİSEL HESAPLARIN" bölümünden bu kişileri *hatırlar* (nezaket kurallarıyla birlikte) — masada süreklilik ve dram doğar.
-
-### İçerik Politikası
-Tarihsel olarak hassas figürler (totaliter liderler, insanlık suçluları) **birinci şahıs bedenlemeyle seed edilmeyiz.** Bu tür briefler için Karakter Mimarı "analitik mesafe" arketipi üretir: tezi savunan, ancak şiddet/ırkçılık/nefret söylemi üretmeyen, kişilere hakaret etmeyen soyut bir zihniyet dosyası. Tam metin: [`CONTENT_POLICY.md`](CONTENT_POLICY.md) (Denetim raporu §3.6).
+**Uyarılar:** Ürün bir tartışma aracıdır — **yatırım, hukuk veya psikoloji tavsiyesi değildir.** Tartışmaya yazdıkların seçtiğin yapay zekâ hizmetlerine gider (varsayılan: Pollinations); sonuçlar model değerlendirmesidir, bağımsız doğrulama değildir. Sayfada bunların hepsi yazılıdır.
 
 ---
 
-## 👤 Karakter Profili Parametreleri (Kodda Gerçek Olanlar)
+## 🧪 Dürüstlük tablosu — ne gerçek, ne örnek, ne iddia
 
-1. **Kimlik:** İsim, yaş, şehir/köken, meslek/uzmanlık, medeni hal.
-2. **Dünya görüşü ve ahlaki pusula** (serbest metin).
-3. **Fikir Katılığı / At Gözlüğü (1–10):** 10'da karakter asla geri adım atmaz; pozisyon esnetme yalnızca "Gerekçe Köprüsü" kuralıyla (somut kanıt + kök değerlere sadakat).
-4. **Kırmızı çizgiler (irritants):** İtiraz motorunun girdisi.
-5. **Tartışma üslubu + kelime dağarcığı** (kütüphane karakterlerinde).
-6. **Anti-Meta Güvenlik Duvarı (Persona Guard v2):** Kendini-tanımlama sızıntıları cümle bazında elenir, yapı korunur; konusal ifadeler yalnız raporlanır.
-
-> **Faz 2'de geliyor:** MBTI + Big Five, bağlanma stili, iki katmanlı zihin (`content`/`inner`), oturumlar arası yaşayan hafıza.
-
----
-
-## 🔌 Desteklenen API ve Model Altyapısı
-
-Her sandalye bağımsız bir istemcidir; dilediğiniz sandalyeye dilediğiniz OpenAI-uyumlu uç atanabilir:
-
-| Preset | Tür | Varsayılan Uç | Anahtar |
-| :--- | :--- | :--- | :--- |
-| **9Router** | Yerel | `http://127.0.0.1:20128/v1` | Gerekmez |
-| **Ollama** | Yerel | `http://127.0.0.1:11434/v1` | Gerekmez |
-| **LM Studio** | Yerel | `http://127.0.0.1:1234/v1` | Gerekmez |
-| **OpenAI** | Bulut | `https://api.openai.com/v1` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| **DeepSeek** | Bulut | `https://api.deepseek.com/v1` | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
-| **Groq** | Bulut · ücretsiz katman | `https://api.groq.com/openai/v1` | [console.groq.com/keys](https://console.groq.com/keys) |
-| **OpenRouter** | Bulut · ücretsiz modeller | `https://openrouter.ai/api/v1` | [openrouter.ai/keys](https://openrouter.ai/keys) |
-| **Google Gemini** | Bulut · ücretsiz anahtar | `https://generativelanguage.googleapis.com/v1beta/openai/` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| **Pollinations** | Canlı & Ücretsiz | `https://text.pollinations.ai/openai` (anahtarsız) | Gerekmez |
-
-### 🔑 API anahtarı nasıl alınır? (v1.4 — herkes kendi anahtarıyla gelir)
-
-1. Sandalye ayarlarında (veya başlangıç rehberinin 2. adımında) sağlayıcıyı seçin.
-2. **ANAHTAR AL ↗** düğmesi sizi sağlayıcının anahtar sayfasına götürür — giriş yapıp yeni anahtar oluşturun, kopyalayın.
-3. Anahtarı **API Key** kutusuna yapıştırıp **Bağlantıyı Test Et** deyin (test anahtarla yapılır), sonra **Kaydet ve Uygula**.
-4. Aynı uç + anahtarı bütün masaya vermek için **"tüm sandalyelere uygula"** kutusunu işaretleyin.
-
-Anahtar tarayıcıda saklanmaz — sunucu kâsasına yazılır, arayüze yalnız `…son4` ipucu gösterilir.
-
-* **Canlı API Doğrulama:** Sandalye modali "Bağlantıyı Test Et" ile uca `GET /models` atar (kutuda anahtar varsa onunla), model listesini döndürür.
-* **Hız Sınırı (v1.4):** Model çağrısı yapan uçlarda IP başına dakikada 60 çağrı (`KONSUL_RATE_LIMIT_PER_MIN`, `0` = kapalı). Aşılırsa `429` + Türkçe mesaj + `Retry-After` döner.
-* **SSRF Kilidi (v1.1):** Proxy yalnızca http(s) uçları kabul eder; yerel (loopback/özel ağ) hedefler yalnızca `KONSUL_LOCAL_PORTS` (varsayılan `11434,1234,20128`) listesindeki portlarda izinlidir. Genişletme: `KONSUL_LOCAL_PORTS="11434,1234,20128,8080"` · Acil: `KONSUL_ALLOW_ALL_LOCAL=1`.
+| Şey | Statü |
+|---|---|
+| Canlı tartışmadaki model yanıtları | **Gerçek model çağrısı** (sunucu havuzu veya senin anahtarın). Yine de model sözüdür, kanıt değildir. |
+| Demo sahnesi | **Örnek metin** — canlı değil, arşive yazılmaz, her sözde DEMO rozeti taşır. |
+| Testlerdeki "canlı akış" | **Yerel mock yukarı akış** — kalite ölçümü için kullanılamaz. |
+| Nörodinamik bilişsel direktif | **Gerçek** — her model çağrısında sistem istemine eklenir, durum çipi gerçek veriyi gösterir. |
+| Nörodinamik predictor **eğitimi** | Kodda mekanizma var ama **eğitim yaptığı iddia edilmez**; kullanıcı puanları eğitim verisi sayılmaz. |
+| Hakem/çıktı | **Model değerlendirmesi** — ekranda da böyle yazar; "kesin karar" dayatmaz. |
+| İddia doğrulama (Araştırma) | Gerçek web araştırmasıdır; kaynak bulunamazsa **"doğrulanmadı"** der. |
 
 ---
 
-## 🎙️ Ses Altyapısı — Durum
+## 🚀 Kurulum ve çalıştırma
 
-* **Bugün:** Arayüz metin tabanlıdır.
-* **Faz 3 planı (denetim raporu §4.4):** `edge-tts` (anahtarsız, Türkçe) ile koltuk başına farklı ses + Web Speech API ile operatör STT → "YAYIN MODU". Bu bölümü gerçek olduğunda güncelleyeceğiz; iddia olarak bırakmayız.
-
----
-
-## 🚀 Kurulum ve Yerel Çalıştırma
-
-### Gereksinimler
-* Python 3.10+
-* `pip install fastapi uvicorn httpx` (veya `pip install -r requirements.txt`)
-* (Opsiyonel) Bir model ucu: Ollama / 9Router / LM Studio / bulut API anahtarı — hiçbir uç yoksa uygulama **demo simülasyon modu**nda açılır.
-
-### Çalıştırma
 ```bash
-python app.py
-# → http://127.0.0.1:8888 (tarayıcı otomatik açılır)
-```
-Windows için `baslat.bat` mevcut. Farklı host/port:
-```bash
-KONSUL_HOST=0.0.0.0 KONSUL_PORT=9000 python app.py
-```
-**Deploy (harici kullanıcılara servis):** [`DEPLOY.md`](DEPLOY.md) — Dockerfile + `fly.toml` + `docker-compose.yml` (Caddy/otomatik HTTPS) + `deploy.sh` ile tek komut VPS kurulumu, Fly.io ve Railway/Render adımları, yedek/güncelleme prosedürü.
-**Test paketi (regresyon):** `bash tests/run_all.sh` — tek komutla tam paket: `tests/dom/test6.js` (Faz 6: pencere/sentez/süre/kasa, 35) + `tests/dom/test7.js` (Faz 7: kâsa rozeti, 8) + `tests/e2e_vault.py` (canlı uvicorn + mock OpenAI, 17). e2e izole geçici DB kullanır (`KONSUL_DB_PATH`) — çalışan sunucunun veritabanına dokunmaz. Gerekli tek bağımlılık: `npm install jsdom --prefix tests` (otomatik de kurulur).
-**CORS (Faz 5):** Varsayılan olarak CORS tamamen kapalıdır (aynı-origin). Tarayıcıdan farklı bir origin'in API'yi kullanması gerekiyorsa beyaz listeyi env ile ver:
-```bash
-KONSUL_CORS_ORIGINS="http://localhost:3000,https://apam-domaini.example" python app.py
-```
-**API Anahtarları — Sunucu Kâsası (Faz 6, S2):** Anahtarlar artık tarayıcının `localStorage`'ında düz metin olarak **kalmaz.** Sandalye modalında girilen anahtar `POST /api/credentials` ile **sunucu tarafı kasaya** (`api_credentials` tablosu) yazılır; tarayıcı yalnızca koltuk anahtarını (`seat`) taşır ve her model çağrısında anahtarı kâsadan çözülür. UI yalnız maskeli ipucunu (`…son4`) gösterir; `GET /api/credentials` ham anahtarı asla döndürmez. Eski sürümden kalan `localStorage` anahtarları açılışta otomatik olarak kasaya göçürülüp tarayıcıdan silinir. Geliştirme için gövdeye açık anahtar göndermek hâlâ çalışır (geri uyum). Koltuk çiplerinde sunucu kâsasında anahtarı olan koltuklar **🔐** rozeti taşır (rozetin ipucunda `…son4` görünür; anahtar yönetimi sandalye modalındadır).
+# gereksinim: Python 3.10+
+pip install -r requirements.txt          # (PEP 668 hatası alırsan: python -m venv .venv && .venv/bin/pip install -r requirements.txt)
 
-### API Uç Noktaları (Görünür Yüzey)
+python run.py                            # → http://127.0.0.1:8888 (tarayıcı otomatik açılır)
+```
+
+Yararlı ortam değişkenleri:
+
+| Değişken | Anlamı |
+|---|---|
+| `KONSUL_PORT` / `KONSUL_HOST` | Port (varsayılan 8888) / arayüz |
+| `KONSUL_DB_PATH` | Veritabanı yolu (varsayılan `konsul.db`) |
+| `KONSUL_RATE_LIMIT_PER_MIN` | IP başına dakika sınırı (varsayılan 60; `0` = kapalı) |
+| `KONSUL_LOCAL_PORTS` | Proxy'nin erişebileceği yerel portlar (SSRF kilidi) |
+| `KONSUL_COMMIT` | Canlıda çalışan commit'i bildirir → `/api/health` |
+
+Modeller: sunucu havuzunda tanımlı sağlayıcılar (Groq vb.) yoksa **Pollinations** (anahtarsız) devreye girer. Kendi anahtarını ana sayfadaki **Ayarlar → "Koltuklara API Anahtarı Bağla"** ekranından bağlarsın — anahtar yalnızca senin tarayıcında saklanır.
+
+| Sağlayıcı | Tür | Anahtar |
+|---|---|---|
+| Groq · OpenRouter · Gemini | Ücretsiz katmanlar | [groq.com/keys](https://console.groq.com/keys) · [openrouter.ai/keys](https://openrouter.ai/keys) · [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| OpenAI · DeepSeek | Ücretli | platform sayfaları |
+| Pollinations | Ücretsiz, anahtarsız | gerekmez |
+| Ollama · LM Studio · 9Router | Yerel | gerekmez (`KONSUL_LOCAL_PORTS` içinde) |
+
+---
+
+## ✅ Testler (güncel sonuç)
+
+```bash
+bash tests/run_all.sh
+```
+
+| Paket | İçerik | Sonuç |
+|---|---|---|
+| jsdom ana sayfa | demo, sıra, yanıt işaretleri, **arşiv 0 yazma**, owner token, G koltuğu, uyarılar, yazım | **49/49** |
+| `test_archive_lock.py` | classic uyum, 403/404 kilitleri, liste filtresi, sha256, persist, **hafıza sızıntısı**, **devralma**, health işaretleri | **10/10** |
+| Nörodinamik | karakter/oturum izolasyonu, bellek sürekliliği | **11/11** |
+| E2E kâsa | gerçek uvicorn + mock upstream | **21/21** |
+| Hız sınırı | 429 + Retry-After | **Yeşil** |
+
+**Toplam: ✅ TÜM PAKET YEŞİL.** (Eski `tests/dom/test6,7,test_onboarding…` dosyaları v1.3 arayüzüne yazılmıştır; değişiklik öncesi de kırmızıydı, tarihçe için korunur — güncel kapsam `test_home_experience.js`.)
+
+---
+
+## 🌍 Canlı ortam ve sürüm doğrulama
+
+- **Platform: Railway** (esas). `main` dalına birleştirme otomatik dağıtır. Vercel kullanılmıyor.
+- Son dağıtımlar: **v2.6** (PR #14), **v2.7** (PR #15), **v2.7.1 güvenlik** (PR #16) → GitHub dağıtım kayıtlarında Railway production **başarılı**.
+- **Canlıda hangi sürüm çalışıyor?** Tek komut:
+  ```bash
+  curl https://yuvarlakmasa.com.tr/api/health
+  ```
+  - `features` listesi (`owner_lock, archive_opt_out, custom_seats, commit_report`) → sürüm en az **v2.7**.
+  - `commit` alanı → tam hash. Railway imajında `.git` olmadığı için bu alanın dolması için Railway → Variables'a `KONSUL_COMMIT=<sha>` eklenir; eklenmezse `unknown` der (özellik işaretleri yine yeterli kanıttır).
+
+---
+
+## 🗺️ Yol haritası (özet — ayrıntı `FAZ0_DURUM_RAPORU.md`)
+
+| Faz | Konu | Durum |
+|---|---|---|
+| 0 | Mevcut durumu mühürle | ✅ Bu rapor |
+| 1 | Gerçek muhakeme kalitesi (canlı konuşma üzerinde kanıtlı rapor) | ⏳ Koşullar raporda §5 |
+| 2 | Soru derinliği (aciliyet/risk/etkilenen seçicileri) | 🔜 |
+| 3 | Kullanıcı müdahalesi (delil, itiraz, etki görünürlüğü) | 🔜 (temel var) |
+| 4 | Nörodinamik Ajan'ın ölçülebilir farkı | 🔜 (mekanizma var) |
+| 5 | İlk adım + paylaşım + hatırlatma | 🔜 (çıktı var) |
+| 6 | Konu sayfaları (`/ev-mi-kira-mi`…) | — |
+| 7 | Güven: kaynak/yorum ayrımı, sürekli ölçüm | 🔜 (temel var) |
+
+**Sıra disiplini:** Önce Faz 0–1, sonra 2–3. Her fazda teslimat: incelenen/değişen dosyalar, test komutları ve sonuçları, canlı doğrulama durumu, tamamlanan/kısmen/açık işler.
+
+---
+
+## 📚 Sürüm geçmişi
+
+| Sürüm | PR | Ne getirdi |
+|---|---|---|
+| v2.7.2 | #17 (açık) | `/api/health` → `commit` + `features` canlı sürüm doğrulaması; README + Faz 0 raporu |
+| v2.7.1 | #16 | Oturum devralma, hayalet yazma, ortak hafıza sızıntısı kapatıldı |
+| v2.7 | #15 | Arşiv gizlilik kilidi, kendi katılımcını kur, başlık/uyarı düzeltmeleri |
+| v2.6 | #14 | İlk ekranda demo, 3 adım, karşılıklı akış, 7 bölümlü çıktı |
+
+---
+
+## 🔌 API (özet)
+
 | Yöntem | Yol | Görev |
 |---|---|---|
-| GET | `/api/health` | Sağlık + sürüm |
-| GET | `/api/ping?url=...` | Uç doğrulama + model listesi |
-| POST | `/api/chat` | Tek atış üretim (persona-filtreli); anahtar `seat` ile kâsadan çözülür |
-| POST | `/api/chat/stream` | SSE streaming üretim; anahtar `seat` ile kâsadan çözülür |
-| POST | `/api/credentials` | API anahtarını koltuk için **sunucu kâsasına** yazar (S2) |
-| GET | `/api/credentials` | Kâsa durumu — yalnız maskeli ipucu (`…son4`), ham anahtar asla |
-| DELETE | `/api/credentials/{seat}` | Koltuğun kâsadaki anahtarını siler |
-| GET | `/api/characters` | Karakter kütüphanesi |
-| GET | `/api/character/{id}` | Karakter + son hafıza girdileri |
-| POST | `/api/characters/save` | Karakter kaydet |
-| POST | `/api/character/architect` | Karakter Mimarı Ajanı |
-| POST | `/api/session/start` · `/record_message` · `/conclude` | Oturum yaşam döngüsü + karakter hafızası |
-| GET | `/api/sessions` | Arşiv listesi (yeni → eski, mesaj sayılı) |
-| GET | `/api/session/{id}/messages` | Oturum tutanağı |
-| POST | `/api/envelope/seal` | Zarf mühürle (SHA-256) |
-| GET | `/api/envelope/{session_id}` | Zarf durumu (mühürlü/açık) |
-| POST | `/api/envelope/open` | Zarfları aynı anda aç |
-| POST | `/api/delta/compute` | İkna Deltası (LLM analizi + mekani̇k fallback) |
-| POST | `/api/research/verify` | Canlı web doğrulama ajanı (İddia Defteri besler) |
-| POST | `/api/debate/evaluate_rebuttal` | İtiraz hakemi (+ 0-100 gerilim ölçümü) |
-| POST | `/api/convergence` | Yakınsama Radarı (LLM + mekani̇k fallback) |
-| GET | `/api/memory/{char_id}` | Yaşayan Hafıza: karakterin önceki oturum anıları (istem bloğu olarak biçimlenmiş) |
-| POST | `/api/memory/add` | Hafıza girdisi ekle (`entry` + `rivalries`) — Küskünlük Haritası bunu besler |
-| POST | `/api/session/report` | Karar raporunu (şerhli) oturuma damgala |
-| GET | `/api/session/{id}/report` | Oturumun en yeni karar raporu |
-| GET | `/api/reports` | Karar raporu arşivi (tam metinsiz) |
-| POST | `/api/persona/clean` | Persona Guard (temizle + raporla) |
+| GET | `/api/health` | Sağlık + `commit` + `features` |
+| POST | `/api/chat` · `/api/chat/stream` | Model çağrısı (SSE akış); bilişsel direktif eklenir |
+| POST | `/api/session/start` | Oturum aç (`owner_token` ile kilitli) — mevcut kayda dokunmaz |
+| POST | `/api/session/record_message` · `/conclude` | Tutanak yazımı — `X-Owner-Token` zorunlu (kilitliyse) |
+| GET | `/api/sessions` · `/api/reports` | Liste — token sahibi yalnızca kendi kayıtlarını görür |
+| GET | `/api/session/{id}/messages` · `/report` | Okuma — kilitliyse 403 |
+| POST | `/api/envelope/seal` · `/open` · GET `/api/envelope/{id}` | Mühürlü zarf — kilitli oturumlarda token zorunlu |
+| POST | `/api/research/verify` | Canlı web iddia doğrulama (`persist=false` ile arşive yazılmaz) |
+| POST | `/api/character/architect` | Karakter mimarı (`persist:false` = yalnızca bu tarayıcı) |
+| GET | `/api/characters` · `/api/memory/{id}` | Karakter kütüphanesi / yaşayan hafıza |
+| GET | `/api/providers` | Sağlayıcılar + koltuk durumları (A–H, K) |
+| GET | `/` · `/classic` | Ana sayfa · eski tam konsol |
 
-Veri yerelde `konsul.db` (SQLite, WAL) dosyasında tutulur.
+Ayrıntılı uç listesi ve CORS/SSRF notları: [`DEPLOY.md`](DEPLOY.md) · [`DENETIM_RAPORU.md`](DENETIM_RAPORU.md). Veri yerelde `konsul.db` (SQLite, WAL).
 
-### Not: `legacy-react/`
-Depodaki eski React+Vite sürümü (3 koltuklu) `legacy-react/` altına izole edildi. Tek resmî arayüz `static/index.html` + `app.py`'dir. Referans olarak kalır; derleme/çalıştırma hedefi değildir.
+**Not — `legacy-react/`:** Eski React arayüzü izole durur; resmî arayüz `static/index.html` + `app.py`'dir. Referans amaçlıdır, derlenmez.
 
 ---
 
 ## 📄 Lisans
+
 Bu proje kurumsal ve kişisel kullanım için açık standartlarda geliştirilmiştir.
