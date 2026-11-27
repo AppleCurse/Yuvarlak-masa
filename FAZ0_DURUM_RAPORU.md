@@ -26,7 +26,7 @@ Bu rapor yeni özellik üretmez; **neyin gerçekten olduğunu** sabitler. Her sa
 |---|---|---|
 | **Faz 0 — Mevcut durum** | **Tamamlandı** | Bu rapor + `README.md` güncellemesi + tam paket yeşil. |
 | **Faz 1 — Gerçek muhakeme kalitesi** | **Kısmen tamamlandı** | 4 gerçek soru canlı sitede çalıştırıldı; kanıtlı rapor [`FAZ1_KALITE_RAPORU.md`](FAZ1_KALITE_RAPORU.md): 4 bulgu → 3'ü kodda kapatıldı (hakem kesilmesi, kanıt/dil disiplini), 1'i platform ayarı (Gemini yedek anahtarı). Sonraki tur teyidi raporda §F. |
-| **Faz 2 — Soru derinliği** | **Eksik** | Zaman/aciliyet, risk sınırı, etkilenenler seçicileri ve netleştirme sorusu henüz yok. |
+| **Faz 2 — Soru derinliği** | **Tamamlandı (kod)** | Soru kutusunun altında soruya göre görünen isteğe bağlı seçiciler (Zaman/Risk/Öncelik — anahtar kelime eşleşmesi, gereksizse gizli), tek netleştirme sorusu ve seçilen bağlamın 6 prompt noktasına `[KULLANICI BAĞLAMI]` enjeksiyonu. Detay: [`FAZ2_DURUM.md`](FAZ2_DURUM.md). Canlı teyit bir sonraki turda. |
 | **Faz 3 — Kullanıcı müdahalesi** | **Kısmen** | Yazma, koltuğa sorma, tur sürdürme, özeti yenileme var. Eksik: yeni bilgi/belge ekleme kanalı, itiraz aracı, müdahalenin etkisinin görünür kılınması. |
 | **Faz 4 — Özgün zekâ** | **Kısmen** | Bilişsel direktif ve bellek gerçek (yukarıda). Eksik: deneysel karşılaştırma raporu, öğrenmenin beğeniye bağlanmadığının kanıtı, tahminlerin geriye dönük değerlendirmesi. |
 | **Faz 5 — Karar çıktısı ve süreklilik** | **Kısmen** | 7 bölümlü çıktı var. Eksik: ilk adım + başarı göstergesi, paylaşılabilir link, sosyal medya kartı, 48 saat hatırlatma. |

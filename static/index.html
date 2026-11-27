@@ -367,6 +367,16 @@
         </div>
       </form>
 
+      <!-- Faz 2: soruya göre isteğe bağlı bağlam seçicileri (anahtar kelimeye dayalı, zorunlu değil) -->
+      <div id="questionContextBox" class="hidden pt-3 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700 space-y-2.5">
+        <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Soruna göre (isteğe bağlı) — seçtiklerin tartışmayı hedefler:</p>
+        <div id="contextChips" class="space-y-2"></div>
+        <div id="clarifyBox" class="hidden rounded-xl bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/20 p-2.5 space-y-1.5">
+          <p class="text-[11px] font-semibold text-amber-800 dark:text-amber-300">Tek netleştirme sorusu: Bu kararı ne zaman vermen gerekiyor?</p>
+          <div class="flex flex-wrap items-center gap-1.5" id="clarifyChips"></div>
+        </div>
+      </div>
+
       <!-- Açılır Uzman Kadrosu & Gelişmiş Masa Ayarları Paneli (Varsayılan kapalı, tek tıkla açılır) -->
       <div id="expertsPanel" class="hidden pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-3 fade-in">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -817,7 +827,10 @@
       sessionId: null,
       activeQuestion: "",
       transcript: [],
-      envelopes: {}
+      envelopes: {},
+      // Faz 2: soru bağlamı (isteğe bağlı seçiciler + tek netleştirme)
+      qctx: { time: null, risk: null, priority: null, clarifyDismissed: false },
+      questionContext: ""
     };
 
     // ═══════════════════════════════════════════════════════════════════
@@ -936,6 +949,103 @@
         ? dbChar.system_prompt
         : `Sen Yuvarlak Masa'da oturan ${seatObj.name} (${seatObj.role}) uzmanısın. 3-4 kısa, somut ve net Türkçe cümleyle konuş; önceki konuşmacının kör noktasına doğrudan değin. Kendi adını başa yazma.`;
       return base.includes("KESİN GERÇEKLİK KURALI") ? base : (base + TR_REALITY_RULE + EVIDENCE_LANG_RULE);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // FAZ 2 — SORU DERİNLİĞİ: soruya göre görünür, isteğe bağlı bağlam
+    // seçicileri + eksik bilgi varsa TEK netleştirme sorusu.
+    // Seçimler promptlara [KULLANICI BAĞLAMI] bloğu olarak girer.
+    // Dürüstlük: eşleştirme anahtar kelimeye dayalıdır (yapay zekâ iddiası yok).
+    // ═══════════════════════════════════════════════════════════════════
+    const CTX_RULES = [
+      {
+        key: "time", label: "Zaman",
+        opts: [
+          { v: "Hemen karar vermeliyim", short: "Hemen" },
+          { v: "Birkaç hafta/ayım var", short: "Zamanım var" },
+          { v: "Önce araştırıp sonra karar vereceğim", short: "Önce araştır" }
+        ],
+        kw: ["karar", "zaman", "acele", "hemen", "şimdi", "sonra", "ne zaman", "yakında", "acil", "ertele", "bu yıl", "yıl içinde", "taşın", "ev", "kredi", "başla", "bitir", "iş değiştir", "vermeliyim", "almalıyım"]
+      },
+      {
+        key: "risk", label: "Risk",
+        opts: [
+          { v: "Kaybı neredeyse hiç göze alamam", short: "Güvenli" },
+          { v: "Sınırlı kaybı göze alabilirim", short: "Dengeli" },
+          { v: "Yüksek riski göze alabilirim", short: "Riskli" }
+        ],
+        kw: ["risk", "kayıp", "bat", "borç", "yatırım", "para", "sermaye", "kazanç", "faiz", "döviz", "altın", "fon", "hisse", "kredi", "geri öde", "iflas", "birikim", "maaş", "gelir", "ücret"]
+      },
+      {
+        key: "priority", label: "Öncelik",
+        opts: [
+          { v: "Önceliğim ailem/eşim-çocuklarım", short: "Aile" },
+          { v: "Önceliğim kendim ve maddi durumum", short: "Kendim" },
+          { v: "Önceliğim işim/ortaklığım/müşterilerim", short: "İş" }
+        ],
+        kw: ["aile", "eşim", "eş ", "çocuk", "ailem", "ortak", "partner", "işçi", "ekip", "müşteri", "şirket", "ortaklık", "arkadaş", "anne", "baba", "kardeş", "işim", "işyeri", "patron"]
+      }
+    ];
+
+    function relevantCtxRules(q) {
+      const low = String(q || "").toLocaleLowerCase("tr");
+      if (!low.trim()) return [];
+      return CTX_RULES.filter(r => r.kw.some(k => low.includes(k)));
+    }
+
+    function buildQuestionContext() {
+      const q = state.qctx || {};
+      const picks = [];
+      if (q.time) picks.push(`- Zaman/aciliyet: ${q.time}`);
+      if (q.risk) picks.push(`- Risk sınırı: ${q.risk}`);
+      if (q.priority) picks.push(`- Etkilenen/öncelik: ${q.priority}`);
+      if (!picks.length) return "";
+      return `\n\n[KULLANICI BAĞLAMI — kullanıcının seçtiği bu detayları cevapların ve önceliklerin için bağlayıcı kabul et]\n` + picks.join("\n");
+    }
+
+    function renderContextUI() {
+      const box = document.getElementById("questionContextBox");
+      const chipsEl = document.getElementById("contextChips");
+      const clarifyEl = document.getElementById("clarifyBox");
+      const clarifyChips = document.getElementById("clarifyChips");
+      if (!box || !chipsEl) return;
+      const q = state.qctx;
+      const draft = (document.getElementById("questionInput") || {}).value || "";
+      const trimmed = draft.trim();
+      const wordCount = trimmed ? trimmed.split(/\s+/).length : 0;
+
+      // İlgili kurallar: anahtar kelime eşleşmesi + seçili olanlar her zaman görünür
+      const rules = relevantCtxRules(trimmed);
+      ["time", "risk", "priority"].forEach(k => {
+        if (q[k] && !rules.some(r => r.key === k)) {
+          const def = CTX_RULES.find(r => r.key === k);
+          if (def) rules.push(def);
+        }
+      });
+
+      // Tek netleştirme sorusu: soru kısa ve boşluksuzsa ve zaman henüz seçilmemişse
+      const clarifyWanted = !!trimmed && wordCount < 8 && !q.time && !q.clarifyDismissed;
+
+      chipsEl.innerHTML = rules.map(r => `
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 w-14 shrink-0">${r.label}</span>
+          ${r.opts.map(o => `
+            <button type="button" data-ctx="${r.key}" data-val="${escapeHtml(o.v)}" class="ctx-chip px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+              q[r.key] === o.v
+                ? "ctx-on bg-brand-600 border-brand-600 text-white"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand-400"
+            }">${o.short}</button>`).join("")}
+        </div>`).join("");
+
+      if (clarifyChips) {
+        clarifyChips.innerHTML = CTX_RULES[0].opts.map(o => `
+          <button type="button" data-clarify="${escapeHtml(o.v)}" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition">${o.short}</button>`).join("") +
+          `<button type="button" id="clarifySkip" class="px-2.5 py-1 rounded-full text-[11px] font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">Geç</button>`;
+      }
+      if (clarifyEl) clarifyEl.classList.toggle("hidden", !clarifyWanted);
+
+      const show = rules.length > 0 || clarifyWanted;
+      box.classList.toggle("hidden", !show);
     }
 
     function sanitizeUserError(rawMsg, errCode = "") {
@@ -1535,7 +1645,7 @@
             temperature: 0.5,
             messages: [
               { role: "system", content: getExpertSystemPrompt(s) },
-              { role: "user", content: `Konu: ${question}\nKimseyi dinlemeden önceki ilk net tavrını TEK KELİME (örn: EVET / HAYIR / BEKLE / KOŞULLU) ve 1 kısa cümle gerekçe olarak yaz.` }
+              { role: "user", content: `Konu: ${question}${state.questionContext || ""}\nKimseyi dinlemeden önceki ilk net tavrını TEK KELİME (örn: EVET / HAYIR / BEKLE / KOŞULLU) ve 1 kısa cümle gerekçe olarak yaz.` }
             ]
           });
           const text = (res.content || "").trim();
@@ -1744,7 +1854,7 @@
         { role: "system", content: getExpertSystemPrompt(seatObj) },
         {
           role: "user",
-          content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}\n\nMasada şimdiye kadar konuşulan her şeyi dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
+          content: `Gündemdeki gerçek hayat sorusu: ${question}${state.questionContext || ""}${priorContext}${condLine}\n\nMasada şimdiye kadar konuşulan her şeyi dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
         }
       ];
       try {
@@ -1820,7 +1930,7 @@
           { role: "system", content: getExpertSystemPrompt(s) },
           {
             role: "user",
-            content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}${replyRule}\n\nMasada şimdiye kadar konuşulan her şeyi (diğer katılımcıların detayları ve Masa Başkanının yönlendirmeleri dahil) dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
+            content: `Gündemdeki gerçek hayat sorusu: ${question}${state.questionContext || ""}${priorContext}${condLine}${replyRule}\n\nMasada şimdiye kadar konuşulan her şeyi (diğer katılımcıların detayları ve Masa Başkanının yönlendirmeleri dahil) dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
           }
         ];
 
@@ -1897,8 +2007,8 @@
 
       const participants = activeSeatsList().map(x => `${x.name} (${x.role})`).join(", ");
       const userContent = kind === "intro"
-        ? `Gündem: ${question}\nMasadakiler: ${participants}\n\nMasayı topla: (1) konuyu tek cümlede netleştir, (2) tartışmanın hangi sorulara yanıt vermesi gerektiğini söyle, (3) kuralı hatırlat: her katılımcı önceki konuşmacının sözüne yanıt verecek, kanıtsız kesin hüküm yok. 3-4 kısa cümle.`
-        : `Gündem: ${question}${buildSharedTranscriptContext()}\n\nTartışmayı derinleştir: (1) masadaki ÇELİŞKİLERİ tek tek görünür kıl, (2) tekrar eden argümanları kes, (3) kanıt boşluğu / doğrulanamaz iddiaları işaretle, (4) tartışmayı ilerletecek TEK bir derinleştirme sorusu sor. 4-5 kısa cümle; taraf tutma, süreç dışında yorum yapma.`;
+        ? `Gündem: ${question}${state.questionContext || ""}\nMasadakiler: ${participants}\n\nMasayı topla: (1) konuyu tek cümlede netleştir, (2) tartışmanın hangi sorulara yanıt vermesi gerektiğini söyle, (3) kuralı hatırlat: her katılımcı önceki konuşmacının sözüne yanıt verecek, kanıtsız kesin hüküm yok. 3-4 kısa cümle.`
+        : `Gündem: ${question}${state.questionContext || ""}${buildSharedTranscriptContext()}\n\nTartışmayı derinleştir: (1) masadaki ÇELİŞKİLERİ tek tek görünür kıl, (2) tekrar eden argümanları kes, (3) kanıt boşluğu / doğrulanamaz iddiaları işaretle, (4) tartışmayı ilerletecek TEK bir derinleştirme sorusu sor. 4-5 kısa cümle; taraf tutma, süreç dışında yorum yapma.`;
 
       try {
         const finalText = await streamSeatCompletion({
@@ -1990,7 +2100,7 @@
       verdictBody.classList.remove("hidden");
       verdictBody.textContent = "Hakem tüm görüşleri süzüyor...";
 
-      const summaryPrompt = `Gündem: ${question}\n\nMasadaki görüşme tutanağı:\n` +
+      const summaryPrompt = `Gündem: ${question}${state.questionContext || ""}\n\nMasadaki görüşme tutanağı:\n` +
         state.transcript.map(t => `- ${t.speaker} (${t.role}): ${t.content}`).join("\n") +
         `\n\nTartışmadan GEREKÇELİ bir değerlendirme çıkar. Kurallar:\n` +
         `- Tam olarak şu Markdown başlıklarını kullan (başlıklar aynen yazılır):\n` +
@@ -2106,6 +2216,7 @@
       const tbl = currentTable();
       const seats = activeSeatsList();
       state.activeQuestion = question;
+      state.questionContext = buildQuestionContext();
       state.transcript = [];
       state.envelopes = {};
       state.sessionId = "ses_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6);
@@ -2932,6 +3043,30 @@
     document.getElementById("questionForm").addEventListener("submit", e => {
       e.preventDefault();
       startDebate(document.getElementById("questionInput").value);
+    });
+
+    // Faz 2: yazarken bağlam seçicilerini yeniden hesapla
+    document.getElementById("questionInput").addEventListener("input", renderContextUI);
+    document.getElementById("questionContextBox").addEventListener("click", e => {
+      const chip = e.target.closest(".ctx-chip");
+      if (chip) {
+        const key = chip.getAttribute("data-ctx");
+        const val = chip.getAttribute("data-val");
+        state.qctx[key] = state.qctx[key] === val ? null : val;
+        renderContextUI();
+        return;
+      }
+      const clar = e.target.closest("[data-clarify]");
+      if (clar) {
+        state.qctx.time = clar.getAttribute("data-clarify");
+        state.qctx.clarifyDismissed = true;
+        renderContextUI();
+        return;
+      }
+      if (e.target.id === "clarifySkip") {
+        state.qctx.clarifyDismissed = true;
+        renderContextUI();
+      }
     });
 
     document.getElementById("stopDebateBtn").addEventListener("click", () => {
