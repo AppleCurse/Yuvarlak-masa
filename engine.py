@@ -263,13 +263,17 @@ def hash_owner_token(token: str) -> str:
 
 
 def create_session(session_id: str, topic: str, owner_token: str = ""):
+    """Oturum açar. v2.7.1: aynı kimlikle tekrar açmak mevcut kaydı DEĞİŞTİRMEZ —
+    böylece bir başkası bilinen bir oturum numarasıyla sahipliği üzerine geçiremez
+    ve mevcut kilidi silemez (INSERT OR REPLACE devralma açığı kapatıldı)."""
     owner_hash = hash_owner_token(owner_token.strip()) if (owner_token or "").strip() else None
     with get_db() as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO sessions (id, topic, status, owner_hash) VALUES (?, ?, 'active', ?)",
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO sessions (id, topic, status, owner_hash) VALUES (?, ?, 'active', ?)",
             (session_id, topic, owner_hash),
         )
         conn.commit()
+        return cur.rowcount > 0
 
 
 def get_session_owner_hash(session_id: str) -> Optional[str]:
@@ -283,15 +287,26 @@ def get_session_owner_hash(session_id: str) -> Optional[str]:
     return row["owner_hash"]
 
 
-def session_owner_authorized(session_id: str, owner_token: str) -> bool:
-    """Kilitli oturumda token özeti eşleşmeli; kilitsiz (eski/classic) oturumlarda herkes okuyabilir."""
-    owner = get_session_owner_hash(session_id)
+def session_owner_state(session_id: str, owner_token: str = "") -> str:
+    """Oturum erişim durumu: 'ok' | 'forbidden' | 'missing'.
+
+    v2.7.1: veritabanında OLMAYAN oturum artık 'missing' — daha önce yok sayılan
+    kayıt hem var hem kilitsiz muamelesi gördüğü için olmayan oturumlara yazma
+    (yetkisiz mesaj/rapor/zarf biriktirme) açığı kapatıldı.
+    """
+    if not session_id:
+        return "missing"
+    with get_db() as conn:
+        row = conn.execute("SELECT owner_hash FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    if row is None:
+        return "missing"
+    owner = row["owner_hash"]
     if owner is None:
-        return True
+        return "ok"  # kilitsiz (eski/classic) kayıt: token şartı yok
     token = (owner_token or "").strip()
     if not token:
-        return False
-    return hmac.compare_digest(owner, hash_owner_token(token))
+        return "forbidden"
+    return "ok" if hmac.compare_digest(owner, hash_owner_token(token)) else "forbidden"
 
 def record_message(session_id: str, seat: str, char_id: str, role: str, content: str, inner_thought: str = "", rebuttal_target_id: str = ""):
     mid = str(uuid.uuid4())

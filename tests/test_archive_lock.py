@@ -189,5 +189,75 @@ class ArchiveLock(unittest.TestCase):
         self.assertIn(sid, [r["session_id"] for r in mine])
 
 
+    def test_session_takeover_blocked(self):
+        """Bilinen oturum numarasıyla tekrar açmak sahipliği devralamaz, kilidi silemez."""
+        sid = _start("kilitli masaj", owner_token=T1)
+        self.assertEqual(_record(sid, "sahibin sözü", token=T1).status_code, 200)
+
+        # saldırgan aynı sid ile kendi token'ıyla açmayı dener
+        client.post("/api/session/start",
+                    json={"session_id": sid, "topic": "devralma denemesi",
+                          "owner_token": T2})
+        with engine.get_db() as conn:
+            row = conn.execute("SELECT owner_hash FROM sessions WHERE id = ?", (sid,)).fetchone()
+        self.assertEqual(row["owner_hash"], hashlib.sha256(T1.encode()).hexdigest(),
+                         "sahiplik T1'de kalmalı (devralma yok)")
+
+        # saldırgan token'sız denese de kilit silinmemeli
+        client.post("/api/session/start", json={"session_id": sid, "topic": "silme denemesi"})
+        self.assertEqual(_record(sid, "saldırgan mesajı", token=T2).status_code, 403)
+        self.assertEqual(_record(sid, "saldırgan mesajı").status_code, 403)
+        # gerçek sahip hâlâ yazabiliyor
+        self.assertEqual(_record(sid, "sahip hâlâ burada", token=T1).status_code, 200)
+
+    def test_nonexistent_session_rejected(self):
+        """Veritabanında olmayan oturuma yazma/okuma 404 — 'kilitsiz kayıt' muamelesi yok."""
+        ghost = "ses_bu_kayit_hic_yok"
+        self.assertEqual(_record(ghost, "hayalet mesaj").status_code, 404)
+        self.assertEqual(client.get(f"/api/session/{ghost}/messages").status_code, 404)
+        self.assertEqual(client.post("/api/session/conclude",
+                                     json={"session_id": ghost, "verdict": "x"}).status_code, 404)
+        self.assertEqual(client.post("/api/session/report",
+                                     json={"session_id": ghost, "topic": "t",
+                                           "report_md": "x"}).status_code, 404)
+        self.assertEqual(client.post("/api/envelope/seal",
+                                     json={"session_id": ghost, "seat": "A",
+                                           "position": "EVET"}).status_code, 404)
+        self.assertEqual(client.get(f"/api/envelope/{ghost}").status_code, 404)
+        # hayalet mesaj gerçekten yazılmamış olmalı
+        with engine.get_db() as conn:
+            n = conn.execute("SELECT COUNT(*) AS c FROM messages WHERE session_id = ?",
+                             (ghost,)).fetchone()["c"]
+        self.assertEqual(n, 0)
+
+    def test_private_session_never_writes_shared_memory(self):
+        """Kilitli oturumun konusu/kararı ortak karakter hafızasına sızmaz;
+        kilitsiz (classic) oturum eskisi gibi damıtılır."""
+        topic = "ÖZEL-GECE-KONU-7391"
+        verdict = "ÖZEL-KARAR-7391"
+        chars = [{"seat": "A", "character_id": "hesap_uzmani"}]
+
+        priv = _start(topic, owner_token=T1)
+        r = client.post("/api/session/conclude",
+                        json={"session_id": priv, "verdict": verdict, "topic": topic,
+                              "seated_characters": chars},
+                        headers={"X-Owner-Token": T1})
+        self.assertEqual(r.status_code, 200)
+
+        c_topic = "KLASIK-HAFIZA-8402"
+        c_verdict = "KLASIK-KARAR-8402"
+        classic = _start(c_topic)
+        r2 = client.post("/api/session/conclude",
+                         json={"session_id": classic, "verdict": c_verdict,
+                               "topic": c_topic, "seated_characters": chars})
+        self.assertEqual(r2.status_code, 200)
+
+        mem = client.get("/api/memory/hesap_uzmani").json()
+        texts = " || ".join(m.get("entry", "") for m in mem.get("memories", []))
+        self.assertNotIn(topic, texts, "özel oturumun konusu ortak hafızaya sızmamalı")
+        self.assertNotIn(verdict, texts, "özel oturumun kararı ortak hafızaya sızmamalı")
+        self.assertIn(c_topic, texts, "kilitsiz (classic) oturum hâlâ damıtılmalı")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
