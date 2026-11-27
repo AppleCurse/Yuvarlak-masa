@@ -1821,6 +1821,120 @@ async def sitemap_xml():
     )
 
 
+# ── Faz 7 — Güven: düzenli kalite ölçümü + veri kontrol paneli ──────────
+@app.get("/api/quality/report")
+async def quality_report():
+    """Sistem geneli kalite ölçütleri — yalnızca sayılar, hiçbir içerik dönmez."""
+    with engine.get_db() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
+                     "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
+                     "session_id TEXT NOT NULL, stance TEXT NOT NULL, expectation REAL NOT NULL, "
+                     "outcome REAL NOT NULL, note TEXT NOT NULL DEFAULT '', "
+                     "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        conn.execute("CREATE TABLE IF NOT EXISTS neuro_subjective_ratings ("
+                     "feedback_id TEXT PRIMARY KEY, character_id TEXT NOT NULL, "
+                     "session_id TEXT NOT NULL, message_id TEXT NOT NULL, rating REAL NOT NULL, "
+                     "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        sessions_total = conn.execute("SELECT COUNT(*) c FROM sessions").fetchone()["c"]
+        with_verdict = conn.execute(
+            "SELECT COUNT(*) c FROM sessions WHERE referee_verdict IS NOT NULL AND TRIM(referee_verdict)<>''"
+        ).fetchone()["c"]
+        verdicts = [r[0] for r in conn.execute(
+            "SELECT referee_verdict FROM sessions WHERE referee_verdict IS NOT NULL AND TRIM(referee_verdict)<>''"
+        ).fetchall()]
+        reports_total = conn.execute("SELECT COUNT(*) c FROM decision_reports").fetchone()["c"]
+        messages_total = conn.execute("SELECT COUNT(*) c FROM messages").fetchone()["c"]
+        backtest_total = conn.execute("SELECT COUNT(*) c FROM neuro_backtest_v1").fetchone()["c"]
+        ratings_total = conn.execute("SELECT COUNT(*) c FROM neuro_subjective_ratings").fetchone()["c"]
+    sec_counts = [len(re.findall(r"(?m)^#{1,6}\s+", v)) for v in verdicts]
+    n = len(verdicts)
+    return {
+        "ok": True,
+        "sessions_total": sessions_total,
+        "sessions_with_verdict": with_verdict,
+        "verdict_completion_rate": round(with_verdict / sessions_total, 4) if sessions_total else None,
+        "verdicts_count": n,
+        "avg_sections_per_verdict": round(sum(sec_counts) / n, 2) if n else None,
+        "verdicts_with_7plus_sections": sum(1 for c in sec_counts if c >= 7),
+        "verdicts_with_first_step": sum(1 for v in verdicts if "ÖNERİLEN İLK ADIM" in v.upper()),
+        "verdicts_with_success_metric": sum(1 for v in verdicts if "BAŞARI GÖSTERGESİ" in v.upper()),
+        "short_verdicts_under_200": sum(1 for v in verdicts if len(v) < 200),
+        "reports_total": reports_total,
+        "messages_total": messages_total,
+        "backtest_total": backtest_total,
+        "subjective_ratings_total": ratings_total,
+        "note": "Yalnızca sayılar; oturum içeriği bu rapora dahil değildir.",
+    }
+
+
+@app.get("/api/data/overview")
+async def data_overview(request: Request):
+    """Veri kontrol paneli: bu sahibin sunucudaki verileri (yalnızca sayılar)."""
+    token = _owner_token(request)
+    with engine.get_db() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
+                     "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
+                     "session_id TEXT NOT NULL, stance TEXT NOT NULL, expectation REAL NOT NULL, "
+                     "outcome REAL NOT NULL, note TEXT NOT NULL DEFAULT '', "
+                     "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        conn.execute("CREATE TABLE IF NOT EXISTS neuro_subjective_ratings ("
+                     "feedback_id TEXT PRIMARY KEY, character_id TEXT NOT NULL, "
+                     "session_id TEXT NOT NULL, message_id TEXT NOT NULL, rating REAL NOT NULL, "
+                     "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        sids = engine.owner_session_ids(conn, token)
+        if not sids:
+            return {"ok": True, "sessions": 0, "messages": 0, "reports": 0, "envelopes": 0,
+                    "ratings": 0, "backtest": 0, "shared": 0,
+                    "note": "Bu tarayıcıya ait sunucu kaydı yok."}
+        ph = ",".join("?" * len(sids))
+        def cnt(sql):
+            return conn.execute(sql + f" WHERE session_id IN ({ph})", sids).fetchone()[0]
+        return {
+            "ok": True,
+            "sessions": len(sids),
+            "messages": cnt("SELECT COUNT(*) FROM messages"),
+            "reports": cnt("SELECT COUNT(*) FROM decision_reports"),
+            "envelopes": cnt("SELECT COUNT(*) FROM envelopes"),
+            "ratings": cnt("SELECT COUNT(*) FROM neuro_subjective_ratings"),
+            "backtest": cnt("SELECT COUNT(*) FROM neuro_backtest_v1"),
+            "shared": conn.execute(
+                f"SELECT COUNT(*) FROM sessions WHERE id IN ({ph}) AND shared_at IS NOT NULL", sids
+            ).fetchone()[0],
+            "note": "Yalnızca senin oturumların; karakter tahminleri ve API anahtarların dahil değildir.",
+        }
+
+
+@app.delete("/api/data/my")
+async def data_delete_my(request: Request):
+    """Veri kontrol paneli: bu sahibin TÜM sunucu verilerini sil (geri alınamaz)."""
+    token = _owner_token(request)
+    with engine.get_db() as conn, conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
+                     "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
+                     "session_id TEXT NOT NULL, stance TEXT NOT NULL, expectation REAL NOT NULL, "
+                     "outcome REAL NOT NULL, note TEXT NOT NULL DEFAULT '', "
+                     "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        conn.execute("CREATE TABLE IF NOT EXISTS neuro_subjective_ratings ("
+                     "feedback_id TEXT PRIMARY KEY, character_id TEXT NOT NULL, "
+                     "session_id TEXT NOT NULL, message_id TEXT NOT NULL, rating REAL NOT NULL, "
+                     "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        sids = engine.owner_session_ids(conn, token)
+        if not sids:
+            return {"ok": True, "deleted": {}, "note": "Silinecek sunucu kaydı yok."}
+        ph = ",".join("?" * len(sids))
+        deleted = {}
+        for table in ("messages", "envelopes", "decision_reports", "fact_checks",
+                      "neuro_subjective_ratings", "neuro_backtest_v1"):
+            deleted[table] = conn.execute(
+                f"DELETE FROM {table} WHERE session_id IN ({ph})", sids
+            ).rowcount
+        deleted["sessions"] = conn.execute(
+            f"DELETE FROM sessions WHERE id IN ({ph})", sids
+        ).rowcount
+    return {"ok": True, "deleted": deleted,
+            "note": "Yalnızca senin oturumların silindi; karakter tahminleri ve API anahtarların korundu."}
+
+
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html", headers=_NO_CACHE_HEADERS)

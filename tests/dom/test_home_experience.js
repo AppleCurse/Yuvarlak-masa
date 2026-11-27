@@ -323,6 +323,28 @@ async function runDebate(d, w, question) {
   d.getElementById("questionInput").value = "";
   d.getElementById("questionInput").dispatchEvent(new w.Event("input", { bubbles: true }));
 
+  // ── Faz 7 — iddia etiketleri + veri kontrol paneli ──
+  assert(d.getElementById("claimLegend"), "F7-1 iddia etiketi açıklaması sayfada");
+  posts.length = 0;
+  d.getElementById("refreshVerdictBtn").click();
+  await sleep(1500);
+  const f7msgs = JSON.stringify(posts.filter(p => p.url.includes("/api/chat/stream")).map(p => p.body.messages || []));
+  assert(f7msgs.includes("VARSAYIM") && f7msgs.includes("[KAYNAK]"), "F7-2 hakem promptu kaynak/yorum/varsayım etiketleri istiyor");
+
+  w.confirm = () => true;
+  posts.length = 0;
+  d.querySelector(".nav-tab[data-tab=\"history\"]").click();
+  d.getElementById("dataOverviewBtn").click();
+  await sleep(100);
+  const ovPosts = posts.filter(p => p.url.includes("/api/data/overview"));
+  assert(ovPosts.length === 1, "F7-3 veri özeti çağrısı gitti");
+  assert(!d.getElementById("dataOverviewBox").classList.contains("hidden"), "F7-4 veri özeti kutusu açıldı");
+  posts.length = 0;
+  d.getElementById("deleteMyDataBtn").click();
+  await sleep(120);
+  const delPosts = posts.filter(p => p.url.includes("/api/data/my"));
+  assert(delPosts.length === 1 && delPosts[0].headers && delPosts[0].headers["X-Owner-Token"], "F7-5 veri silme sahiplik anahtarıyla gitti");
+
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });
