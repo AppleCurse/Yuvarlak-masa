@@ -132,7 +132,7 @@ bash tests/run_all.sh
 | 3 | Müdahale (ek bilgi, itiraz, etki günlüğü) | ✅ Kodda — [`FAZ3_DURUM.md`](FAZ3_DURUM.md) |
 | 4 | Özgün zekâ (beğeni/kanıt ayrımı, backtest) | ✅ Kodda — [`FAZ4_DURUM.md`](FAZ4_DURUM.md) |
 | 5 | İlk adım + paylaşım + 48 saat hatırlatma | ✅ Kodda — [`FAZ5_DURUM.md`](FAZ5_DURUM.md) |
-| 6 | Konu sayfaları (`/ev-mi-kira-mi`…) | — |
+| 6 | Keşif sayfaları (4 konu + sitemap) | ✅ Kodda — [`FAZ6_DURUM.md`](FAZ6_DURUM.md) |
 | 7 | Güven: kaynak/yorum ayrımı, sürekli ölçüm | 🔜 (temel var) |
 
 **Sıra disiplini:** Önce Faz 0–1, sonra 2–3. Her fazda teslimat: incelenen/değişen dosyalar, test komutları ve sonuçları, canlı doğrulama durumu, tamamlanan/kısmen/açık işler.
