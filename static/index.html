@@ -456,6 +456,7 @@
         </div>
         <div id="verdictBody" class="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line"></div>
         <div id="outcomeSections" class="hidden space-y-0"></div>
+        <p id="claimLegend" class="hidden text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 border-t border-slate-200/70 dark:border-slate-700 pt-2">İddia etiketleri: <b>[KAYNAK]</b> tutanakta dayanak var · <b>[YORUM]</b> çıkarımdır · <b>[VARSAYIM]</b> kanıtlanmamış varsayım — iddiaları böyle ayırt edebilirsin.</p>
         <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 border-t border-slate-200/70 dark:border-slate-700 pt-2.5">
           Bu çıktı bir yapay zekâ değerlendirmesidir; <strong class="font-semibold text-slate-600 dark:text-slate-300">yatırım, hukuk veya psikoloji tavsiyesi değildir</strong>. Tartışmaya yazdıkların seçtiğin yapay zekâ hizmetlerine gönderilir; sunucuda arşivle seçeneğini açmadıysan kayıtlar yalnızca bu tarayıcıda kalır.
         </p>
@@ -595,6 +596,16 @@
       <button id="refreshHistoryBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
         Yenile
       </button>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 space-y-2">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs font-bold text-slate-800 dark:text-slate-100">Veri kontrol paneli — sunucudaki verilerin</p>
+        <div class="flex gap-1.5">
+          <button id="dataOverviewBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-indigo-500/20 dark:text-indigo-200 transition">Neler var?</button>
+          <button id="deleteMyDataBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200 transition">Verilerimi sil</button>
+        </div>
+      </div>
+      <div id="dataOverviewBox" class="hidden text-xs leading-relaxed text-slate-600 dark:text-slate-300"></div>
     </div>
     <div id="historyList" class="space-y-2.5"></div>
     <div id="historyDetail" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3"></div>
@@ -2201,6 +2212,7 @@
       verdictCard.classList.remove("hidden");
       outcomeSections.classList.add("hidden");
       outcomeSections.innerHTML = "";
+      document.getElementById("claimLegend").classList.add("hidden");
       verdictBody.classList.remove("hidden");
       verdictBody.textContent = "Hakem tüm görüşleri süzüyor...";
 
@@ -2211,6 +2223,7 @@
         `## ÖNE ÇIKAN ARGÜMANLAR\n## UZLAŞILAN NOKTALAR\n## GÖRÜŞ AYRILIKLARI\n## DOĞRULANMAMIŞ İDDİALAR\n## RİSKLER\n## EKSİK BİLGİLER\n## OLASI KARAR YOLLARI\n## ÖNERİLEN İLK ADIM\n## BAŞARI GÖSTERGESİ\n` +
         `- Her bölümde 2-4 kısa madde (- ile). Yalnızca tutanakta geçenleri yaz; yeni iddia uydurma.\n` +
         `- ÖNERİLEN İLK ADIM: en geç 48 saat içinde atılacak TEK somut adım (ne yapılacak, ne zaman). BAŞARI GÖSTERGESİ: 1-2 hafta içinde işe yaradığını nasıl anlarsın — ölçülebilir tek madde.\n` +
+        `- Etiketleme (Faz 7): OLASI KARAR YOLLARI ve RİSKLER maddelerinin sonuna şu etiketi ekle — [KAYNAK] (tutanakta dayanak var), [YORUM] (çıkarımdır), [VARSAYIM] (kanıtlanmamış varsayım).\n` +
         `- Güncel faiz/enflasyon/döviz oranı uydurma; oran/kural mantığıyla konuş.\n` +
         `- Tek kesin hüküm vermek zorunda değilsin; gerekliyse 'Bu bilgiyle kesin karar verilemez' de.\n` +
         `- DOĞRULANMAMIŞ İDDİALAR bölümünde kanıtı olmayan her iddiayı açıkça işaretle.\n` +
@@ -2251,6 +2264,7 @@
           verdictBody.textContent = "";
           verdictBody.classList.add("hidden");
           outcomeSections.innerHTML = structuredHtml;
+          document.getElementById("claimLegend").classList.remove("hidden");
           outcomeSections.classList.remove("hidden");
         } else {
           outcomeSections.classList.add("hidden");
@@ -3268,6 +3282,35 @@
       } catch (_) {
         showToast("Kopyalanamadı.");
       }
+    });
+
+    document.getElementById("dataOverviewBtn").addEventListener("click", async () => {
+      const box = document.getElementById("dataOverviewBox");
+      try {
+        const res = await ownerFetch("/api/data/overview");
+        const data = await res.json();
+        if (!data || !data.ok) { showToast("Özet alınamadı."); return; }
+        box.classList.remove("hidden");
+        box.innerHTML = "<b>Sunucudaki verilerin:</b> " +
+          (data.sessions || 0) + " oturum · " + (data.messages || 0) + " mesaj · " +
+          (data.reports || 0) + " karar raporu · " + (data.envelopes || 0) + " mühür · " +
+          (data.ratings || 0) + " beğeni kaydı · " + (data.backtest || 0) + " sonuç kaydı" +
+          (data.shared ? " · " + data.shared + " paylaşım açık" : "") +
+          ". Karakter tahminleri ve API anahtarların bu panele dahil değildir.";
+      } catch (_) { showToast("Özet alınamadı."); }
+    });
+    document.getElementById("deleteMyDataBtn").addEventListener("click", async () => {
+      let sure = false;
+      try { sure = window.confirm("Sunucudaki TÜM verilerin (oturum, mesaj, rapor, mühür, beğeni, sonuç kayıtları) silinecek. Bu geri alınamaz. Emin misin?"); } catch (_) { sure = false; }
+      if (!sure) return;
+      try {
+        const res = await ownerFetch("/api/data/my", { method: "DELETE" });
+        const data = await res.json();
+        if (!data || !data.ok) { showToast("Silinemedi."); return; }
+        showToast("Verilerin silindi. Karakter tahminleri ve API anahtarların korundu.");
+        document.getElementById("dataOverviewBox").classList.add("hidden");
+        document.getElementById("historyList").innerHTML = "";
+      } catch (_) { showToast("Silinemedi."); }
     });
 
     document.getElementById("shareVerdictBtn").addEventListener("click", async () => {

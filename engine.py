@@ -350,6 +350,19 @@ def list_sessions(limit: int = 50, owner_token: Optional[str] = None) -> List[Di
             ).fetchall()
         return [dict(r) for r in rows]
 
+def owner_session_ids(conn, owner_token: str = "") -> list:
+    """Bu sahibe ait oturum ID'leri — token varsa kilitli kendi kayıtları,
+    yoksa yalnızca kilitsiz (eski/classic) kayıtlar. Veri paneli/silme için."""
+    token = (owner_token or "").strip()
+    if token:
+        rows = conn.execute(
+            "SELECT id FROM sessions WHERE owner_hash=?", (hash_owner_token(token),)
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT id FROM sessions WHERE owner_hash IS NULL").fetchall()
+    return [r[0] for r in rows]
+
+
 def share_session(session_id: str) -> bool:
     """Karar özetini paylaşmaya aç (yalnızca sahibi çağırır). İdempotent."""
     with get_db() as conn, conn:
