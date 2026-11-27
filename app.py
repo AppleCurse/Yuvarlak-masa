@@ -1870,7 +1870,14 @@ async def quality_report():
 @app.get("/api/data/overview")
 async def data_overview(request: Request):
     """Veri kontrol paneli: bu sahibin sunucudaki verileri (yalnızca sayılar)."""
-    token = _owner_token(request)
+    token = (_owner_token(request) or "").strip()
+    if not token:
+        # Güvenlik (Faz 7 yaması): anahtarsız istek eski kilitsiz kayıtları
+        # "sahipsiz" sanıp gösteremez/silemez — sahiplik kanıtlanmadan erişim yok.
+        return JSONResponse(
+            {"ok": False, "error": "Bu işlem için sahiplik anahtarı gerekir; anahtarsız istek kayıtları göremez."},
+            status_code=403,
+        )
     with engine.get_db() as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
                      "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
@@ -1907,7 +1914,14 @@ async def data_overview(request: Request):
 @app.delete("/api/data/my")
 async def data_delete_my(request: Request):
     """Veri kontrol paneli: bu sahibin TÜM sunucu verilerini sil (geri alınamaz)."""
-    token = _owner_token(request)
+    token = (_owner_token(request) or "").strip()
+    if not token:
+        # Güvenlik (Faz 7 yaması): anahtarsız toplu silme YOK — aksi halde
+        # kilitsiz eski kayıtlar kimliksiz olarak silinebilirdi.
+        return JSONResponse(
+            {"ok": False, "error": "Bu işlem için sahiplik anahtarı gerekir; anahtarsız hiçbir kayıt silinemez."},
+            status_code=403,
+        )
     with engine.get_db() as conn, conn:
         conn.execute("CREATE TABLE IF NOT EXISTS neuro_backtest_v1 ("
                      "id INTEGER PRIMARY KEY AUTOINCREMENT, character_id TEXT NOT NULL, "
