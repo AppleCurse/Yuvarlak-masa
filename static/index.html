@@ -391,7 +391,7 @@
             <input id="optInnerVoice" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
             <span>İç sesleri göster</span>
           </label>
-          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Varsayılan kapalıdır: açıkken tartışma mesajları, zarflar ve sonuç sunucuya yazılır; sunucudaki kayıtları yalnızca bu tarayıcının anahtarı okuyabilir. Kapalıyken hiçbir şey sunucuya yazılmaz.">
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Varsayılan kapalıdır: açıkken tartışma mesajları, zarflar ve sonuç sunucu arşivine yazılır; arşiv kayıtlarını yalnızca bu tarayıcının anahtarı okuyabilir. Kapalıyken sunucu arşivine hiçbir şey yazılmaz (mesajların yine seçtiğin yapay zekâ hizmetine iletilir).">
             <input id="optArchive" type="checkbox" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
             <span>Sunucuda arşivle</span>
           </label>
@@ -563,7 +563,7 @@
     <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
       Tartışmaya yazdıkların seçtiğin yapay zekâ hizmetlerine gönderilir (varsayılan: Pollinations);
       "Araştırma" sonuçları için iddialar internette kaynak aranır.
-      "Sunucuda arşivle"yi açmadıysan mesajların, zarfların ve sonuçların sunucuya yazılmaz — hepsi yalnızca bu tarayıcıda kalır.
+      "Sunucuda arşivle"yi açmadıysan mesajların, zarfların ve sonuçların sunucu arşivine kaydedilmez — arşiv kayıtların hepsi yalnızca bu tarayıcıda kalır.
     </p>
     <p class="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
       Arşivi açarsan kayıtlar sunucuda saklanır ve yalnızca bu tarayıcının ürettiği gizli anahtarla okunur; anahtarını kaybedersen kayıtlara erişemezsin.
@@ -2388,7 +2388,7 @@
           listEl.innerHTML = `
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-3">
               <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Henüz kayıtlı bir görüşmeniz yok.</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Karar Masası'nda başlattığın görüşmeler varsayılan olarak yalnızca senin tarayıcında saklanır. "Sunucuda arşivle"yi açmadıysan hiçbir tartışman sunucuya yazılmaz.</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Karar Masası'nda başlattığın görüşmeler varsayılan olarak yalnızca senin tarayıcında saklanır. "Sunucuda arşivle"yi açmadıysan hiçbir tartışmanın arşivi sunucuya yazılmaz.</p>
               <button type="button" id="goToDebateFromHistory" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition">
                 <i data-lucide="play" class="w-3.5 h-3.5"></i>
                 <span>Karar Masası'na Git</span>
@@ -2981,7 +2981,7 @@
       if (!optArchiveEl || !archiveHintEl) return;
       archiveHintEl.textContent = optArchiveEl.checked
         ? "Açık: mesajların, zarfların ve sonucun sunucuya yazılır; kayıtları yalnızca bu tarayıcının gizli anahtarıyla okuyabilirsin."
-        : "Kapalı (önerilen): tartışma yalnızca bu tarayıcıda kalır, sunucuya hiçbir mesaj yazılmaz.";
+        : "Kapalı (önerilen): tartışma yalnızca bu tarayıcıda kalır; sunucu arşivine hiçbir mesaj yazılmaz.";
     }
     if (optArchiveEl) {
       optArchiveEl.checked = archiveOn();
@@ -2991,7 +2991,7 @@
         refreshArchiveHint();
         showToast(optArchiveEl.checked
           ? "Sunucu arşivi açıldı: kayıtlar yalnızca senin anahtarınla okunur."
-          : "Sunucu arşivi kapatıldı: yazdıkların yalnızca bu tarayıcıda kalır.");
+          : "Sunucu arşivi kapatıldı: arşiv kayıtların yalnızca bu tarayıcında kalır.");
       });
     }
 
