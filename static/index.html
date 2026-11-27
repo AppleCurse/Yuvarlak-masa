@@ -920,17 +920,22 @@
       `\n\nGÜNCEL TARİH: Şu an ${CURRENT_YEAR} yılındayız; 2023 veya 2024 gibi geçmiş yılları asla "güncel/bugün" gibi anma.` +
       "\nKESİN GERÇEKLİK KURALI: Güncel Türkiye faiz oranlarını, enflasyonu, döviz kurunu, asgari ücreti, kira/kredi yüzdelerini veya değişen mevzuat rakamlarını ASLA ezberden veya eski/yabancı verilere bakarak uydurma. Kullanıcının vermediği güncel bir oran gerekiyorsa kesin sayı uydurmak yerine oran/kural mantığıyla analiz yap (ör. taksit/gelir oranı, nakit yastığı ayı, maliyet-getiri farkı) ve gerekirse kullanıcıdan güncel oranı yazmasını iste.";
 
+    // Faz 1 (canlı kalite denetimi): tüm koltuklar için ortak kanıt ve dil disiplini
+    const EVIDENCE_LANG_RULE =
+      "\nKANIT KURALI (Faz 1): Tutanakta kaynak yoksa \"evrim biyolojisi kanıtladığı\", \"ontolojik zorunluluktur\", \"bilimsel olarak ispatlanmıştır\" gibi dış otorite iddialarını KULLANMA; böyle bir düşünceyi \"benim varsayımım\" diye sun ve kanıt durumunu açıkça yaz." +
+      "\nDİL KURALI (Faz 1): Sade, doğal Türkçe konuş; \"köpek gibi\", \"saf hayvan\" gibi aşağılayıcı veya çeviri kokan sert benzetmeleri ve abartılı metaforları kullanma; kısa, düz cümleler kur.";
+
     function getExpertSystemPrompt(seatObj) {
       if (seatObj && seatObj.prompt) {
         // v2.7: kullanıcının kurduğu katılımcı — kendi yazdığı/ürettirdiği istem
         const own = seatObj.prompt;
-        return own.includes("KESİN GERÇEKLİK KURALI") ? own : (own + TR_REALITY_RULE);
+        return own.includes("KESİN GERÇEKLİK KURALI") ? own : (own + TR_REALITY_RULE + EVIDENCE_LANG_RULE);
       }
       const dbChar = state.charactersById[seatObj.id];
       const base = (dbChar && dbChar.system_prompt)
         ? dbChar.system_prompt
         : `Sen Yuvarlak Masa'da oturan ${seatObj.name} (${seatObj.role}) uzmanısın. 3-4 kısa, somut ve net Türkçe cümleyle konuş; önceki konuşmacının kör noktasına doğrudan değin. Kendi adını başa yazma.`;
-      return base.includes("KESİN GERÇEKLİK KURALI") ? base : (base + TR_REALITY_RULE);
+      return base.includes("KESİN GERÇEKLİK KURALI") ? base : (base + TR_REALITY_RULE + EVIDENCE_LANG_RULE);
     }
 
     function sanitizeUserError(rawMsg, errCode = "") {
@@ -1993,14 +1998,17 @@
         `- Her bölümde 2-4 kısa madde (- ile). Yalnızca tutanakta geçenleri yaz; yeni iddia uydurma.\n` +
         `- Güncel faiz/enflasyon/döviz oranı uydurma; oran/kural mantığıyla konuş.\n` +
         `- Tek kesin hüküm vermek zorunda değilsin; gerekliyse 'Bu bilgiyle kesin karar verilemez' de.\n` +
-        `- DOĞRULANMAMIŞ İDDİALAR bölümünde kanıtı olmayan her iddiayı açıkça işaretle.`;
+        `- DOĞRULANMAMIŞ İDDİALAR bölümünde kanıtı olmayan her iddiayı açıkça işaretle.\n` +
+        `- Uzun düşünme yapma; düşünmeyi uzatmadan doğrudan bölümleri sırayla yaz, her maddeyi tek cümlede tut.`;
 
       try {
         const finalVerdict = await streamSeatCompletion({
           seat: "K",
           characterId: "karar_hakemi",
           temperature: 0.4,
-          maxTokens: 1100,
+          // Faz 1: 1100 sınırı qwen'in gizli düşünme payıyla kesiliyordu (RİSKLER 2. madde)
+          maxTokens: 2048,
+          timeoutMs: 45000,
           messages: [
             { role: "system", content: getExpertSystemPrompt({ id: "karar_hakemi", name: "Karar Hakemi", role: "Çıktı" }) },
             { role: "user", content: summaryPrompt }

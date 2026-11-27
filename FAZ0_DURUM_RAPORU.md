@@ -25,7 +25,7 @@ Bu rapor yeni özellik üretmez; **neyin gerçekten olduğunu** sabitler. Her sa
 | Faz | Durum | Dayanak |
 |---|---|---|
 | **Faz 0 — Mevcut durum** | **Tamamlandı** | Bu rapor + `README.md` güncellemesi + tam paket yeşil. |
-| **Faz 1 — Gerçek muhakeme kalitesi** | **Doğrulanamadı (engel: ortam)** | Gerçek model çağrısı bu geliştirme ortamından yapılamaz (dış ağ kısıtlı) ve canlı siteye erişilemez. Geçiş koşulları: aşağıdaki §5. |
+| **Faz 1 — Gerçek muhakeme kalitesi** | **Kısmen tamamlandı** | 4 gerçek soru canlı sitede çalıştırıldı; kanıtlı rapor [`FAZ1_KALITE_RAPORU.md`](FAZ1_KALITE_RAPORU.md): 4 bulgu → 3'ü kodda kapatıldı (hakem kesilmesi, kanıt/dil disiplini), 1'i platform ayarı (Gemini yedek anahtarı). Sonraki tur teyidi raporda §F. |
 | **Faz 2 — Soru derinliği** | **Eksik** | Zaman/aciliyet, risk sınırı, etkilenenler seçicileri ve netleştirme sorusu henüz yok. |
 | **Faz 3 — Kullanıcı müdahalesi** | **Kısmen** | Yazma, koltuğa sorma, tur sürdürme, özeti yenileme var. Eksik: yeni bilgi/belge ekleme kanalı, itiraz aracı, müdahalenin etkisinin görünür kılınması. |
 | **Faz 4 — Özgün zekâ** | **Kısmen** | Bilişsel direktif ve bellek gerçek (yukarıda). Eksik: deneysel karşılaştırma raporu, öğrenmenin beğeniye bağlanmadığının kanıtı, tahminlerin geriye dönük değerlendirmesi. |
@@ -70,14 +70,11 @@ curl https://yuvarlakmasa.com.tr/api/health
 
 ---
 
-## 5. Faz 1'e geçiş koşulları (açık kalan iş)
+## 5. Faz 1 — durum notu (kapatıldı, izleme sürüyor)
 
-Faz 1 (gerçek muhakeme kalitesi raporu) bu ortamdan **yürütülemez** — iki yoldan biri gerekir:
+Faz 1'in ilk turu tamamlandı: kullanıcı canlı sitede 4 gerçek soru çalıştırıp tutanakları getirdi; rapor [`FAZ1_KALITE_RAPORU.md`](FAZ1_KALITE_RAPORU.md) içinde. Şartlar karşılandı: rapor gerçek konuşma kaydı üzerinde kanıtlı, "güzel cevap" yerine hangi aşamada kalite düştüğünü söylüyor (hakem kesilmesi → bulundu ve giderildi; kanıt uydurma → bulundu ve kural sıkılaştırıldı).
 
-1. **Sen canlı sitede** gerçek bir soruyu masaya koyarsın, çıktıyı (tutanak/metin) buraya yapıştırırsın → ben kalite raporunu üretirim: doğrudan yanıt oranı, tekrar/yüzeysellik örnekleri, hakemin tartışmaya bağlılığı, Türkçe doğallık, düzeltme öncelikleri.
-2. **Bu ortama gerçek model erişimi** açılırsa (ağ izni veya API anahtarı) ben aynı testi burada çalıştırırım.
-
-**Faz 1 tamamlanmış sayılmayacak** şart: rapor en az bir gerçek konuşma kaydı üzerinde kanıtlı olacak ve "güzel cevap" yerine hangi aşamada kalite düştüğünü söyleyecek.
+**Açık kalan:** (a) Railway'e `GEMINI_API_KEY` eklenmesi (kullanıcı eylemi), (b) bir sonraki canlı turda hakem çıktısının tamamlandığının ve kanıt uydurma olayının sıfır olduğunun teyidi.
 
 ---
 

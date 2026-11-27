@@ -201,6 +201,12 @@ async function runDebate(d, w, question) {
   const histText = d.getElementById("view-history").textContent;
   assert(histText.includes("yalnızca bu tarayıcıda saklanır"), "47 geçmiş: sekme başlığı arşiv gerçeğini söylüyor");
 
+  // ── Faz 1 düzeltmeleri (canlı kalite denetimi bulguları) ──
+  const judgePost = [...posts].reverse().find(p => p.url.includes("/api/chat/stream") && p.body && p.body.cognitive_character_id === "karar_hakemi");
+  assert(judgePost && judgePost.body.max_tokens === 2048, "48 Faz1: hakem token sınırı 2048 (yarım cümle kesilmesi giderildi)");
+  const expertPrompt = w.getExpertSystemPrompt({ id: "test_koltuk", name: "Test", role: "Rol" });
+  assert(expertPrompt.includes("KANIT KURALI (Faz 1)") && expertPrompt.includes("DİL KURALI (Faz 1)"), "49 Faz1: tüm koltuklara kanıt + sade dil kuralı ekli");
+
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });

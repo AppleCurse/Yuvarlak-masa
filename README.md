@@ -127,7 +127,7 @@ bash tests/run_all.sh
 | Faz | Konu | Durum |
 |---|---|---|
 | 0 | Mevcut durumu mühürle | ✅ Bu rapor |
-| 1 | Gerçek muhakeme kalitesi (canlı konuşma üzerinde kanıtlı rapor) | ⏳ Koşullar raporda §5 |
+| 1 | Gerçek muhakeme kalitesi (canlı konuşma üzerinde kanıtlı rapor) | 🟡 Kısmen — [`FAZ1_KALITE_RAPORU.md`](FAZ1_KALITE_RAPORU.md): 4 canlı oturum, 3/4 bulgu kapatıldı |
 | 2 | Soru derinliği (aciliyet/risk/etkilenen seçicileri) | 🔜 |
 | 3 | Kullanıcı müdahalesi (delil, itiraz, etki görünürlüğü) | 🔜 (temel var) |
 | 4 | Nörodinamik Ajan'ın ölçülebilir farkı | 🔜 (mekanizma var) |
