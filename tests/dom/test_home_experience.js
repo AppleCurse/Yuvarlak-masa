@@ -1,0 +1,135 @@
+/* v2.6 ana sayfa deneyimi testi — jsdom:
+   - demo sahnesi: örnek akış oynar, DEMO/YZ/İNSAN etiketleri, arşive/servise 0 çağrı
+   - 3 adım ilk kullanım rayı
+   - katılımcı çeşitliliği (6 kişi, tek renk yok)
+   - canlı akış: Moderatör → katılımcılar → Nörodinamik Ajan → Moderatör → Karar Hakemi
+   - karşılıklılık: yanıt işareti yalnızca metin gerçekten önceki konuşmacıya değiniyorsa
+   - nörodinamik durum çipi /api/neuro/state'ten gelen GERÇEK veriyle dolar
+   - çıktı gerekçeli bölümlere ayrılır (## başlıkları)
+   Çalıştırma: cd tests && node dom/test_home_experience.js */
+const fs = require("fs");
+const path = require("path");
+const { JSDOM } = require(path.join(__dirname, "..", "node_modules", "jsdom"));
+
+const REPO = path.join(__dirname, "..", "..");
+const html = fs.readFileSync(path.join(REPO, "static", "index.html"), "utf-8");
+let pass = 0, fail = 0;
+function assert(cond, label) {
+  if (cond) { pass++; console.log("  ✅ " + label); }
+  else { fail++; console.log("  ❌ " + label); }
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const posts = [];
+function makeSSE(chunks) {
+  const enc = new TextEncoder();
+  return new ReadableStream({ start(c) { for (const x of chunks) c.enqueue(enc.encode(x)); c.close(); } });
+}
+
+function makeDom() {
+  return new JSDOM(html, {
+    url: "http://localhost:8888/",
+    runScripts: "dangerously",
+    pretendToBeVisual: true,
+    beforeParse(w) {
+      w.YM_DEMO_FAST = 1;
+      w.tailwind = { config: {} };
+      w.Element.prototype.scrollIntoView = function () {};
+      if (!w.crypto.subtle) Object.defineProperty(w, "crypto", { value: require("crypto").webcrypto });
+      w.TextDecoder = TextDecoder; w.TextEncoder = TextEncoder;
+      w.fetch = async (u, opts = {}) => {
+        const s = String(u);
+        const json = (obj, st = 200) => ({ ok: st < 400, status: st, json: async () => obj, text: async () => JSON.stringify(obj) });
+        try { if (opts.body) posts.push({ url: s, body: JSON.parse(opts.body) }); } catch (_) { posts.push({ url: s }); }
+        if (s.includes("/api/characters")) return json({ ok: true, characters: [] });
+        if (s.includes("/api/providers")) return json({ ok: true, providers: [{ id: "groq", name: "Groq", free: true, badge: "Ücretsiz", note: "test", base_url: "https://x", key_url: "https://x", models: [], default_model: "m", server_ready: false, multi_model: false }], server_pool_count: 0, seat_status: {} });
+        if (s.includes("/api/neuro/state")) {
+          const st = posts.find(p => p.url.includes("/api/session/start"));
+          const sid = st ? st.body.session_id : "none";
+          return json({ ok: true, seats: { [`${sid}:norodinamik_ajan`]: { energy: 0.72, fatigue: 0.31, epistemic_uncertainty: 0.44, stance_label: "Derin Sorgulama", step_count: 3 } } });
+        }
+        if (s.includes("/api/chat/stream")) {
+          const body = opts.body ? JSON.parse(opts.body) : {};
+          const who = body.cognitive_character_id || body.seat;
+          // SIRA KURALI satırındaki önceki konuşmacıyı yankıla → yanıt işareti test edilebilir
+          const m = JSON.stringify(body.messages || []).match(/konuşan (.+?) \(/);
+          const replyTo = m ? ` ${m[1]} iddiasına doğrudan yanıt veriyorum;` : "";
+          let reply = `MOCK ${who}: Öncesindekini dikkate alıyorum.${replyTo} İddia kanıt durumuyla ele alınıyor.`;
+          if (who === "karar_hakemi") {
+            reply = "## ÖNE ÇIKAN ARGÜMANLAR\n- mock madde bir\n- mock madde iki\n## UZLAŞILAN NOKTALAR\n- mock uzlaşı\n## GÖRÜŞ AYRILIKLARI\n- mock ayrılık\n## DOĞRULANMAMIŞ İDDİALAR\n- mock doğrulanamaz\n## RİSKLER\n- mock risk\n## EKSİK BİLGİLER\n- mock eksik\n## OLASI KARAR YOLLARI\n- mock seçenek A";
+          }
+          return { ok: true, status: 200, body: makeSSE([`data: ${JSON.stringify({ delta: reply })}\n`, "data: [DONE]\n"]) };
+        }
+        if (s.includes("/api/chat")) return json({ ok: true, content: "MOCK quick", provider_label: "Mock" });
+        return json({ ok: true });
+      };
+    }
+  });
+}
+
+(async () => {
+  console.log("== v2.6 Ana Sayfa Deneyimi ==");
+  const dom = makeDom();
+  const w = dom.window, d = w.document;
+
+  // ── 1) DEMO SAHNESİ ──
+  await sleep(400);
+  const demoCalls = posts.filter(p => p.url.includes("/api/chat") || p.url.includes("/api/session"));
+  assert(d.querySelectorAll("#demoTranscript .demo-turn").length === 8, "1 demo: 8 örnek söz oynar");
+  assert(d.querySelectorAll("#demoSeatRail .rail-item").length === 6, "2 demo: 6 katılımcı rayda");
+  assert(!d.getElementById("landingStage").classList.contains("hidden"), "3 demo: sahne görünür");
+  assert(d.getElementById("landingStage").textContent.includes("önceden yazılmış bir demo"), "4 demo: dürüstlük notu ekranda");
+  assert(d.querySelectorAll("#demoTranscript .chip-demo").length === 8, "5 demo: her sözde DEMO rozeti");
+  assert(d.querySelectorAll("#demoTranscript .chip-yz").length >= 7, "6 demo: YZ karakter etiketleri var");
+  assert(d.querySelectorAll("#demoTranscript .chip-human").length === 1, "7 demo: insan koltuğu İNSAN etiketli");
+  assert(demoCalls.length === 0, "8 demo: servise/arşive 0 çağrı (sahte canlı akış yok)");
+  assert(!d.getElementById("demoOutcome").classList.contains("hidden"), "9 demo: çıktı paneli açılır");
+  assert(d.querySelectorAll("#demoOutcomeBody .outcome-sec").length >= 5, "10 demo: çıktı gerekçeli bölümlere ayrılmış");
+  const railNames = [...d.querySelectorAll("#demoSeatRail .rail-name")].map(e => e.textContent);
+  assert(new Set(railNames).size === 6, "11 demo: katılımcı isimleri benzersiz");
+  const demoBodies = [...d.querySelectorAll("#demoTranscript .turn-body")].map(e => e.textContent);
+  assert(demoBodies.some(t => t.includes("doğrulayamıyorum")), "12 demo: ajan doğrulayamadığını açıkça söyler");
+  assert(demoBodies.some(t => t.includes("geri çekiyorum")), "13 demo: ajan fikrini gerekçeyle değiştirir");
+  assert(d.querySelectorAll("#demoTranscript .reply-mark").length >= 4, "14 demo: sözler birbirine yanıt bağlantılarıyla bağlı");
+
+  // ── 2) 3 ADIM RAYI ──
+  const steps = d.querySelectorAll("#firstRunSteps .step-card");
+  assert(steps.length === 3, "15 üç adım rayı: 3 kart");
+  const stepText = d.getElementById("firstRunSteps").textContent;
+  assert(stepText.includes("Konunu belirle") && stepText.includes("Masanı kur") && stepText.includes("Tartıştır"), "16 üç adım: konu → masa → tartıştır");
+
+  // ── 3) YARDIMCI: yanıt işareti mantığı ──
+  assert(w.detectReplyTarget("Moderatörün sorusuna katılıyorum ama bir ekleme var", { speaker: "Moderatör" }) === "Moderatör", "17 yanıt işareti: önceki konuşmacı anılırsa");
+  assert(w.detectReplyTarget("tamamen alakasız bir cümle", { speaker: "Moderatör" }) === null, "18 yanıt işareti: anılmazsa işaret yok (uydurma ok yok)");
+
+  // ── 4) CANLI AKIŞ ──
+  posts.length = 0;
+  d.getElementById("questionInput").value = "İş değişikliği yapmalı mıyım?";
+  d.getElementById("questionForm").dispatchEvent(new w.Event("submit", { cancelable: true, bubbles: true }));
+  await sleep(1600);
+
+  assert(d.getElementById("landingStage").classList.contains("hidden"), "19 canlı: sahne gizlenir, tartışma alanı açılır");
+  const streamCalls = posts.filter(p => p.url.includes("/api/chat/stream")).map(p => p.body.cognitive_character_id || p.body.seat);
+  const expected = ["moderator", "hesap_uzmani", "risk_kriz", "firsat_stratejist", "sokak_gercekcisi", "norodinamik_ajan", "moderator", "karar_hakemi"];
+  assert(JSON.stringify(streamCalls) === JSON.stringify(expected), "20 canlı sıra: Moderatör → 4 uzman → Ajan → Moderatör → Hakem");
+  assert(posts.filter(p => p.url.includes("/api/session/record_message")).length === 7, "21 canlı: 7 söz arşive yazılır");
+  const cards = d.querySelectorAll("#messagesContainer article");
+  assert(cards.length === 7, "22 canlı: 7 konuşma kartı");
+  const replyMarks = [...d.querySelectorAll(".reply-el")].map(e => e.textContent).filter(t => t.length);
+  assert(replyMarks.length >= 4, "23 canlı: yanıt işaretleri gerçekten önceki söze bağlanıyor");
+  const neuroChips = [...d.querySelectorAll(".neuro-chip")].map(e => e.textContent).filter(t => t.length);
+  assert(neuroChips.length === 1 && neuroChips[0].includes("Enerji %72") && neuroChips[0].includes("Derin Sorgulama"), "24 canlı: nörodinamik çip sunucudaki gerçek veriyle doldu");
+  assert(!d.getElementById("outcomeSections").classList.contains("hidden"), "25 canlı: çıktı bölümleri görünür");
+  assert(d.querySelectorAll("#outcomeSections .outcome-sec").length === 7, "26 canlı: 7 gerekçeli bölüm ayrıştırıldı");
+  assert(d.getElementById("debateStatusPill").textContent.includes("Karar özeti hazır"), "27 canlı: durum çipi hazır diyor");
+  assert(d.getElementById("messagesContainer").textContent.includes("YZ KARAKTER"), "28 canlı: kartlarda YZ etiketi");
+
+  // ── 5) SAĞLAYICI MODALI: E/F koltukları ──
+  d.getElementById("openProvidersBtn").click();
+  await sleep(50);
+  const modalText = d.getElementById("providersModal").textContent;
+  assert(modalText.includes("Moderatör (Operatör)") && modalText.includes("Nörodinamik Ajan"), "29 sağlayıcılar: E/F koltukları yapılandırılabilir");
+
+  console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });

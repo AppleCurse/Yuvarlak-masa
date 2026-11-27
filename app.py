@@ -86,10 +86,12 @@ try:
     FREE_TRIAL_DAILY_SESSIONS = max(1, int(os.environ.get("FREE_TRIAL_DAILY_SESSIONS", "2")))
 except ValueError:
     FREE_TRIAL_DAILY_SESSIONS = 2
+# v2.6: Tam masa akışı (moderatör girişi + 6 koltuk turu + moderatör derinleştirme
+# + karar özeti = 9 çağrı; zarf/open opsiyonlarıyla birlikte 20 çağrıya kadar çıkabiliyor.)
 try:
-    FREE_TRIAL_MAX_CALLS_PER_SESSION = max(5, int(os.environ.get("FREE_TRIAL_MAX_CALLS_PER_SESSION", "14")))
+    FREE_TRIAL_MAX_CALLS_PER_SESSION = max(5, int(os.environ.get("FREE_TRIAL_MAX_CALLS_PER_SESSION", "20")))
 except ValueError:
-    FREE_TRIAL_MAX_CALLS_PER_SESSION = 14
+    FREE_TRIAL_MAX_CALLS_PER_SESSION = 20
 
 _TR_MONTHS = [
     "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -652,7 +654,7 @@ async def providers_info(request: Request):
             "server_ready": p["id"] in ready_ids,
         })
     seat_status = {}
-    for seat in ("A", "B", "C", "D", "K"):
+    for seat in ("A", "B", "C", "D", "E", "F", "K"):
         vc = vault.get(seat)
         if vc and vc.get("base_url"):
             seat_status[seat] = {

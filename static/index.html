@@ -5,29 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Yuvarlak Masa — Gerçek Hayat Karar Masası</title>
   <meta name="description" content="Tek bir yapay zekaya güvenme. Konunu farklı uzmanların ve farklı yapay zekaların önüne koy, birbirlerine itiraz etsinler, sonunda net karar özetini al." />
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Yerel varlıklar: CDN bağımlılığı yok (çevrimdışı da çalışır). Yeniden derleme: tailwind.config.js + static/tailwind.src.css -->
+  <link rel="stylesheet" href="/static/tailwind.css" />
+  <script src="/static/vendor/lucide.min.js"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#4f46e5',
-              600: '#4338ca',
-              700: '#3730a3'
-            }
-          }
-        }
-      }
-    };
+    // Varsayılan: sinematik karanlık tema (kullanıcı 'light' seçmediyse)
+    try { if (localStorage.getItem("ym_theme") !== "light") document.documentElement.classList.add("dark"); } catch (_) { document.documentElement.classList.add("dark"); }
   </script>
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
@@ -59,6 +42,150 @@
     .seat-float-delay-1 { animation-delay: -1.3s; }
     .seat-float-delay-2 { animation-delay: -2.6s; }
     .seat-float-delay-3 { animation-delay: -3.9s; }
+
+    /* ═══ Yuvarlak Masa sahnesi — ciddi, sıcak-ışıklı, sinematik ═══ */
+    body { background: #0a0c11; }
+    .stage-shell {
+      background:
+        radial-gradient(120% 90% at 50% -10%, rgba(232, 180, 90, 0.13), transparent 55%),
+        radial-gradient(80% 60% at 92% 110%, rgba(124, 58, 237, 0.12), transparent 60%),
+        linear-gradient(180deg, #12151d 0%, #0b0d12 100%);
+      border: 1px solid rgba(232, 180, 90, 0.16);
+      box-shadow: 0 34px 90px -46px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .stage-title {
+      font-size: clamp(1.35rem, 2.6vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #f4efe6;
+      line-height: 1.15;
+    }
+    .stage-topic {
+      font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+      font-weight: 600;
+      color: #e8b45a;
+      line-height: 1.45;
+    }
+    .stage-honesty { font-size: 11px; color: #8b93a7; line-height: 1.5; max-width: 62ch; }
+    .demo-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+      color: #f0c274; background: rgba(232, 180, 90, 0.12);
+      border: 1px solid rgba(232, 180, 90, 0.4);
+      padding: 4px 10px; border-radius: 999px;
+    }
+    .stage-grid { display: grid; grid-template-columns: 225px minmax(0, 1fr) 275px; gap: 14px; padding: 0 16px 16px; }
+    @media (max-width: 1020px) { .stage-grid { grid-template-columns: 1fr; } }
+    .stage-panel {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .stage-panel-title {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #7d8496; margin-bottom: 8px;
+    }
+    .rail-item {
+      display: flex; gap: 9px; align-items: flex-start;
+      padding: 8px 10px; border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      opacity: 0.55; transition: opacity 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+      margin-bottom: 7px;
+    }
+    .rail-item.active {
+      opacity: 1;
+      border-color: rgba(232, 180, 90, 0.5);
+      box-shadow: 0 0 0 1px rgba(232, 180, 90, 0.22), 0 0 26px -8px rgba(232, 180, 90, 0.5);
+      transform: translateY(-1px);
+    }
+    .rail-item.done { opacity: 0.92; }
+    .rail-name { font-size: 12px; font-weight: 700; color: #ece7de; line-height: 1.2; }
+    .rail-role { font-size: 10px; color: #8b93a7; line-height: 1.3; margin-top: 1px; }
+    .rail-state { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: #5c6478; margin-top: 3px; }
+    .rail-item.active .rail-state { color: #e8b45a; }
+    .rail-item.done .rail-state { color: #6ee7b7; }
+    .stage-transcript { max-height: 470px; overflow-y: auto; padding-right: 4px; }
+    .demo-turn {
+      --sp: #e8b45a;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid var(--sp);
+      border-radius: 14px;
+      padding: 11px 13px;
+      margin-bottom: 10px;
+      animation: fadeIn 0.35s ease-out forwards;
+    }
+    .demo-turn .turn-who { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 4px; }
+    .demo-turn .turn-name { font-size: 12.5px; font-weight: 800; color: #f4efe6; }
+    .demo-turn .turn-role { font-size: 10.5px; color: #9aa2b5; }
+    .demo-turn .turn-body { font-size: 13px; line-height: 1.6; color: #d7dbe4; white-space: pre-line; min-height: 18px; }
+    .chip-yz, .chip-demo, .chip-human {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+      padding: 2px 7px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #cbd5e1; background: rgba(255, 255, 255, 0.05);
+    }
+    .chip-demo { color: #f0c274; border-color: rgba(232, 180, 90, 0.45); background: rgba(232, 180, 90, 0.1); }
+    .chip-human { color: #86efac; border-color: rgba(110, 231, 183, 0.4); background: rgba(110, 231, 183, 0.08); }
+    .reply-mark {
+      display: block; font-size: 11px; font-weight: 700;
+      color: #e8b45a; margin-bottom: 3px;
+    }
+    .stage-cta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 4px 16px 16px; }
+    .btn-warm {
+      background: linear-gradient(180deg, #f0c274, #e8b45a);
+      color: #221a0c; font-weight: 800; font-size: 13px;
+      padding: 11px 18px; border-radius: 13px;
+      box-shadow: 0 10px 30px -12px rgba(232, 180, 90, 0.6);
+      transition: transform 0.15s, filter 0.15s;
+    }
+    .btn-warm:hover { filter: brightness(1.06); transform: translateY(-1px); }
+    .btn-ghost-dark {
+      background: rgba(255, 255, 255, 0.06); color: #e7e2d8;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-weight: 700; font-size: 13px; padding: 11px 16px; border-radius: 13px;
+      transition: background 0.15s;
+    }
+    .btn-ghost-dark:hover { background: rgba(255, 255, 255, 0.1); }
+    /* 3 adım rayı */
+    .step-card {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px; padding: 13px 15px;
+      display: flex; gap: 11px; align-items: flex-start;
+    }
+    .step-no {
+      width: 24px; height: 24px; border-radius: 8px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #221a0c; background: #e8b45a;
+    }
+    .step-card h2 { font-size: 13px; font-weight: 800; color: #f4efe6; }
+    .step-card p { font-size: 11.5px; color: #9aa2b5; line-height: 1.5; margin-top: 2px; }
+    /* Sonuç (çıktı) bölümleri */
+    .outcome-sec { border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 8px; margin-top: 8px; }
+    .outcome-sec:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+    .outcome-sec h4 {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #b45309; margin-bottom: 4px;
+    }
+    html.dark .outcome-sec h4 { color: #f0b45a; }
+    .outcome-sec ul { margin: 0; padding-left: 16px; }
+    .outcome-sec li { font-size: 12px; line-height: 1.55; color: #334155; margin-bottom: 3px; }
+    .outcome-sec p { font-size: 12px; line-height: 1.55; color: #334155; }
+    html.dark .outcome-sec li, html.dark .outcome-sec p { color: #cbd5e1; }
+    /* Demo sahnesi (her zaman karanlık panel) */
+    .stage-panel .outcome-sec h4 { color: #e8b45a; }
+    .stage-panel .outcome-sec li, .stage-panel .outcome-sec p { color: #d7dbe4; }
+    .demo-outcome-body { max-height: 350px; overflow-y: auto; }
+    /* Nörodinamik durum çipi (canlı veri) */
+    .neuro-chip {
+      font-size: 10.5px; font-weight: 600; line-height: 1.45;
+      color: #c4b5fd; background: rgba(124, 58, 237, 0.14);
+      border: 1px dashed rgba(167, 139, 250, 0.5);
+      border-radius: 10px; padding: 6px 9px;
+    }
+    .crt-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(232,180,90,.55), transparent); }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased min-h-screen transition-colors duration-200">
@@ -111,92 +238,81 @@
   <!-- =================================================================== -->
   <main id="view-debate" class="max-w-5xl mx-auto px-3 sm:px-4 py-5 sm:py-8 space-y-5">
 
-    <!-- Güçlü Giriş Sahnesi (İlk 3 saniyede burası ne, neden var, nasıl çalışır?) -->
-    <section id="landingHero" class="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-8 shadow-xl border border-indigo-500/20 relative overflow-hidden">
-      <div class="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-indigo-500/20 blur-3xl"></div>
-      <div class="pointer-events-none absolute -bottom-24 -right-20 w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl"></div>
+    <!-- ═══ GİRİŞ SAHNESİ: ÜRÜNÜN KENDİSİ — Yuvarlak Masa, örnek bir tartışmada ═══ -->
+    <section id="landingStage" class="stage-shell rounded-3xl overflow-hidden relative fade-in">
+      <div class="px-4 sm:px-6 pt-5 pb-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="demo-badge">DEMO · ÖRNEK AKIŞ</span>
+            <span class="text-[11px] font-semibold text-amber-200/80">Yuvarlak Masa iş başında</span>
+          </div>
+          <span class="text-[10px] font-bold tracking-widest uppercase text-slate-500">Muhakeme Masası</span>
+        </div>
+        <h1 class="stage-title mt-3">Farklı zihinler aynı masada karşılaşıyor</h1>
+        <p class="stage-topic mt-1.5">“Kendine ait bir hayat kurmak için mevcut düzenini bozmalı mısın?”</p>
+        <p class="stage-honesty mt-2">
+          Bu diyalog <strong class="text-amber-200/90">önceden yazılmış bir demo örneğidir</strong> — canlı model içermez, arşive yazılmaz.
+          Aşağıdaki “Kendi konunu masaya koy” ile gerçek tartışma başlatırsın; katılımcılar o zaman gerçek model yanıtlarıyla konuşur.
+        </p>
+      </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
-        <!-- Sol Sütun: Net Değer Önerisi -->
-        <div class="lg:col-span-7 space-y-4">
-          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-indigo-200 border border-white/10">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            4 Zıt Uzman + 1 Karar Hakemi · Günde 2 Ücretsiz Tam Oturum
-          </span>
+      <div class="stage-grid">
+        <!-- Katılımcı rayı -->
+        <aside class="stage-panel" id="demoSeatRail">
+          <div class="stage-panel-title">Masadakiler</div>
+          <!-- JS DEMO_CAST ile doldurur -->
+        </aside>
 
-          <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight text-white">
-            Tek yapay zeka seni pohpohlar.
-            <span class="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300">Yuvarlak Masa gerçeği tartışır.</span>
-          </h1>
+        <!-- Tartışma akışı -->
+        <div class="stage-panel stage-transcript" id="demoTranscript" aria-live="polite"></div>
 
-          <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
-            Büyük bir karar vermeden önce konunu 4 farklı uzmanın önüne bırak. Birbirine itiraz ederek senin görmediğin riskleri çıkarsınlar; Karar Hakemi sonunda 3 maddede net yol haritasını yazsın.
+        <!-- Çıktı (akış sonunda açılır) -->
+        <aside class="stage-panel" id="demoOutcomePanel">
+          <div class="stage-panel-title">Masanın Çıktısı · Demo</div>
+          <div id="demoOutcome" class="hidden">
+            <div class="demo-outcome-body" id="demoOutcomeBody"></div>
+            <p class="text-[10px] text-slate-500 leading-snug mt-3 pt-2 border-t border-white/10">
+              Demo çıktısı örnektir. Gerçek oturumlarda bu panel, tartışmadan üretilen gerekçeli değerlendirmedir.
+            </p>
+          </div>
+          <p id="demoOutcomePending" class="text-xs text-slate-500 leading-relaxed">
+            Tartışma sürerken katılımcıların iddiaları, çelişkileri ve kanıt boşlukları burada birikecek…
           </p>
+        </aside>
+      </div>
 
-          <div class="flex flex-wrap items-center gap-2.5 pt-1">
-            <button id="heroFocusQuestionBtn" type="button" class="bg-white hover:bg-indigo-50 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-sm inline-flex items-center gap-2 transition">
-              <i data-lucide="arrow-down" class="w-4 h-4 text-brand-600"></i>
-              <span>Sorunu Masaya Koy</span>
-            </button>
-            <button id="heroDemoBtn" type="button" class="bg-white/10 hover:bg-white/15 text-white border border-white/15 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl inline-flex items-center gap-2 transition">
-              <i data-lucide="play" class="w-4 h-4 text-emerald-300"></i>
-              <span id="heroDemoLabel">Canlı Örnek Başlat (Ev mi, Kira mı?)</span>
-            </button>
-          </div>
-
-          <div class="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
-            <span>✓ Üyelik gerekmez</span>
-            <span>✓ Tartışmaya istediğin an müdahale et</span>
-            <span>✓ Görüşmelerin sadece sende saklanır</span>
-          </div>
-        </div>
-
-        <!-- Sağ Sütun: Canlı Görsel Yuvarlak Masa -->
-        <div class="lg:col-span-5">
-          <div id="visualRoundTable" class="relative mx-auto w-full max-w-[320px] aspect-square flex items-center justify-center">
-            <div class="rounded-full border border-dashed border-indigo-400/35 w-[82%] h-[82%] absolute"></div>
-            <div class="table-ring-glow w-[44%] h-[44%] rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-500/20 border border-indigo-300/35 backdrop-blur-md flex flex-col items-center justify-center text-center p-3 z-10">
-              <span class="text-[10px] uppercase tracking-wider font-bold text-indigo-200">Yuvarlak Masa</span>
-              <span id="visualTableName" class="text-xs font-extrabold text-white mt-0.5 leading-tight">Para, Ev &amp; Yatırım</span>
-              <span class="text-[10px] text-emerald-300 font-semibold mt-1">+ Karar Hakemi</span>
-            </div>
-
-            <div id="visualSeat0" class="seat-float absolute top-2 left-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
-            <div id="visualSeat1" class="seat-float seat-float-delay-1 absolute top-2 right-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
-            <div id="visualSeat2" class="seat-float seat-float-delay-2 absolute bottom-2 left-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
-            <div id="visualSeat3" class="seat-float seat-float-delay-3 absolute bottom-2 right-0 z-20 bg-slate-900/90 border border-white/15 rounded-xl px-2.5 py-2 shadow-lg backdrop-blur-md max-w-[138px]"></div>
-          </div>
-        </div>
+      <div class="stage-cta">
+        <button id="heroFocusQuestionBtn" type="button" class="btn-warm inline-flex items-center gap-2">
+          <span aria-hidden="true">↳</span> Kendi konunu masaya koy
+        </button>
+        <button id="demoReplayBtn" type="button" class="btn-ghost-dark inline-flex items-center gap-2">
+          <span aria-hidden="true">↻</span> Örneği yeniden izle
+        </button>
+        <span class="text-[11px] text-slate-500">İzle → sorunu yaz → masaya müdahale et</span>
       </div>
     </section>
 
-    <!-- 3 Adımda Nasıl Çalışır Şeridi -->
-    <section id="howItWorksStrip" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-start gap-3">
-        <div class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-indigo-500/15 text-brand-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
-          <i data-lucide="message-square" class="w-4 h-4"></i>
-        </div>
-        <div class="min-w-0">
-          <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">1. Konunu Masaya Bırak</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Para, iş, kira, ilişki ya da iş fikri... Tek cümleyle derdini yaz veya hazır senaryoya tıkla.</p>
+    <!-- İlk kullanım: 3 sade adım -->
+    <section id="firstRunSteps" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="step-card">
+        <span class="step-no">1</span>
+        <div>
+          <h2>Konunu belirle</h2>
+          <p>Parayla, işle, evle, ilişkile ilgili tek cümlelik sorunu yaz veya hazır senaryodan başla.</p>
         </div>
       </div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-start gap-3">
-        <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
-          <i data-lucide="users" class="w-4 h-4"></i>
-        </div>
-        <div class="min-w-0">
-          <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">2. 4 Uzman Çarpışsın</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Farklı bakış açıları birbirine itiraz eder. İstediğin an araya girip yönü değiştirebilirsin.</p>
+      <div class="step-card">
+        <span class="step-no">2</span>
+        <div>
+          <h2>Masanı kur</h2>
+          <p>Önerilen katılımcılarla başla: moderatör, uzmanlar, eleştirel ses ve nörodinamik ajan. İstediğin zaman kat ekle/çıkar.</p>
         </div>
       </div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-start gap-3">
-        <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
-          <i data-lucide="gavel" class="w-4 h-4"></i>
-        </div>
-        <div class="min-w-0">
-          <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">3. 3 Maddede Net Karar</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Tarafsız Karar Hakemi sonunda Net Karar, En Büyük Risk ve 48 Saatte İlk Adım özetini verir.</p>
+      <div class="step-card">
+        <span class="step-no">3</span>
+        <div>
+          <h2>Tartıştır &amp; müdahale et</h2>
+          <p>Tartışmayı izle, bir koltuğa soru yönelt, yön değiştir, gerektiğinde durdur; sonunda gerekçeli çıktıyı incele.</p>
         </div>
       </div>
     </section>
@@ -213,7 +329,7 @@
           Tek yapay zeka sana duymak istediğini söyler.
         </h1>
         <p id="heroSubtitle" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-          Konunu 4 farklı uzmanın önüne koy; birbirine itiraz etsinler, sonunda 3 maddede net karar özetini al.
+          Konunu masaya koy: moderatör gündemi açsın, katılımcılar birbirine itiraz etsin, sonunda gerekçeli çıktıyı al.
         </p>
       </div>
 
@@ -234,7 +350,7 @@
           <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
             <button id="toggleExpertsBtn" type="button" class="inline-flex items-center gap-1.5 text-brand-600 dark:text-indigo-400 font-semibold hover:underline">
               <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-              <span id="expertsToggleLabel">4 Uzman + Hakem · Masa Ayarları</span>
+              <span id="expertsToggleLabel">6 Katılımcı · Masa Ayarları</span>
             </button>
           </div>
 
@@ -259,7 +375,7 @@
             Koltuklara API Anahtarı Bağla →
           </button>
         </div>
-        <div id="seatCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"></div>
+        <div id="seatCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"></div>
         <div class="pt-2.5 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
           <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Ek Seçenekler:</span>
           <label class="inline-flex items-center gap-1.5 cursor-pointer select-none" title="Tartışma başlamadan herkes ilk fikrini gizlice zarfa koyar, sonunda kimin fikrinin değiştiği açılır">
@@ -294,7 +410,7 @@
         </button>
       </div>
 
-      <!-- Karar Özeti Kartı (Hakem bitirince en üstte görünür) -->
+      <!-- Masanın Çıktısı (Karar Hakemi bitirince en üstte görünür) -->
       <div id="verdictCard" class="hidden bg-gradient-to-br from-indigo-50/90 via-white to-emerald-50/60 dark:from-indigo-950/40 dark:via-slate-900 dark:to-emerald-950/25 border border-indigo-200/90 dark:border-indigo-500/30 rounded-2xl p-4 sm:p-6 shadow-sm space-y-3 fade-in">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
@@ -302,16 +418,17 @@
               <i data-lucide="gavel" class="w-4 h-4"></i>
             </div>
             <div>
-              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">Masanın Net Kararı</h3>
-              <p class="text-[11px] text-slate-500 dark:text-slate-400">Karar Hakemi Özeti · Model değerlendirmesidir, son karar senindir</p>
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">Masanın Çıktısı — Gerekçeli Değerlendirme</h3>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Karar Hakemi (model) değerlendirmesidir · bağımsız doğrulama yoktur · son karar senindir</p>
             </div>
           </div>
           <button id="copyVerdictBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-            Özeti Kopyala
+            Çıktıyı Kopyala
           </button>
         </div>
         <div id="verdictBody" class="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line"></div>
+        <div id="outcomeSections" class="hidden space-y-0"></div>
       </div>
 
       <!-- Mühürlü Zarf Sonucu (Kimin Fikri Değişti?) -->
@@ -499,8 +616,8 @@
         id: "para",
         label: "Para, Ev & Yatırım",
         icon: "home",
-        headline: "Büyük para kararı vermeden önce 4 farklı gözden geçir.",
-        subtitle: "Hesap uzmanı, risk gözü, stratejist ve sokaktaki gerçekçi birbirine itiraz etsin; sonunda net karar özetini al.",
+        headline: "Büyük para kararı vermeden önce farklı zihinlerden geçir.",
+        subtitle: "Hesap uzmanı, risk gözü, stratejist ve sokaktaki gerçekçi birbirine itiraz etsin; moderatör çelişkileri çıkarsın, sonunda gerekçeli çıktı gelsin.",
         placeholder: "Örn: 3 milyon TL birikimim var; kredi çekip ev mi alayım, yoksa kirada kalıp altın/fon mu yapayım?",
         scenarios: [
           { label: "Ev mi, kira + yatırım mı?", q: "İstanbul'da 3,5 milyon TL birikimim var. Kredi çekip ev mi alayım, yoksa kirada kalıp birikimi değerlendirmek mi daha mantıklı?" },
@@ -597,6 +714,15 @@
       }
     ];
 
+    // ═══════════════════════════════════════════════════════════════════
+    // SABİT KATILIMCILAR — tüm masalarda bulunan Moderatör (E) ve
+    // Nörodinamik Ajan (F). Koltuk harfleri backend VALID_CRED_SEATS ile uyumlu.
+    // ═══════════════════════════════════════════════════════════════════
+    const SHARED_SEATS = [
+      { seat: "E", id: "moderator", name: "Moderatör", role: "Tartışma Operatörü", dot: "bg-cyan-600", badge: "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300", fixed: true },
+      { seat: "F", id: "norodinamik_ajan", name: "Nörodinamik Ajan", role: "Kanıt & Öz Denetim", dot: "bg-purple-700", badge: "bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300", fixed: true, neuro: true }
+    ];
+
     // =========================================================================
     // DURUM YÖNETİMİ
     // =========================================================================
@@ -646,8 +772,21 @@
       return DECISION_TABLES.find(t => t.id === state.tableId) || DECISION_TABLES[0];
     }
 
+    // Masadaki tüm katılımcılar: masa uzmanları (A-D) + Moderatör (E) + Nörodinamik Ajan (F)
     function activeSeatsList() {
-      return currentTable().seats.filter(s => !state.disabledSeats.has(s.seat));
+      const base = currentTable().seats.filter(s => !state.disabledSeats.has(s.seat));
+      const shared = SHARED_SEATS.filter(s => !state.disabledSeats.has(s.seat));
+      return [...base, ...shared];
+    }
+    // Tur atacak koltuklar (Moderatör ayrı fazlarda konuşur)
+    function roundSeatsList() {
+      return activeSeatsList().filter(s => s.seat !== "E");
+    }
+    function moderatorSeat() {
+      return state.disabledSeats.has("E") ? null : SHARED_SEATS[0];
+    }
+    function neuroSeat() {
+      return state.disabledSeats.has("F") ? null : SHARED_SEATS[1];
     }
 
     const CURRENT_YEAR = new Date().getFullYear();
@@ -728,7 +867,7 @@
     function refreshSeatStatusFromLocal() {
       const local = loadPersonalSeats();
       const status = {};
-      ["A", "B", "C", "D", "K"].forEach(s => {
+      ["A", "B", "C", "D", "E", "F", "K"].forEach(s => {
         if (local[s] && local[s].api_key && local[s].base_url) {
           const k = local[s].api_key;
           status[s] = {
@@ -782,7 +921,7 @@
       const customCount = Object.values(state.seatStatus).filter(s => s.source === "personal").length;
       const lbl = document.getElementById("providerBtnLabel");
       if (customCount > 0) {
-        lbl.textContent = `${customCount}/5 Kendi API'n`;
+        lbl.textContent = `${customCount}/7 Kendi API'n`;
       } else {
         lbl.textContent = "Ücretsiz API Bağla";
       }
@@ -978,32 +1117,6 @@
       document.getElementById("heroSubtitle").textContent = tbl.subtitle;
       document.getElementById("questionInput").placeholder = tbl.placeholder;
 
-      // Görsel Yuvarlak Masa koltuklarını kategoriye göre canlı güncelle
-      const vTableName = document.getElementById("visualTableName");
-      if (vTableName) vTableName.textContent = tbl.label;
-      for (let i = 0; i < 4; i++) {
-        const chip = document.getElementById(`visualSeat${i}`);
-        const s = tbl.seats[i];
-        if (!chip) continue;
-        if (!s) {
-          chip.classList.add("hidden");
-          continue;
-        }
-        chip.classList.remove("hidden");
-        chip.innerHTML = `
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full ${s.dot} shrink-0"></span>
-            <span class="text-[11px] font-bold text-white truncate">${escapeHtml(s.name)}</span>
-          </div>
-          <div class="text-[10px] text-slate-300 truncate mt-0.5">${escapeHtml(s.role)}</div>
-        `;
-      }
-      const demoLbl = document.getElementById("heroDemoLabel");
-      if (demoLbl && tbl.scenarios && tbl.scenarios[0]) {
-        const shortLbl = tbl.id === "para" ? "Ev mi, Kira mı?" : tbl.scenarios[0].label;
-        demoLbl.textContent = `Canlı Örnek Başlat (${shortLbl})`;
-      }
-
       // Hazır Senaryo Çipleri
       const chipsEl = document.getElementById("scenarioChips");
       chipsEl.innerHTML = tbl.scenarios.map((s, idx) => `
@@ -1021,11 +1134,11 @@
         });
       });
 
-      // Uzman Kartları (Açılır Panel)
+      // Katılımcı Kartları (Açılır Panel) — masa uzmanları + Moderatör + Nörodinamik Ajan
       const activeCount = activeSeatsList().length;
-      document.getElementById("expertsToggleLabel").textContent = `${activeCount} Uzman + Hakem · Masa Ayarları`;
+      document.getElementById("expertsToggleLabel").textContent = `${activeCount} Katılımcı · Masa Ayarları`;
       const grid = document.getElementById("seatCardsGrid");
-      grid.innerHTML = tbl.seats.map(s => {
+      grid.innerHTML = tbl.seats.concat(SHARED_SEATS).map(s => {
         const enabled = !state.disabledSeats.has(s.seat);
         const st = state.seatStatus[s.seat] || {};
         const provLabel = st.provider_label || "Hazır AI";
@@ -1040,6 +1153,7 @@
               <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full ${s.dot} shrink-0"></span>
                 <span class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(s.name)}</span>
+                <span class="text-[9px] font-extrabold px-1.5 py-px rounded border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 shrink-0" title="Bu katılımcı bir yapay zekâ karakteridir">YZ</span>
               </div>
               <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(s.role)}</p>
               <span class="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${escapeHtml(provLabel)}</span>
@@ -1173,7 +1287,10 @@
       if (isUser) {
         card.className = "bg-brand-50/70 dark:bg-indigo-500/10 border border-brand-200 dark:border-indigo-500/30 rounded-2xl p-4 fade-in";
         card.innerHTML = `
-          <div class="text-[11px] font-bold uppercase tracking-wider text-brand-700 dark:text-indigo-300 mb-1">Sen (Ek Şart / Soru)</div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-brand-700 dark:text-indigo-300">Sen (Masa Başkanı)</span>
+            <span class="text-[9px] font-extrabold px-1.5 py-px rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-500/40">İNSAN</span>
+          </div>
           <p class="text-sm text-slate-900 dark:text-slate-100 leading-relaxed"></p>
         `;
         container.appendChild(card);
@@ -1181,15 +1298,19 @@
       }
 
       card.className = "bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm space-y-2.5 fade-in";
+      if (seatObj.seat === "E") card.classList.add("border-l-4", "border-l-cyan-500");
+      if (seatObj.seat === "F") card.classList.add("border-l-4", "border-l-purple-600");
       card.innerHTML = `
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
+          <div class="flex items-center gap-2 min-w-0 flex-wrap">
             <span class="w-2.5 h-2.5 rounded-full ${seatObj.dot} shrink-0"></span>
             <span class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(seatObj.name)}</span>
             <span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${seatObj.badge}">${escapeHtml(seatObj.role)}</span>
+            <span class="text-[9px] font-extrabold px-1.5 py-px rounded border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400" title="Bu katılımcı bir yapay zekâ karakteridir; gerçek bir insan canlı olarak konuşmuyor">YZ KARAKTER</span>
           </div>
           <span class="provider-chip text-[11px] font-medium text-slate-400 dark:text-slate-500"></span>
         </div>
+        <div class="reply-el hidden text-[11px] font-bold text-amber-600 dark:text-amber-400"></div>
         <div class="msg-body text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
           <span class="inline-flex items-center gap-1 text-xs text-slate-400">
             Düşünüyor
@@ -1198,6 +1319,7 @@
             <span class="w-1.5 h-1.5 rounded-full bg-slate-400 typing-dot"></span>
           </span>
         </div>
+        <div class="neuro-chip hidden"></div>
         <div class="inner-voice hidden text-xs italic text-rose-700 dark:text-rose-300 bg-rose-50/70 dark:bg-rose-950/30 border border-dashed border-rose-200 dark:border-rose-500/30 rounded-xl px-3 py-2"></div>
         <div class="card-actions hidden pt-1 flex flex-wrap items-center gap-3">
           <button type="button" class="elaborate-btn inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition">
@@ -1220,6 +1342,8 @@
         card,
         bodyEl: card.querySelector(".msg-body"),
         providerEl: card.querySelector(".provider-chip"),
+        replyEl: card.querySelector(".reply-el"),
+        neuroEl: card.querySelector(".neuro-chip"),
         innerEl: card.querySelector(".inner-voice"),
         actionsEl: card.querySelector(".card-actions"),
         elaborateBtn: card.querySelector(".elaborate-btn"),
@@ -1284,7 +1408,7 @@
       const prev = sel.value;
       sel.innerHTML = `<option value="ALL">Tüm Masa (Hepsi Cevaplasın)</option>` +
         seats.map(s => `<option value="${s.seat}">Sadece ${escapeHtml(s.name)}</option>`).join("") +
-        `<option value="K">Sadece Karar Hakemi</option>`;
+        `<option value="K">Sadece Karar Hakemi (Çıktı)</option>`;
       if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
     }
 
@@ -1296,6 +1420,44 @@
       return "\n\nMasada şimdiye kadar geçen TÜM konuşmalar (tüm koltukların ve masa başkanının müdahaleleri dahil):\n" +
         note +
         slice.map((t, idx) => `${idx + 1}. ${t.speaker} (${t.role}): ${t.content}`).join("\n");
+    }
+
+    // ── Karşılıklılık: yanıt bağını yalnızca metin gerçekten önceki konuşmacıya
+    //    değiniyorsa göster (uydurma ok yok).
+    function detectReplyTarget(text, prevEntry) {
+      if (!text || !prevEntry || !prevEntry.speaker) return null;
+      const head = String(text).slice(0, 260);
+      const tokens = String(prevEntry.speaker)
+        .replace(/\(.*?\)/g, " ")
+        .split(/\s+/)
+        .map(t => t.replace(/[^\p{L}\p{N}]/gu, ""))
+        .filter(t => t.length >= 4);
+      const hit = tokens.find(t => head.toLocaleLowerCase("tr").includes(t.toLocaleLowerCase("tr")));
+      if (hit) return prevEntry.speaker;
+      if (/^(→|↳|>>)/.test(head.trim())) return prevEntry.speaker;
+      return null;
+    }
+
+    function showReplyMark(ui, targetName) {
+      if (!ui || !ui.replyEl || !targetName) return;
+      ui.replyEl.textContent = `↳ ${targetName} sözüne yanıt`;
+      ui.replyEl.classList.remove("hidden");
+    }
+
+    // ── Nörodinamik ajan: sunucudaki GERÇEK bilişsel durumu okur ──
+    async function attachNeuroState(ui) {
+      if (!ui || !ui.neuroEl || !state.sessionId) return;
+      try {
+        const resp = await fetch("/api/neuro/state");
+        const data = await resp.json();
+        const snap = data && data.seats ? data.seats[`${state.sessionId}:norodinamik_ajan`] : null;
+        if (!snap) return;
+        const pct = v => Math.round((Number(v) || 0) * 100);
+        ui.neuroEl.textContent =
+          `Bilişsel durum (canlı) · Enerji %${pct(snap.energy)} · Yorgunluk %${pct(snap.fatigue)} · ` +
+          `Merak %${pct(snap.epistemic_uncertainty)} · Tavır: ${snap.stance_label} · Adım: ${snap.step_count}`;
+        ui.neuroEl.classList.remove("hidden");
+      } catch (_) { /* durum okunamazsa çip gizli kalır — sahte veri üretilmez */ }
     }
 
     function bindCardActionButtons(ui, seatObj, cleanText) {
@@ -1493,12 +1655,16 @@
 
         const priorContext = buildSharedTranscriptContext();
         const condLine = extraCondition ? `\n\nMasa Başkanının son yönlendirmesi / yeni şartı: ${extraCondition}` : "";
+        const prevEntry = state.transcript[state.transcript.length - 1] || null;
+        const replyRule = prevEntry
+          ? `\n\nSIRA KURALI: Sözün ilk cümlesi az önce konuşan ${prevEntry.speaker} (${prevEntry.role}) iddiasına doğrudan yanıt olsun: adını an, katıldığın ya da itiraz ettiğin noktayı tek cümlede söyle. Böylece bağımsız paragraf değil, karşılıklı tartışma olsun.`
+          : "\n\nİlk söz olarak masadaki tartışmayı aç: konuyu ve ilk iddianı net ortaya koy.";
 
         const messages = [
           { role: "system", content: getExpertSystemPrompt(s) },
           {
             role: "user",
-            content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}\n\nMasada şimdiye kadar konuşulan her şeyi (diğer uzmanların detayları ve Masa Başkanının yönlendirmeleri dahil) dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
+            content: `Gündemdeki gerçek hayat sorusu: ${question}${priorContext}${condLine}${replyRule}\n\nMasada şimdiye kadar konuşulan her şeyi (diğer katılımcıların detayları ve Masa Başkanının yönlendirmeleri dahil) dikkate alarak kendi uzmanlık açından 3-4 kısa, somut ve net Türkçe cümleyle yanıt ver. Katılmadığın veya eksik gördüğün noktaya doğrudan değin.`
           }
         ];
 
@@ -1517,9 +1683,12 @@
 
           const cleanText = finalText || "Bu açıdan yanıt üretilemedi.";
           ui.bodyEl.textContent = cleanText;
+          const replyTo = detectReplyTarget(cleanText, prevEntry);
+          if (replyTo) showReplyMark(ui, replyTo);
           state.transcript.push({ seat: s.seat, speaker: s.name, role: s.role, content: cleanText });
           upsertCurrentSessionHistory();
           successCount += 1;
+          if (s.neuro) attachNeuroState(ui);
 
           if (state.sessionId) {
             fetch("/api/session/record_message", {
@@ -1561,28 +1730,128 @@
       return { successCount, failCount, sharedPoolBlocked, sharedPoolBlockReason, sharedPoolBlockMsg };
     }
 
+    // ── Moderatör fazları: gündem açılışı ve çelişki/derinleştirme turu ──
+    async function runModeratorPhase(kind, question, myRun) {
+      const mod = moderatorSeat();
+      if (!mod || !state.isRunning || state.runId !== myRun) return null;
+      const phaseLabel = kind === "intro" ? "Gündem" : "Çelişki Turu";
+      setRunningUI(true, kind === "intro" ? "Moderatör masayı topluyor..." : "Moderatör çelişkileri çıkarıyor...");
+      const ui = createSpeakerCard({ ...mod, role: `Operatör · ${phaseLabel}` });
+      ui.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      const participants = activeSeatsList().map(x => `${x.name} (${x.role})`).join(", ");
+      const userContent = kind === "intro"
+        ? `Gündem: ${question}\nMasadakiler: ${participants}\n\nMasayı topla: (1) konuyu tek cümlede netleştir, (2) tartışmanın hangi sorulara yanıt vermesi gerektiğini söyle, (3) kuralı hatırlat: her katılımcı önceki konuşmacının sözüne yanıt verecek, kanıtsız kesin hüküm yok. 3-4 kısa cümle.`
+        : `Gündem: ${question}${buildSharedTranscriptContext()}\n\nTartışmayı derinleştir: (1) masadaki ÇELİŞKİLERİ tek tek görünür kıl, (2) tekrar eden argümanları kes, (3) kanıt boşluğu / doğrulanamaz iddiaları işaretle, (4) tartışmayı ilerletecek TEK bir derinleştirme sorusu sor. 4-5 kısa cümle; taraf tutma, süreç dışında yorum yapma.`;
+
+      try {
+        const finalText = await streamSeatCompletion({
+          seat: "E",
+          characterId: "moderator",
+          temperature: 0.5,
+          maxTokens: 430,
+          messages: [
+            { role: "system", content: getExpertSystemPrompt(mod) },
+            { role: "user", content: userContent }
+          ],
+          onMeta: meta => { if (meta && meta.provider) ui.providerEl.textContent = meta.provider; },
+          onDelta: txt => { if (state.runId === myRun) ui.bodyEl.textContent = txt; }
+        });
+        if (state.runId !== myRun) return null;
+        const clean = (finalText || "").trim();
+        ui.bodyEl.textContent = clean || "(Moderatör bu fazda yanıt üretmedi.)";
+        const replyTo = detectReplyTarget(clean, state.transcript[state.transcript.length - 1]);
+        if (replyTo) showReplyMark(ui, replyTo);
+        if (clean) {
+          state.transcript.push({ seat: "E", speaker: "Moderatör", role: `Operatör · ${phaseLabel}`, content: clean });
+          upsertCurrentSessionHistory();
+          if (state.sessionId) {
+            fetch("/api/session/record_message", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ session_id: state.sessionId, seat: "E", character_id: "moderator", role: "moderator", speaker_name: "Moderatör", content: clean })
+            }).catch(() => {});
+          }
+        }
+        return clean || null;
+      } catch (err) {
+        if (err && err.name === "AbortError") return null;
+        if (state.runId === myRun) {
+          renderInlineErrorBox(ui.bodyEl, err.message, null);
+        }
+        return null;
+      } finally {
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    // ── Gerekçeli çıktı: sabit başlıklı bölümlere ayrılır (varsa) ──
+    function renderStructuredOutcome(text) {
+      const lines = String(text || "").split("\n");
+      const secs = [];
+      let cur = null;
+      let preamble = [];
+      for (const ln of lines) {
+        const m = ln.match(/^#{1,6}\s+(.+)$/);
+        if (m) {
+          cur = { title: m[1].trim().replace(/[:：]\s*$/, ""), items: [] };
+          secs.push(cur);
+        } else if (cur) {
+          const t = ln.trim();
+          if (!t) continue;
+          cur.items.push(/^[-*•]\s+/.test(t) ? t.replace(/^[-*•]\s+/, "") : t);
+        } else if (ln.trim()) {
+          preamble.push(ln.trim());
+        }
+      }
+      if (!secs.length) return null;
+      const esc = escapeHtml;
+      let html = "";
+      if (preamble.length) html += `<p class="mb-2">${esc(preamble.join(" "))}</p>`;
+      for (const s of secs) {
+        html += `<div class="outcome-sec"><h4>${esc(s.title)}</h4>`;
+        if (s.items.length === 1 && !/[-•]/.test(s.items[0]) && s.items[0].length > 0) {
+          html += `<p>${esc(s.items[0])}</p>`;
+        } else {
+          html += `<ul>${s.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`;
+        }
+        html += `</div>`;
+      }
+      return html;
+    }
+
     async function runJudgeVerdict(question) {
       if (!state.isRunning || !state.transcript.length) {
         return { ok: false, aborted: true, error: "Henüz değerlendirilecek uzman görüşü yok." };
       }
-      setRunningUI(true, "Karar Hakemi net özeti çıkarıyor...");
+      setRunningUI(true, "Karar Hakemi gerekçeli çıktıyı hazırlıyor...");
       const verdictCard = document.getElementById("verdictCard");
       const verdictBody = document.getElementById("verdictBody");
+      const outcomeSections = document.getElementById("outcomeSections");
       verdictCard.classList.remove("hidden");
+      outcomeSections.classList.add("hidden");
+      outcomeSections.innerHTML = "";
+      verdictBody.classList.remove("hidden");
       verdictBody.textContent = "Hakem tüm görüşleri süzüyor...";
 
-      const summaryPrompt = `Gündem: ${question}\n\nMasadaki uzman görüşleri:\n` +
+      const summaryPrompt = `Gündem: ${question}\n\nMasadaki görüşme tutanağı:\n` +
         state.transcript.map(t => `- ${t.speaker} (${t.role}): ${t.content}`).join("\n") +
-        `\n\nŞimdi kullanıcı için yalın, net ve doğrudan uygulanabilir bir karar özeti yaz. Güncel faiz/enflasyon/döviz oranı uydurma; oran/kural mantığıyla konuş. Tam olarak şu 3 başlığı kullan:\n1) NET KARAR: (tek net yön + hangi şartta)\n2) EN BÜYÜK RİSK / KÖR NOKTA: (masada ortaya çıkan en kritik uyarı)\n3) 48 SAATTE İLK ADIM: (hemen yarın yapabileceği somut ilk hamle)`;
+        `\n\nTartışmadan GEREKÇELİ bir değerlendirme çıkar. Kurallar:\n` +
+        `- Tam olarak şu Markdown başlıklarını kullan (başlıklar aynen yazılır):\n` +
+        `## ÖNE ÇIKAN ARGÜMANLAR\n## UZLAŞILAN NOKTALAR\n## GÖRÜŞ AYRILIKLARI\n## DOĞRULANMAMIŞ İDDİALAR\n## RİSKLER\n## EKSİK BİLGİLER\n## OLASI KARAR YOLLARI\n` +
+        `- Her bölümde 2-4 kısa madde (- ile). Yalnızca tutanakta geçenleri yaz; yeni iddia uydurma.\n` +
+        `- Güncel faiz/enflasyon/döviz oranı uydurma; oran/kural mantığıyla konuş.\n` +
+        `- Tek kesin hüküm vermek zorunda değilsin; gerekliyse 'Bu bilgiyle kesin karar verilemez' de.\n` +
+        `- DOĞRULANMAMIŞ İDDİALAR bölümünde kanıtı olmayan her iddiayı açıkça işaretle.`;
 
       try {
         const finalVerdict = await streamSeatCompletion({
           seat: "K",
           characterId: "karar_hakemi",
           temperature: 0.4,
-          maxTokens: 780,
+          maxTokens: 1100,
           messages: [
-            { role: "system", content: getExpertSystemPrompt({ id: "karar_hakemi", name: "Karar Hakemi", role: "Özet" }) },
+            { role: "system", content: getExpertSystemPrompt({ id: "karar_hakemi", name: "Karar Hakemi", role: "Çıktı" }) },
             { role: "user", content: summaryPrompt }
           ],
           onDelta: txt => { verdictBody.textContent = txt; }
@@ -1591,7 +1860,18 @@
         if (!cleanVerdict) {
           throw new Error("Karar Hakemi boş yanıt döndürdü.");
         }
-        verdictBody.textContent = cleanVerdict;
+        const structuredHtml = renderStructuredOutcome(cleanVerdict);
+        if (structuredHtml) {
+          verdictBody.textContent = "";
+          verdictBody.classList.add("hidden");
+          outcomeSections.innerHTML = structuredHtml;
+          outcomeSections.classList.remove("hidden");
+        } else {
+          outcomeSections.classList.add("hidden");
+          outcomeSections.innerHTML = "";
+          verdictBody.classList.remove("hidden");
+          verdictBody.textContent = cleanVerdict;
+        }
         upsertCurrentSessionHistory(cleanVerdict);
         if (state.sessionId) {
           fetch("/api/session/conclude", {
@@ -1678,8 +1958,8 @@
       document.getElementById("verdictCard").classList.add("hidden");
       document.getElementById("envelopeResultCard").classList.add("hidden");
       populateFollowUpTargets(seats);
-      document.getElementById("landingHero").classList.add("hidden");
-      document.getElementById("howItWorksStrip").classList.add("hidden");
+      document.getElementById("landingStage").classList.add("hidden");
+      document.getElementById("firstRunSteps").classList.add("hidden");
       document.getElementById("followUpBox").classList.remove("hidden");
       document.getElementById("debateWorkspace").classList.remove("hidden");
       document.getElementById("debateWorkspace").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1697,11 +1977,16 @@
         }).catch(() => {});
 
         if (document.getElementById("optEnvelope").checked && state.isRunning) {
-          await runSealEnvelopes(question, seats);
+          await runSealEnvelopes(question, seats.filter(s => s.seat !== "E"));
         }
         if (state.runId !== myRun) return;
 
-        const roundRes = await runExpertRound(question, seats, "", myRun);
+        // 1) Moderatör gündemi açar
+        await runModeratorPhase("intro", question, myRun);
+        if (state.runId !== myRun) return;
+
+        // 2) Katılımcılar turu (Moderatör hariç; herkes önceki söze yanıt vererek)
+        const roundRes = await runExpertRound(question, roundSeatsList(), "", myRun);
         if (state.runId !== myRun) return;
 
         if (!state.isRunning) {
@@ -1709,9 +1994,17 @@
           return;
         }
 
-        if (!state.transcript.length) {
+        if (!roundRes || roundRes.successCount === 0) {
           const isDailyLimit = roundRes && roundRes.sharedPoolBlockReason === "daily_trial_limit";
-          setRunningUI(false, isDailyLimit ? "Günlük ücretsiz deneme hakkı doldu" : "Uzmanlardan yanıt alınamadı", isDailyLimit ? "warn" : "error");
+          setRunningUI(false, isDailyLimit ? "Günlük ücretsiz deneme hakkı doldu" : "Katılımcılardan yanıt alınamadı", isDailyLimit ? "warn" : "error");
+          return;
+        }
+
+        // 3) Moderatör çelişkileri ve derinleştirme sorusunu çıkarır
+        await runModeratorPhase("deepen", question, myRun);
+        if (state.runId !== myRun) return;
+        if (!state.isRunning) {
+          setRunningUI(false, "Durduruldu", "warn");
           return;
         }
 
@@ -2079,7 +2372,9 @@
         { seat: "B", title: "2. Uzman Koltuğu" },
         { seat: "C", title: "3. Uzman Koltuğu" },
         { seat: "D", title: "4. Uzman Koltuğu" },
-        { seat: "K", title: "Karar Hakemi" }
+        { seat: "E", title: "Moderatör (Operatör)" },
+        { seat: "F", title: "Nörodinamik Ajan" },
+        { seat: "K", title: "Karar Hakemi (Çıktı)" }
       ];
       const perSeatEl = document.getElementById("perSeatConfigList");
       perSeatEl.innerHTML = seatLabels.map((item, idx) => {
@@ -2201,6 +2496,188 @@
     }
 
     // =========================================================================
+    // DEMO SAHNESİ — önceden yazılmış örnek tartışma (canlı model DEĞİLDİR,
+    // arşive YAZMAZ). Ürünün gerçek davranışını göstermek için oynatılır.
+    // =========================================================================
+    const DEMO_CAST = [
+      { key: "mod",   name: "Moderatör",                role: "Tartışma Operatörü",  color: "#0891b2", kind: "ai" },
+      { key: "plan",  name: "Güvenli Bölge Planlayıcı", role: "İstikrar & Temkin",   color: "#2563eb", kind: "ai" },
+      { key: "real",  name: "Sokaktaki Gerçekçi",       role: "Günlük Hayat Bütçesi", color: "#d97706", kind: "ai" },
+      { key: "crit",  name: "Karşı Görüş",              role: "Eleştirel Sorgulama", color: "#e11d48", kind: "ai" },
+      { key: "user",  name: "Sen (Masa Başkanı)",       role: "İnsan · Operatör",    color: "#10b981", kind: "human" },
+      { key: "neuro", name: "Nörodinamik Ajan",         role: "Kanıt & Öz Denetim",  color: "#7c3aed", kind: "ai" }
+    ];
+
+    const DEMO_SCRIPT = [
+      {
+        who: "mod",
+        text: "Gündem net: “Kendine ait bir hayat kurmak için mevcut düzenini bozmalı mısın?” Kurallar: her söz önceki söze yanıt verecek; kanıtsız kesin hüküm yok. İlk teyi Güvenli Bölge Planlayıcı açsın."
+      },
+      {
+        who: "plan",
+        text: "Önce bozma. 12 aylık gider tamponu kur, borcu kapat, sonra karar ver. Düzeni bir gecede bozanların çoğu ilk6 ay içinde geri dönmek zorunda kalıyor — istikrar bir tercih değil, sigortadır."
+      },
+      {
+        who: "real",
+        reply: "↳ Güvenli Bölge Planlayıcı’nın “12 aylık tampon” tezine yanıt",
+        text: "Güzel tez ama kimin 12 ayı? Kirası gelirinin yarısını yiyen biri için “düzeni bozma” demek, “düzen içinde erimeye devam et” demek. Düzen de pahalı, bozmak da; ikisinin gider tablosu masada yok."
+      },
+      {
+        who: "crit",
+        text: "İkiniz de aynı varsayımı paylaşıyorsunuz: ne istediğini biliyorsun. Halbuki asıl soru şu — mevcut düzen senin düzenin mi, sana dayatılan mı? Bu cevaplanmadan hiçbir tablo tutmaz."
+      },
+      {
+        who: "user",
+        reply: "↳ Tartışmaya yeni bilgi ekliyorsun",
+        text: "Ek bilgi: elimde yalnızca 3 aylık nakit var ve iş sözleşmem 3 ay süreli. Bu bilgiyle kimin tezi güçleniyor, kimin zayıflıyor?"
+      },
+      {
+        who: "neuro",
+        reply: "↳ Senin eklediğin “3 aylık nakit” bilgisine yanıt",
+        text: "“Düzeni bozanların çoğu batıyor” iddiasını doğrulayamıyorum — elimde kaynak yok; bunu kesin bilgi gibi işlemeyeceğim. Kendi “temkin önce” önerimi geri çekiyorum: 12 aylık tampon şartı, 3 aylık nakit gerçeğiyle çürüdü ve Planlayıcı bunu cevaplamadı. Yine de “hemen boz” da savunulamaz; doğru hamle önce geliri çeşitlendirmek, sonra düzeni bozmak olabilir."
+      },
+      {
+        who: "mod",
+        reply: "↳ Masadaki çelişkileri görünür kılıyor",
+        text: "İki çelişki: (1) Planlayıcı 12 aylık tampon dedi, sen 3 aylık nakit verdin — Planlayıcı cevaplamadı. (2) Karşı Görüş “düzen senin mi” sorusuna yanıt beklemedi. Derinleştirme sorusu: Düzeni bozduğunda ilk6 ayın giderini hangi kesin gelir karşılayacak?"
+      },
+      {
+        who: "real",
+        reply: "↳ Moderatörün derinleştirme sorusuna yanıt",
+        text: "Kesin gelir yok; 3 aylık sözleşmem var. “Boz” diyorum ama kendime bile tamponum yok — bu itiraf tezimi zayıflatıyor. Belki de tartışma “bozma/bozma” değil, “önce geliri çeşitlendir” eksenine kaymalı."
+      }
+    ];
+
+    const DEMO_OUTCOME = `## ÖNE ÇIKAN ARGÜMANLAR
+- Temkin: 12 aylık tampon bir güvenlik şartı olarak sunuldu, ama masaya gider tablosu gelmedi.
+- Gerçekçilik: “Düzen içinde erime” maliyeti ilk kez düzene karşı bir argüman olarak kondu.
+- Çeleştirel açı: “Ne istediğini biliyor musun?” sorusu hiçbir tarafça cevaplanmadı.
+## UZLAŞILAN NOKTALAR
+- Mevcut gider tablosu olmadan iki tarafın da kesin hüküm vermesi zayıf.
+- Hemen, hazırlıksız bir bozuculuk herkesçe riskli bulundu.
+## GÖRÜŞ AYRILIKLARI
+- “Önce tampon” ile “düzen zaten pahalı” arasında sayısal uzlaşma yok.
+## DOĞRULANMAMIŞ İDDİALAR
+- “Düzeni bozanların çoğu batıyor” — kaynak sunulmadı, ajan tarafından doğrulanamaz işaretlendi.
+## EKSİK BİLGİLER
+- Aylık gider tablosu, kesin gelir garantisi ve 3 ay sonrası iş güvencesi.
+## OLASI KARAR YOLLARI
+- Seçenek A: Önce geliri çeşitlendir, düzeni bozma; 6 ay sonra yeniden oyala.
+- Seçenek B: Küçük bir pilot bozuculuk (yan gelir/proje) ile test et, tamponu paralel kur.
+- Bu bilgiyle kesin karar verilemez; eksik bilgiler tamamlanmadan taraf olunmaz.`;
+
+    let demoRunId = 0;
+
+    function renderDemoRail() {
+      const rail = document.getElementById("demoSeatRail");
+      if (!rail || rail.getAttribute("data-built") === "1") return;
+      const html = DEMO_CAST.map(c => `
+        <div class="rail-item" data-demo-seat="${c.key}">
+          <span style="width:9px;height:9px;border-radius:99px;background:${c.color};flex-shrink:0;margin-top:4px;"></span>
+          <div class="min-w-0">
+            <div class="rail-name">${escapeHtml(c.name)}</div>
+            <div class="rail-role">${escapeHtml(c.role)}</div>
+            <div class="rail-state">BEKLİYOR</div>
+          </div>
+        </div>
+      `).join("");
+      rail.insertAdjacentHTML("beforeend", html);
+      rail.setAttribute("data-built", "1");
+    }
+
+    async function playDemo() {
+      const transcript = document.getElementById("demoTranscript");
+      const outcomeBox = document.getElementById("demoOutcome");
+      const outcomeBody = document.getElementById("demoOutcomeBody");
+      const pending = document.getElementById("demoOutcomePending");
+      if (!transcript) return;
+      const myRun = ++demoRunId;
+      const fast = Boolean(window.YM_DEMO_FAST);
+      const sleep = ms => new Promise(r => setTimeout(r, fast ? 0 : ms));
+
+      renderDemoRail();
+      transcript.innerHTML = "";
+      outcomeBox.classList.add("hidden");
+      outcomeBody.innerHTML = "";
+      pending.classList.remove("hidden");
+      document.querySelectorAll("#demoSeatRail .rail-item").forEach(el => {
+        el.classList.remove("active", "done");
+        const st = el.querySelector(".rail-state");
+        if (st) st.textContent = "BEKLİYOR";
+      });
+
+      for (const turn of DEMO_SCRIPT) {
+        if (myRun !== demoRunId) return;
+        const cast = DEMO_CAST.find(c => c.key === turn.who);
+        if (!cast) continue;
+        document.querySelectorAll("#demoSeatRail .rail-item").forEach(el => {
+          if (el.classList.contains("active")) {
+            el.classList.remove("active");
+            el.classList.add("done");
+            const st = el.querySelector(".rail-state");
+            if (st) st.textContent = "TAMAMLANDI";
+          }
+        });
+        const railItem = document.querySelector(`#demoSeatRail [data-demo-seat="${turn.who}"]`);
+        if (railItem) {
+          railItem.classList.add("active");
+          const st = railItem.querySelector(".rail-state");
+          if (st) st.textContent = "KONUŞUYOR";
+        }
+
+        const el = document.createElement("article");
+        el.className = "demo-turn";
+        el.setAttribute("data-who", turn.who);
+        el.style.setProperty("--sp", cast.color);
+        el.innerHTML = `
+          <div class="turn-who">
+            <span style="width:8px;height:8px;border-radius:99px;background:${cast.color};flex-shrink:0;"></span>
+            <span class="turn-name">${escapeHtml(cast.name)}</span>
+            <span class="turn-role">${escapeHtml(cast.role)}</span>
+            ${cast.kind === "human"
+              ? `<span class="chip-human">İNSAN</span>`
+              : `<span class="chip-yz" title="Yapay zekâ karakteri — gerçek bir insan canlı olarak konuşmuyor">YZ KARAKTER</span>`}
+            <span class="chip-demo">DEMO</span>
+          </div>
+          ${turn.reply ? `<span class="reply-mark">${escapeHtml(turn.reply)}</span>` : ""}
+          <div class="turn-body"></div>
+        `;
+        transcript.appendChild(el);
+        transcript.scrollTop = transcript.scrollHeight;
+
+        const bodyEl = el.querySelector(".turn-body");
+        if (fast) {
+          bodyEl.textContent = turn.text;
+        } else {
+          const chars = turn.text.split("");
+          let out = "";
+          for (let i = 0; i < chars.length; i++) {
+            if (myRun !== demoRunId) return;
+            out += chars[i];
+            bodyEl.textContent = out;
+            if (i % 2 === 1) await sleep(12);
+          }
+        }
+        await sleep(fast ? 0 : 420);
+      }
+      if (myRun !== demoRunId) return;
+
+      document.querySelectorAll("#demoSeatRail .rail-item").forEach(el => {
+        el.classList.remove("active");
+        el.classList.add("done");
+        const st = el.querySelector(".rail-state");
+        if (st) st.textContent = "TAMAMLANDI";
+      });
+
+      const structured = renderStructuredOutcome(DEMO_OUTCOME);
+      if (structured) outcomeBody.innerHTML = structured;
+      else outcomeBody.textContent = DEMO_OUTCOME;
+      pending.classList.add("hidden");
+      outcomeBox.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // =========================================================================
     // OLAY BAĞLANTILARI
     // =========================================================================
     function switchTab(tab) {
@@ -2223,8 +2700,9 @@
     document.getElementById("logoHomeBtn").addEventListener("click", () => {
       switchTab("debate");
       if (!state.isRunning) {
-        document.getElementById("landingHero").classList.remove("hidden");
-        document.getElementById("howItWorksStrip").classList.remove("hidden");
+        document.getElementById("landingStage").classList.remove("hidden");
+        document.getElementById("firstRunSteps").classList.remove("hidden");
+        playDemo();
       }
     });
 
@@ -2237,21 +2715,12 @@
       }, 220);
     });
 
-    document.getElementById("heroDemoBtn").addEventListener("click", () => {
-      const tbl = currentTable();
-      const firstScenario = tbl.scenarios && tbl.scenarios[0];
-      if (!firstScenario) return;
-      document.getElementById("questionInput").value = firstScenario.q;
-      startDebate(firstScenario.q);
-    });
+    document.getElementById("demoReplayBtn").addEventListener("click", () => playDemo());
 
     document.getElementById("themeToggleBtn").addEventListener("click", () => {
       document.documentElement.classList.toggle("dark");
       try { localStorage.setItem("ym_theme", document.documentElement.classList.contains("dark") ? "dark" : "light"); } catch (_) {}
     });
-    try {
-      if (localStorage.getItem("ym_theme") === "dark") document.documentElement.classList.add("dark");
-    } catch (_) {}
 
     document.getElementById("toggleExpertsBtn").addEventListener("click", () => {
       document.getElementById("expertsPanel").classList.toggle("hidden");
@@ -2310,9 +2779,10 @@
     document.getElementById("resetDebateBtn").addEventListener("click", () => {
       cancelActiveRun();
       document.getElementById("debateWorkspace").classList.add("hidden");
-      document.getElementById("landingHero").classList.remove("hidden");
-      document.getElementById("howItWorksStrip").classList.remove("hidden");
+      document.getElementById("landingStage").classList.remove("hidden");
+      document.getElementById("firstRunSteps").classList.remove("hidden");
       document.getElementById("questionInput").value = "";
+      playDemo();
       document.getElementById("questionInput").focus();
     });
 
@@ -2351,6 +2821,7 @@
 
     // Başlat
     loadInitialData();
+    playDemo();
   </script>
 </body>
 </html>
