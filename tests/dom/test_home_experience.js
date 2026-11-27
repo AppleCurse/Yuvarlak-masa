@@ -317,6 +317,12 @@ async function runDebate(d, w, question) {
   assert(outcomePosts.length === 1 && outcomePosts[0].body && outcomePosts[0].body.outcome === 1, "F5-8 hatırlatma sonucu outcome uçuna gitti");
   assert(rBanner.classList.contains("hidden"), "F5-9 bildirim sonrası banner kapandı");
 
+  // ── Faz 6 — keşif sayfası soru ön-doldurma ──
+  assert(w.prefillQuestion("Ev mi kira mı, 3 milyon birikimim var?"), "F6-1 ön-doldurma çalıştı");
+  assert(d.getElementById("questionInput").value.includes("3 milyon"), "F6-2 soru kutusu doldu");
+  d.getElementById("questionInput").value = "";
+  d.getElementById("questionInput").dispatchEvent(new w.Event("input", { bubbles: true }));
+
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("TEST ÇÖKTÜ:", e); process.exit(1); });

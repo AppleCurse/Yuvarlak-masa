@@ -42,14 +42,14 @@ import webbrowser
 from contextlib import asynccontextmanager, nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from html import escape as html_escape
 
 import httpx
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -1713,6 +1713,112 @@ _NO_CACHE_HEADERS = {
     "Pragma": "no-cache",
     "Expires": "0",
 }
+
+
+# ── Faz 6 — Keşif sayfaları (SEO/keşif) ─────────────────────────────────
+TOPICS = {
+    "ev-mi-kira-mi": {
+        "title": "Ev mi, kira mı?",
+        "lede": "Birikim var, faizler yüksek, kirada kalmak pahalı hissettiriyor. Peki ev almak mı, kirada devam etmek mı? Bu karar tek bir sayıya sığmaz: taşınma tarihi, kredi taksiti, iş güvenliği ve ailenin öncelikleri aynı masada olmalı.",
+        "question": "3 milyon TL birikimim var ve kredi oranları yüksekken ev mi almalıyım, kirada mı devam etmeliyim? Taşınma ve aile önceliklerimi de kat.",
+    },
+    "is-degisikligi": {
+        "title": "İş değişikliği: kalmak mı, geçmek mi?",
+        "lede": "Yeni bir teklif geldi ya da mevcut iş boğuyor. Maaş tek kriter değil: işin geleceği, ailenin zamanı, borç yükü ve risk toleransı aynı kararda buluşuyor. Acele karar, çoğu zaman en pahalı karar olur.",
+        "question": "Mevcut işimde kalmalı mı, gelen yeni teklife geçmeliyim? Risklerim ve aile önceliklerim dahil değerlendir.",
+    },
+    "borc-kapatma": {
+        "title": "Borç kapatma sırası",
+        "lede": "Kredi kartı, ihtiyaç kredisi, taksitler… Birikimi borç kapatmaya mı yoksa güvence olarak tutmaya mı ayırmalısınız? Doğru sıra, faiz yüküyle nakit güvenliğinin dengesine bağlıdır.",
+        "question": "Kredi kartı borcumu kapatmak için birikimi mi kullanayım, yoksa taksitlendirip birikimi mi koruyayım? Sırayı netleştir.",
+    },
+    "tasinma-sehir": {
+        "title": "Şehir değiştirme / taşınma",
+        "lede": "İş, aile, kira farkı, alışkanlıklar… Taşınma kararı çoğu zaman bir yer değişikliği değil, bir hayat yeniden planlamasıdır. Masada maliyet tarafı kadar manevi taraf da konuşulur.",
+        "question": "Başka bir şehre taşınmalı mıyım? İş imkanları, maliyet ve aile tarafını birlikte değerlendir.",
+    },
+}
+
+
+def _topic_page_html(slug: str) -> str:
+    t = TOPICS[slug]
+    title = html_escape(t["title"])
+    lede = html_escape(t["lede"])
+    q_enc = html_escape(quote(t["question"], safe=""))
+    related = "".join(
+        f'<li><a href="/{s}">{html_escape(v["title"])}</a></li>'
+        for s, v in TOPICS.items() if s != slug
+    )
+    return f"""<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title} — Yuvarlak Masa'da tartışılarak karar</title>
+<meta name="description" content="{lede[:170]}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{title} — Yuvarlak Masa">
+<meta property="og:description" content="{lede[:170]}">
+<meta property="og:site_name" content="Yuvarlak Masa">
+<meta name="twitter:card" content="summary">
+<style>
+ body {{ margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:#12100e; color:#e9e2d6; line-height:1.65; }}
+ main {{ max-width:720px; margin:0 auto; padding:34px 18px 56px; }}
+ .brand {{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#e8b45a; font-weight:700; }}
+ h1 {{ font-size:27px; margin:10px 0 8px; color:#fff; }}
+ .lede {{ font-size:15.5px; color:#cfc6b6; }}
+ h2 {{ font-size:16px; color:#f0b45a; margin:28px 0 8px; }}
+ ul.plain {{ padding-left:18px; margin:6px 0; }} ul.plain li {{ margin:5px 0; font-size:14px; color:#c9c0b0; }}
+ .cta {{ display:inline-block; margin-top:22px; background:#e8b45a; color:#221c12; font-weight:800; text-decoration:none; padding:13px 20px; border-radius:12px; font-size:15px; }}
+ .rel {{ margin-top:26px; font-size:13.5px; }} .rel a {{ color:#e8b45a; text-decoration:none; font-weight:600; }}
+ .note {{ font-size:12px; color:#9a917f; border-top:1px dashed #33302b; padding-top:14px; margin-top:26px; }}
+ footer {{ margin-top:20px; font-size:13px; }} footer a {{ color:#e8b45a; text-decoration:none; font-weight:600; }}
+</style></head><body><main>
+<p class="brand">Yuvarlak Masa · Karar Masası</p>
+<h1>{title}</h1>
+<p class="lede">{lede}</p>
+<h2>Bu masada ne oluyor?</h2>
+<ul class="plain">
+ <li>Soru masaya konur: Hesap Uzmanı, Risk/Kriz, Fırsat Stratejisti, Sokak Gerçekçisi, Nörodinamik Ajan ve Karar Hakemi sırayla konuşur.</li>
+ <li>Her koltuk kendi açısından yanıt verir; birbirinin sözüne doğrudan yanıt verir, kanıtsız kesin hüküm kullanmaz.</li>
+ <li>Çıktı 9 bölümlü gerekçeli karardır: uzlaşılanlar, ayrışıklar, doğrulanamamış iddialar, riskler, eksik bilgiler, olası karar yolları ve <b>48 saat içinde atılacak ilk adım</b>.</li>
+</ul>
+<a class="cta" href="/?soru={q_enc}">Bu soruyu masaya götür →</a>
+<div class="rel"><b>Diğer kararlar:</b><ul class="plain">{related}</ul></div>
+<p class="note">Yuvarlak Masa bir tartışma ve karar destek aracıdır; yatırım, hukuk veya psikoloji tavsiyesi değildir. Çıktılar yapay zekâ tarafından üretilir — son karar senindir.</p>
+<footer><a href="/">Ana sayfaya dön</a></footer>
+</main></body></html>"""
+
+
+@app.get("/ev-mi-kira-mi")
+async def topic_ev_mi_kira_mi():
+    return HTMLResponse(_topic_page_html("ev-mi-kira-mi"))
+
+
+@app.get("/is-degisikligi")
+async def topic_is_degisikligi():
+    return HTMLResponse(_topic_page_html("is-degisikligi"))
+
+
+@app.get("/borc-kapatma")
+async def topic_borc_kapatma():
+    return HTMLResponse(_topic_page_html("borc-kapatma"))
+
+
+@app.get("/tasinma-sehir")
+async def topic_tasinma_sehir():
+    return HTMLResponse(_topic_page_html("tasinma-sehir"))
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    today = datetime.now(timezone.utc).date().isoformat()
+    urls = "".join(
+        f"<url><loc>https://yuvarlakmasa.com.tr{p}</loc><lastmod>{today}</lastmod></url>"
+        for p in ["/"] + [f"/{s}" for s in TOPICS]
+    )
+    return Response(
+        f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>',
+        media_type="application/xml",
+    )
 
 
 @app.get("/")

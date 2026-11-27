@@ -3495,7 +3495,25 @@
     });
     checkDecisionReminders();
 
+    // ── Faz 6 — keşif sayfalarından soru ön-doldurma ──
+    function prefillQuestion(q) {
+      const el = document.getElementById("questionInput");
+      if (!el || !q) return false;
+      el.value = String(q).slice(0, 600);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      try { el.focus({ preventScroll: true }); } catch (_) { try { el.focus(); } catch (_) {} }
+      try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
+      return true;
+    }
+    function prefillFromUrl() {
+      try {
+        const q = new URLSearchParams(location.search).get("soru");
+        if (q) prefillQuestion(q);
+      } catch (_) {}
+    }
+
     // Başlat
+    prefillFromUrl();
     loadInitialData();
     playDemo();
   </script>
