@@ -1239,13 +1239,16 @@ def _owner_token(request: Request) -> str:
 
 
 def _require_session_owner(session_id: str, request: Request):
-    """Kilitli oturumda sahiplik doğrulaması. None = sorun yok; dolu = 403 yanıtı."""
-    if engine.session_owner_authorized(session_id, _owner_token(request)):
-        return None
-    return JSONResponse(
-        {"ok": False, "error": "Bu oturum başka bir tarayıcıya ait; erişim reddedildi."},
-        status_code=403,
-    )
+    """Kilitli oturum sahiplik doğrulaması. None = sorun yok; dolu = 404/403 yanıtı."""
+    state = engine.session_owner_state(session_id, _owner_token(request))
+    if state == "missing":
+        return JSONResponse({"ok": False, "error": "Oturum bulunamadı."}, status_code=404)
+    if state == "forbidden":
+        return JSONResponse(
+            {"ok": False, "error": "Bu oturum başka bir tarayıcıya ait; erişim reddedildi."},
+            status_code=403,
+        )
+    return None
 
 
 # ── Oturum & Mesaj Kayıt Rotaları ───────────────────────────────────────
@@ -1288,12 +1291,15 @@ async def session_conclude(payload: dict, request: Request):
 
     if sid:
         engine.close_session(sid, verdict)
-        # Her katılımcı için damıtılmış kişisel hafıza girdisi üret ve kaydet
-        for sc in seated_characters:
-            cid = sc.get("character_id")
-            if cid:
-                mem_entry = f"'{topic}' konulu müzakereye katıldı. Nihai karar: {verdict[:100]}..."
-                engine.add_character_memory(cid, sid, mem_entry, stance="Tutumunu savundu", rivalries="")
+        # v2.7.1: KİLİTLİ (özel) oturumlardan ortak karakter hafızasına bilgi sızmaz —
+        # "yalnızca senin anahtarınla okunur" sözü episodik hafızayı da kapsar.
+        # Kilitsiz (eski/classic) oturumlar eskisi gibi hafızaya damıtılır.
+        if engine.get_session_owner_hash(sid) is None:
+            for sc in seated_characters:
+                cid = sc.get("character_id")
+                if cid:
+                    mem_entry = f"'{topic}' konulu müzakereye katıldı. Nihai karar: {verdict[:100]}..."
+                    engine.add_character_memory(cid, sid, mem_entry, stance="Tutumunu savundu", rivalries="")
         return {"ok": True}
     return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
 
