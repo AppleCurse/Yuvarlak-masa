@@ -654,7 +654,7 @@ async def providers_info(request: Request):
             "server_ready": p["id"] in ready_ids,
         })
     seat_status = {}
-    for seat in ("A", "B", "C", "D", "E", "F", "K"):
+    for seat in ("A", "B", "C", "D", "E", "F", "G", "H", "K"):
         vc = vault.get(seat)
         if vc and vc.get("base_url"):
             seat_status[seat] = {
@@ -1219,7 +1219,13 @@ async def character_architect(payload: dict, request: Request):
                 clean_json = m.group(1).strip()
 
         char_obj = json.loads(clean_json)
-        saved = engine.save_character(char_obj)
+        if payload.get("persist", True):
+            saved = engine.save_character(char_obj)
+        else:
+            # v2.7: tanım yalnızca bu tarayıcıda kalsın — paylaşılan karakter kütüphanesine yazma
+            if not char_obj.get("id"):
+                char_obj["id"] = "custom_" + uuid.uuid4().hex[:8]
+            saved = char_obj
         return {"ok": True, "character": saved}
     except json.JSONDecodeError:
         return JSONResponse({"ok": False, "error": "Model geçerli JSON üretemedi.", "raw": raw_text[:2000]}, status_code=502)
@@ -1227,18 +1233,37 @@ async def character_architect(payload: dict, request: Request):
         return JSONResponse({"ok": False, "error": _friendly_error(exc)}, status_code=502)
 
 
+# ── Oturum Sahipliği (v2.7 gizlilik kilidi) ──────────────────────────────
+def _owner_token(request: Request) -> str:
+    return (request.headers.get("X-Owner-Token") or "").strip()
+
+
+def _require_session_owner(session_id: str, request: Request):
+    """Kilitli oturumda sahiplik doğrulaması. None = sorun yok; dolu = 403 yanıtı."""
+    if engine.session_owner_authorized(session_id, _owner_token(request)):
+        return None
+    return JSONResponse(
+        {"ok": False, "error": "Bu oturum başka bir tarayıcıya ait; erişim reddedildi."},
+        status_code=403,
+    )
+
+
 # ── Oturum & Mesaj Kayıt Rotaları ───────────────────────────────────────
 @app.post("/api/session/start")
 async def session_start(payload: dict):
     sid = (payload.get("session_id") or "").strip() or ("ses_" + uuid.uuid4().hex[:10])
     topic = (payload.get("topic") or "").strip() or "Yeni Tartışma"
-    engine.create_session(sid, topic)
+    # v2.7: tarayıcının sahiplik anahtarı özeti olarak saklanır (ham anahtar sunucuda kalmaz)
+    engine.create_session(sid, topic, owner_token=(payload.get("owner_token") or ""))
     return {"ok": True, "session_id": sid}
 
 
 @app.post("/api/session/record_message")
-async def session_record_message(payload: dict):
+async def session_record_message(payload: dict, request: Request):
     sid = (payload.get("session_id") or "").strip()
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     seat = (payload.get("seat") or "").strip()
     cid = (payload.get("character_id") or payload.get("speaker_name") or "").strip()
     role = (payload.get("role") or "seat").strip()
@@ -1252,8 +1277,11 @@ async def session_record_message(payload: dict):
 
 
 @app.post("/api/session/conclude")
-async def session_conclude(payload: dict):
+async def session_conclude(payload: dict, request: Request):
     sid = (payload.get("session_id") or "").strip()
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     verdict = (payload.get("verdict") or payload.get("synthesis") or "").strip()
     seated_characters = payload.get("seated_characters", [])
     topic = payload.get("topic", "")
@@ -1272,12 +1300,16 @@ async def session_conclude(payload: dict):
 
 # ── Arşiv & Tutanak Rotaları (okuma tarafı — denetim raporu §3.4) ───────
 @app.get("/api/sessions")
-async def list_sessions(limit: int = 50):
-    return {"ok": True, "sessions": engine.list_sessions(limit=limit)}
+async def list_sessions(request: Request, limit: int = 50):
+    # v2.7: token'ı olan yalnızca kendi oturumlarını; tokensız istek yalnızca kilitsiz (eski) kayıtları görür
+    return {"ok": True, "sessions": engine.list_sessions(limit=limit, owner_token=_owner_token(request))}
 
 
 @app.get("/api/session/{sid}/messages")
-async def session_messages(sid: str):
+async def session_messages(sid: str, request: Request):
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     msgs = engine.get_session_messages(sid)
     if not msgs:
         return JSONResponse({"ok": False, "error": "Oturum veya kaydı bulunamadı."}, status_code=404)
@@ -1286,8 +1318,11 @@ async def session_messages(sid: str):
 
 # ── Hukuki Karar Protokolü (Faz 3): resmî rapor arşivi ────────────────────
 @app.post("/api/session/report")
-async def session_report_save(payload: dict):
+async def session_report_save(payload: dict, request: Request):
     sid = payload.get("session_id", "")
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     report_md = payload.get("report_md", "")
     if not sid or not report_md:
         return JSONResponse({"ok": False, "error": "session_id ve report_md gerekli."}, status_code=400)
@@ -1302,7 +1337,10 @@ async def session_report_save(payload: dict):
 
 
 @app.get("/api/session/{sid}/report")
-async def session_report_get(sid: str):
+async def session_report_get(sid: str, request: Request):
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     rep = engine.get_session_report(sid)
     if not rep:
         return JSONResponse({"ok": False, "error": "Bu oturum için karar raporu yok."}, status_code=404)
@@ -1310,14 +1348,17 @@ async def session_report_get(sid: str):
 
 
 @app.get("/api/reports")
-async def list_decision_reports(limit: int = 100):
-    return {"ok": True, "reports": engine.list_decision_reports(limit=limit)}
+async def list_decision_reports(request: Request, limit: int = 100):
+    return {"ok": True, "reports": engine.list_decision_reports(limit=limit, owner_token=_owner_token(request))}
 
 
 # ── Mühürlü Zarf & İkna Deltası (Faz 2 — taç) ───────────────────────────
 @app.post("/api/envelope/seal")
-async def envelope_seal(payload: dict):
+async def envelope_seal(payload: dict, request: Request):
     sid = payload.get("session_id", "")
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     seat = payload.get("seat", "")
     position = (payload.get("position") or "").strip()
     if not sid or not seat or not position:
@@ -1332,7 +1373,10 @@ async def envelope_seal(payload: dict):
 
 
 @app.get("/api/envelope/{sid}")
-async def envelope_status(sid: str):
+async def envelope_status(sid: str, request: Request):
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     envelopes = engine.get_envelopes(sid)
     return {
         "ok": True,
@@ -1344,8 +1388,11 @@ async def envelope_status(sid: str):
 
 
 @app.post("/api/envelope/open")
-async def envelope_open(payload: dict):
+async def envelope_open(payload: dict, request: Request):
     sid = payload.get("session_id", "")
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     if not sid:
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
     envelopes = engine.open_envelopes(sid)
@@ -1362,6 +1409,9 @@ async def delta_compute(payload: dict, request: Request):
     sid = payload.get("session_id", "")
     if not sid:
         return JSONResponse({"ok": False, "error": "session_id eksik"}, status_code=400)
+    denied = _require_session_owner(sid, request)
+    if denied is not None:
+        return denied
     base_url = (payload.get("base_url") or "https://text.pollinations.ai/openai").strip()
     base, api_key, model, rerr = _resolve_endpoint(
         base_url, payload.get("api_key", ""), payload.get("model", ""), payload.get("seat", "")
@@ -1447,8 +1497,12 @@ async def research_verify(payload: dict, request: Request):
     if err:
         return JSONResponse({"ok": False, "error": err}, status_code=400)
     session_id = payload.get("session_id", "")
+    # v2.7: arşivi kapalıysa iddia metni sunucuya yazılmaz (persist=false)
+    persist = bool(payload.get("persist", True))
     async with _pollinations_guard(base):
-        res = await engine.research_fact_check(claim, base, api_key, model or "openai", session_id=session_id)
+        res = await engine.research_fact_check(
+            claim, base, api_key, model or "openai", session_id=session_id, persist=persist
+        )
     return res
 
 

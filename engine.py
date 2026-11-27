@@ -6,6 +6,7 @@ SQLite tabanlı kalıcı karakter hafızası, oturum arşivi ve canlı web araş
 
 import difflib
 import hashlib
+import hmac
 import html
 import json
 import os
@@ -64,6 +65,11 @@ def init_database():
             referee_verdict TEXT
         )
         """)
+        # v2.7 gizlilik kilidi: oturum sahibinin anahtar özeti (eski DB'ler için sütun ekle)
+        try:
+            conn.execute("ALTER TABLE sessions ADD COLUMN owner_hash TEXT")
+        except sqlite3.OperationalError:
+            pass  # sütun zaten var
         conn.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id TEXT PRIMARY KEY,
@@ -251,10 +257,41 @@ def add_character_memory(char_id: str, session_id: str, entry: str, stance: str 
         conn.commit()
 
 # ── Oturum ve Mesaj Kayıtları ───────────────────────────────────────────
-def create_session(session_id: str, topic: str):
+def hash_owner_token(token: str) -> str:
+    """Oturum sahipliği anahtarının özeti — ham anahtar sunucuda asla tutulmaz."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_session(session_id: str, topic: str, owner_token: str = ""):
+    owner_hash = hash_owner_token(owner_token.strip()) if (owner_token or "").strip() else None
     with get_db() as conn:
-        conn.execute("INSERT OR REPLACE INTO sessions (id, topic, status) VALUES (?, ?, 'active')", (session_id, topic))
+        conn.execute(
+            "INSERT OR REPLACE INTO sessions (id, topic, status, owner_hash) VALUES (?, ?, 'active', ?)",
+            (session_id, topic, owner_hash),
+        )
         conn.commit()
+
+
+def get_session_owner_hash(session_id: str) -> Optional[str]:
+    """Oturum kilitliyse sahip özeti, kilitsiz/eski kayıttaysa None."""
+    if not session_id:
+        return None
+    with get_db() as conn:
+        row = conn.execute("SELECT owner_hash FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    if not row:
+        return None
+    return row["owner_hash"]
+
+
+def session_owner_authorized(session_id: str, owner_token: str) -> bool:
+    """Kilitli oturumda token özeti eşleşmeli; kilitsiz (eski/classic) oturumlarda herkes okuyabilir."""
+    owner = get_session_owner_hash(session_id)
+    if owner is None:
+        return True
+    token = (owner_token or "").strip()
+    if not token:
+        return False
+    return hmac.compare_digest(owner, hash_owner_token(token))
 
 def record_message(session_id: str, seat: str, char_id: str, role: str, content: str, inner_thought: str = "", rebuttal_target_id: str = ""):
     mid = str(uuid.uuid4())
@@ -270,14 +307,27 @@ def get_session_messages(session_id: str) -> List[Dict[str, Any]]:
         rows = conn.execute("SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC", (session_id,)).fetchall()
         return [dict(r) for r in rows]
 
-def list_sessions(limit: int = 50) -> List[Dict[str, Any]]:
-    """Arşiv odası için oturum listesi (yeni → eski), mesaj sayılarıyla."""
+def list_sessions(limit: int = 50, owner_token: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Arşiv odası için oturum listesi (yeni → eski), mesaj sayılarıyla.
+
+    v2.7 gizlilik: token verilirse yalnızca o tarayıcının oturumları döner;
+    token yoksa yalnızca kilitsiz (eski/classic) kayıtlar döner — kilitli
+    kayıtlar başkasına asla listelenmez.
+    """
+    token = (owner_token or "").strip()
     with get_db() as conn:
-        rows = conn.execute(
-            """SELECT s.*, (SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id) AS msg_count
-               FROM sessions s ORDER BY s.started_at DESC LIMIT ?""",
-            (limit,),
-        ).fetchall()
+        if token:
+            rows = conn.execute(
+                """SELECT s.*, (SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id) AS msg_count
+                   FROM sessions s WHERE s.owner_hash = ? ORDER BY s.started_at DESC LIMIT ?""",
+                (hash_owner_token(token), limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT s.*, (SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id) AS msg_count
+                   FROM sessions s WHERE s.owner_hash IS NULL ORDER BY s.started_at DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
         return [dict(r) for r in rows]
 
 def close_session(session_id: str, verdict: str):
@@ -313,12 +363,28 @@ def get_session_report(session_id: str) -> Optional[Dict[str, Any]]:
         return dict(row) if row else None
 
 
-def list_decision_reports(limit: int = 100) -> List[Dict[str, Any]]:
+def list_decision_reports(limit: int = 100, owner_token: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Karar raporu listesi — v2.7 gizlilik: kilitli oturumların raporları
+    yalnızca sahip anahtarıyla görünür; tokensiz istek yalnızca kilitsiz
+    (eski/classic) oturumların raporlarını döner."""
+    token = (owner_token or "").strip()
     with get_db() as conn:
-        rows = conn.execute(
-            "SELECT id, session_id, topic, fingerprint, dissent_seats, created_at FROM decision_reports ORDER BY rowid DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
+        if token:
+            rows = conn.execute(
+                """SELECT id, session_id, topic, fingerprint, dissent_seats, created_at
+                   FROM decision_reports WHERE session_id IN
+                     (SELECT id FROM sessions WHERE owner_hash = ?)
+                   ORDER BY rowid DESC LIMIT ?""",
+                (hash_owner_token(token), limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT id, session_id, topic, fingerprint, dissent_seats, created_at
+                   FROM decision_reports WHERE session_id IN
+                     (SELECT id FROM sessions WHERE owner_hash IS NULL)
+                   ORDER BY rowid DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
         return [dict(r) for r in rows]
 
 
@@ -602,7 +668,7 @@ async def fetch_live_web_sources(query: str, max_results: int = 5) -> List[Dict[
     return sources[:max_results]
 
 # ── Doğrulama & Araştırma Ajanı (Fact-Checker) ──────────────────────────
-async def research_fact_check(claim: str, base_url: str, api_key: str, model: str, session_id: Optional[str] = None) -> Dict[str, Any]:
+async def research_fact_check(claim: str, base_url: str, api_key: str, model: str, session_id: Optional[str] = None, persist: bool = True) -> Dict[str, Any]:
     """Masada ortaya atılan iddiayı canlı web araştırması ve doğrulanabilir linklerle teyit eder."""
     # 1. Gerçek canlı internet araştırması yap
     live_sources = await fetch_live_web_sources(claim)
@@ -666,7 +732,9 @@ async def research_fact_check(claim: str, base_url: str, api_key: str, model: st
     # Denetim §3.5: 'verdict' sütuna TAM rapor değil, kısa durum değeri gitsin
     status_match = re.search(r"\*\*Doğruluk Durumu:\*\*\s*([^\n]+)", report_text)
     verdict = status_match.group(1).strip()[:200] if status_match else "RAPOR ÜRETİLDİ"
-    record_fact_check(claim, verdict, json.dumps(live_sources, ensure_ascii=False), session_id)
+    # v2.7: kullanıcı arşivi kapalı tuttuysa iddia metnini sunucuya yazma
+    if persist:
+        record_fact_check(claim, verdict, json.dumps(live_sources, ensure_ascii=False), session_id)
 
     return {"ok": True, "report": report_text, "sources": live_sources, "verdict": verdict}
 

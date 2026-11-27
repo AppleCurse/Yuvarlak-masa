@@ -26,11 +26,12 @@ if [ ! -d node_modules/jsdom ]; then
   (cd "$REPO" && npm install jsdom --no-audit --no-fund --prefix tests) || FAILED=1
 fi
 
-run "jsdom: v2.6 ana sayfa deneyimi (demo/3 adım/karşılıklılık/çıktı)" node dom/test_home_experience.js
+run "jsdom: v2.7 ana sayfa deneyimi (gizlilik/özel koltuk/uyarılar)" node dom/test_home_experience.js
 
 PY="$REPO/.venv/bin/python"
 [ -x "$PY" ] || PY="$(command -v python3)"
 run "nörodinamik: karakter ve oturum izolasyonu" "$PY" test_neuro_integration.py
+run "gizlilik kilidi: sahiplik anahtarı + arşiv persist" "$PY" test_archive_lock.py
 run "e2e: kâsa (gerçek uvicorn + mock upstream)" "$PY" e2e_vault.py
 run "hız sınırı (gerçek uvicorn, düşük limit)"  "$PY" test_ratelimit.py
 

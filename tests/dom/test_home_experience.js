@@ -1,11 +1,11 @@
-/* v2.6 ana sayfa deneyimi testi — jsdom:
+/* v2.7 ana sayfa deneyimi testi — jsdom:
    - demo sahnesi: örnek akış oynar, DEMO/YZ/İNSAN etiketleri, arşive/servise 0 çağrı
    - 3 adım ilk kullanım rayı
-   - katılımcı çeşitliliği (6 kişi, tek renk yok)
    - canlı akış: Moderatör → katılımcılar → Nörodinamik Ajan → Moderatör → Karar Hakemi
-   - karşılıklılık: yanıt işareti yalnızca metin gerçekten önceki konuşmacıya değiniyorsa
-   - nörodinamik durum çipi /api/neuro/state'ten gelen GERÇEK veriyle dolar
-   - çıktı gerekçeli bölümlere ayrılır (## başlıkları)
+   - GİZLİLİK: arşiv varsayılan KAPALI → 0 sunucu yazması; açılınca owner_token +
+     X-Owner-Token başlığıyla yazılır
+   - ÖZEL KATILIMCI: G/H koltuğu kurulur, akışa katılır, kartı görünür
+   - başlıkta API butonu yok; yazım hataları yok; yasal uyarı metni ekranda
    Çalıştırma: cd tests && node dom/test_home_experience.js */
 const fs = require("fs");
 const path = require("path");
@@ -40,12 +40,15 @@ function makeDom() {
       w.fetch = async (u, opts = {}) => {
         const s = String(u);
         const json = (obj, st = 200) => ({ ok: st < 400, status: st, json: async () => obj, text: async () => JSON.stringify(obj) });
-        try { if (opts.body) posts.push({ url: s, body: JSON.parse(opts.body) }); } catch (_) { posts.push({ url: s }); }
+        try {
+          posts.push({ url: s, body: opts.body ? JSON.parse(opts.body) : undefined, headers: opts.headers || {} });
+        } catch (_) { posts.push({ url: s, headers: opts.headers || {} }); }
         if (s.includes("/api/characters")) return json({ ok: true, characters: [] });
         if (s.includes("/api/providers")) return json({ ok: true, providers: [{ id: "groq", name: "Groq", free: true, badge: "Ücretsiz", note: "test", base_url: "https://x", key_url: "https://x", models: [], default_model: "m", server_ready: false, multi_model: false }], server_pool_count: 0, seat_status: {} });
         if (s.includes("/api/neuro/state")) {
-          const st = posts.find(p => p.url.includes("/api/session/start"));
-          const sid = st ? st.body.session_id : "none";
+          // Oturum kimliği session/start yerine son akış çağrısından (arşiv kapalıyken start yok)
+          const st = [...posts].reverse().find(p => p.url.includes("/api/chat/stream"));
+          const sid = st && st.body ? st.body.cognitive_session_id : "none";
           return json({ ok: true, seats: { [`${sid}:norodinamik_ajan`]: { energy: 0.72, fatigue: 0.31, epistemic_uncertainty: 0.44, stance_label: "Derin Sorgulama", step_count: 3 } } });
         }
         if (s.includes("/api/chat/stream")) {
@@ -60,6 +63,9 @@ function makeDom() {
           }
           return { ok: true, status: 200, body: makeSSE([`data: ${JSON.stringify({ delta: reply })}\n`, "data: [DONE]\n"]) };
         }
+        if (s.includes("/api/character/architect")) {
+          return json({ ok: true, character: { id: "arch_test", name: "Usta Çırak", title: "Pratik Zeka", system_prompt: "Sen sahada öğrenmiş bir usta çırağısın; her tezde 'pratikte nasıl uygulanır?' diye sorarsın." } });
+        }
         if (s.includes("/api/chat")) return json({ ok: true, content: "MOCK quick", provider_label: "Mock" });
         return json({ ok: true });
       };
@@ -67,8 +73,15 @@ function makeDom() {
   });
 }
 
+async function runDebate(d, w, question) {
+  posts.length = 0;
+  d.getElementById("questionInput").value = question;
+  d.getElementById("questionForm").dispatchEvent(new w.Event("submit", { cancelable: true, bubbles: true }));
+  await sleep(1600);
+}
+
 (async () => {
-  console.log("== v2.6 Ana Sayfa Deneyimi ==");
+  console.log("== v2.7 Ana Sayfa Deneyimi ==");
   const dom = makeDom();
   const w = dom.window, d = w.document;
 
@@ -102,33 +115,91 @@ function makeDom() {
   assert(w.detectReplyTarget("Moderatörün sorusuna katılıyorum ama bir ekleme var", { speaker: "Moderatör" }) === "Moderatör", "17 yanıt işareti: önceki konuşmacı anılırsa");
   assert(w.detectReplyTarget("tamamen alakasız bir cümle", { speaker: "Moderatör" }) === null, "18 yanıt işareti: anılmazsa işaret yok (uydurma ok yok)");
 
-  // ── 4) CANLI AKIŞ ──
-  posts.length = 0;
-  d.getElementById("questionInput").value = "İş değişikliği yapmalı mıyım?";
-  d.getElementById("questionForm").dispatchEvent(new w.Event("submit", { cancelable: true, bubbles: true }));
-  await sleep(1600);
+  // ── 4) CANLI AKIŞ (arşiv varsayılan KAPALI) ──
+  assert(d.getElementById("optArchive") && !d.getElementById("optArchive").checked, "19 gizlilik: arşiv onay kutusu varsayılan kapalı");
+  assert((d.getElementById("archiveHint").textContent || "").length > 20, "20 gizlilik: arşiv ipucu metni görünür");
 
-  assert(d.getElementById("landingStage").classList.contains("hidden"), "19 canlı: sahne gizlenir, tartışma alanı açılır");
+  await runDebate(d, w, "İş değişikliği yapmalı mıyım?");
+
+  assert(d.getElementById("landingStage").classList.contains("hidden"), "21 canlı: sahne gizlenir, tartışma alanı açılır");
   const streamCalls = posts.filter(p => p.url.includes("/api/chat/stream")).map(p => p.body.cognitive_character_id || p.body.seat);
   const expected = ["moderator", "hesap_uzmani", "risk_kriz", "firsat_stratejist", "sokak_gercekcisi", "norodinamik_ajan", "moderator", "karar_hakemi"];
-  assert(JSON.stringify(streamCalls) === JSON.stringify(expected), "20 canlı sıra: Moderatör → 4 uzman → Ajan → Moderatör → Hakem");
-  assert(posts.filter(p => p.url.includes("/api/session/record_message")).length === 7, "21 canlı: 7 söz arşive yazılır");
+  assert(JSON.stringify(streamCalls) === JSON.stringify(expected), "22 canlı sıra: Moderatör → 4 uzman → Ajan → Moderatör → Hakem");
+  const offPosts = posts.filter(p => p.url.includes("/api/session/start") || p.url.includes("/api/session/record_message") || p.url.includes("/api/session/conclude") || p.url.includes("/api/envelope/seal"));
+  assert(offPosts.length === 0, "23 gizlilik: arşiv kapalıyken sunucuya 0 yazma (start/record/conclude/seal yok)");
   const cards = d.querySelectorAll("#messagesContainer article");
-  assert(cards.length === 7, "22 canlı: 7 konuşma kartı");
+  assert(cards.length === 7, "24 canlı: 7 konuşma kartı");
   const replyMarks = [...d.querySelectorAll(".reply-el")].map(e => e.textContent).filter(t => t.length);
-  assert(replyMarks.length >= 4, "23 canlı: yanıt işaretleri gerçekten önceki söze bağlanıyor");
+  assert(replyMarks.length >= 4, "25 canlı: yanıt işaretleri gerçekten önceki söze bağlanıyor");
   const neuroChips = [...d.querySelectorAll(".neuro-chip")].map(e => e.textContent).filter(t => t.length);
-  assert(neuroChips.length === 1 && neuroChips[0].includes("Enerji %72") && neuroChips[0].includes("Derin Sorgulama"), "24 canlı: nörodinamik çip sunucudaki gerçek veriyle doldu");
-  assert(!d.getElementById("outcomeSections").classList.contains("hidden"), "25 canlı: çıktı bölümleri görünür");
-  assert(d.querySelectorAll("#outcomeSections .outcome-sec").length === 7, "26 canlı: 7 gerekçeli bölüm ayrıştırıldı");
-  assert(d.getElementById("debateStatusPill").textContent.includes("Karar özeti hazır"), "27 canlı: durum çipi hazır diyor");
-  assert(d.getElementById("messagesContainer").textContent.includes("YZ KARAKTER"), "28 canlı: kartlarda YZ etiketi");
+  assert(neuroChips.length === 1 && neuroChips[0].includes("Enerji %72") && neuroChips[0].includes("Derin Sorgulama"), "26 canlı: nörodinamik çip sunucudaki gerçek veriyle doldu");
+  assert(!d.getElementById("outcomeSections").classList.contains("hidden"), "27 canlı: çıktı bölümleri görünür");
+  assert(d.querySelectorAll("#outcomeSections .outcome-sec").length === 7, "28 canlı: 7 gerekçeli bölüm ayrıştırıldı");
+  assert(d.getElementById("debateStatusPill").textContent.includes("Karar özeti hazır"), "29 canlı: durum çipi hazır diyor");
+  assert(d.getElementById("messagesContainer").textContent.includes("YZ KARAKTER"), "30 canlı: kartlarda YZ etiketi");
 
-  // ── 5) SAĞLAYICI MODALI: E/F koltukları ──
-  d.getElementById("openProvidersBtn").click();
+  // ── 5) AYARLAR: API butonu başlıkta YOK, sağlayıcı modalı ayarlardan açılır ──
+  assert(!d.getElementById("openProvidersBtn"), "31 başlık: korkutucu API butonu başlıktan kaldırıldı");
+  d.getElementById("openProvidersInlineBtn").click();
   await sleep(50);
   const modalText = d.getElementById("providersModal").textContent;
-  assert(modalText.includes("Moderatör (Operatör)") && modalText.includes("Nörodinamik Ajan"), "29 sağlayıcılar: E/F koltukları yapılandırılabilir");
+  assert(modalText.includes("Moderatör (Operatör)") && modalText.includes("Nörodinamik Ajan"), "32 sağlayıcılar: E/F koltukları yapılandırılabilir");
+  assert(modalText.includes("Özel Katılımcı G"), "33 sağlayıcılar: G/H özel koltuk satırları var");
+  d.getElementById("closeProvidersBtn").click();
+
+  // ── 6) YAZIM HATALARI + YASAL UYARI ──
+  const bodyText = d.body.textContent;
+  assert(!bodyText.includes("ilk6"), "34 yazım: 'ilk6' hatası yok");
+  assert(!bodyText.includes("Çeleştirel"), "35 yazım: 'Çeleştirel' hatası yok");
+  assert(bodyText.includes("yatırım, hukuk veya psikoloji tavsiyesi değildir"), "36 yasal: tavsiye değildir uyarısı sayfada");
+  assert(bodyText.includes("yalnızca bu tarayıcıda kalır") || bodyText.includes("sunucuya yazılmaz"), "37 gizlilik: dürüst arşiv notu sayfada");
+
+  // ── 7) ÖZEL KATILIMCI KUR (G koltuğu) ──
+  d.getElementById("addCustomSeatBtn").click();
+  await sleep(30);
+  assert(!d.getElementById("customSeatModal").classList.contains("hidden"), "38 özel koltuk: kurulum modalı açılır");
+  // YZ ile doldur: mimar alanları doldurur (persist işaretsiz → yalnızca tarayıcı)
+  assert(!d.getElementById("csPersist").checked, "38b özel koltuk: kütüphane kaydı varsayılan işaretsiz");
+  d.getElementById("csArchitectBtn").click();
+  await sleep(120);
+  assert(d.getElementById("csName").value === "Usta Çırak", "38c özel koltuk: YZ mimarı adı alanına yazar");
+  d.getElementById("csName").value = "Usta Çırak";
+  d.getElementById("csRole").value = "Pratik Zeka";
+  d.getElementById("csBrief").value = "Sahadaki uygulama sorusunu sorar; her tezde pratik karşılığını ister.";
+  d.getElementById("customSeatForm").dispatchEvent(new w.Event("submit", { cancelable: true, bubbles: true }));
+  await sleep(50);
+  const gridText = d.getElementById("seatCardsGrid").textContent;
+  assert(gridText.includes("Usta Çırak") && gridText.includes("SENİN"), "39 özel koltuk: kart masada görünür (SENİN rozeti)");
+  assert(d.getElementById("customSeatModal").classList.contains("hidden"), "40 özel koltuk: eklemeden sonra modal kapanır");
+
+  // ── 8) ARŞİV AÇ → owner_token ile yazma + özel koltuk akışta ──
+  const optArchive = d.getElementById("optArchive");
+  optArchive.checked = true;
+  optArchive.dispatchEvent(new w.Event("change"));
+  await sleep(30);
+
+  await runDebate(d, w, "Kendi işimi kurmalı mıyım?");
+
+  const startPosts = posts.filter(p => p.url.includes("/api/session/start"));
+  assert(startPosts.length === 1, "41 arşiv açık: oturum sunucuda başlar");
+  assert(startPosts[0].body && typeof startPosts[0].body.owner_token === "string" && startPosts[0].body.owner_token.length > 10, "42 arşiv açık: sahiplik anahtarı (owner_token) gönderilir");
+  const recordPosts = posts.filter(p => p.url.includes("/api/session/record_message"));
+  // arşiv açıkken ikinci tartışma: moderatör (2) + 5 tur katılımcısı (A–D, G, Ajan) = 8 kayıt
+  assert(recordPosts.length === 8, `43 arşiv açık: 8 söz arşive yazılır (bulunan: ${recordPosts.length})`);
+  assert(recordPosts.every(p => p.headers && p.headers["X-Owner-Token"]), "44 arşiv açık: her yazma sahiplik başlığı taşır");
+  const concludePosts = posts.filter(p => p.url.includes("/api/session/conclude"));
+  assert(concludePosts.length === 1 && concludePosts[0].headers["X-Owner-Token"], "45 arşiv açık: sonuç da sahiplik başlığıyla yazılır");
+
+  const stream2 = posts.filter(p => p.url.includes("/api/chat/stream")).map(p => p.body.cognitive_character_id || p.body.seat);
+  const expected2 = ["moderator", "hesap_uzmani", "risk_kriz", "firsat_stratejist", "sokak_gercekcisi", "custom_g_", "norodinamik_ajan", "moderator", "karar_hakemi"];
+  const seqOk = stream2.length === expected2.length && expected2.every((e, i) => e === "custom_g_" ? String(stream2[i]).startsWith("custom_g_") : stream2[i] === e);
+  assert(seqOk, "46 özel koltuk: akışa sırayla katılır (A–D → G → Ajan → Moderatör → Hakem)");
+
+  // ── 9) GEÇMİŞ SEKMESİ DÜRÜST KOPYA ──
+  d.querySelector('.nav-tab[data-tab="history"]').click();
+  await sleep(50);
+  const histText = d.getElementById("view-history").textContent;
+  assert(histText.includes("yalnızca bu tarayıcıda saklanır"), "47 geçmiş: sekme başlığı arşiv gerçeğini söylüyor");
 
   console.log(`\nSONUÇ: ${pass} YEŞİL / ${fail} KIRMIZI`);
   process.exit(fail ? 1 : 0);
