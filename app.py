@@ -697,11 +697,44 @@ async def providers_info(request: Request):
 # ── Sağlık / teşhis rotaları ────────────────────────────────────────────
 # v1.3: dürüst teşhis — arayüz "gerçek model mi, demo mu" sorusunu tahminle
 # değil bu uçtan öğrenir. Backend'de simülasyon yoktur (demo yalnız tarayıcıdadır).
+def _detect_commit() -> str:
+    """Çalışan sürümün git commit'i — canlı ortamda tek curl ile doğrulama için.
+
+    Öncelik: KONSUL_COMMIT / RAILWAY_GIT_COMMIT_SHA ortam değişkenleri →
+    yerel depoda git → "unknown". (Docker imajında .git bulunmaz — .dockerignore.)"""
+    env = (os.environ.get("KONSUL_COMMIT") or os.environ.get("RAILWAY_GIT_COMMIT_SHA") or "").strip()
+    if env:
+        return env[:40]
+    try:
+        import subprocess
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=2,
+            cwd=str(Path(__file__).resolve().parent),
+        )
+        if out.returncode == 0:
+            sha = out.stdout.strip()
+            if sha:
+                return sha[:40]
+    except Exception:  # noqa: BLE001 — git yoksa "unknown" yeterli
+        pass
+    return "unknown"
+
+
+_COMMIT = _detect_commit()
+
+# Bu işaretler yalnızca v2.7+ kodunda bulunur: canlı /api/health yanıtında
+# görünürlüğü, dağıtılan sürümün en az bu seviyede olduğunu kanıtlar.
+_FEATURE_MARKERS = ["owner_lock", "archive_opt_out", "custom_seats", "commit_report"]
+
+
 @app.get("/api/health")
 async def health():
     loopback = HOST in ("127.0.0.1", "localhost", "::1")
     return {
         "ok": True, "service": "KONSÜL AI", "mode": "canlı", "version": "1.3.0",
+        "commit": _COMMIT,
+        "features": _FEATURE_MARKERS,
         "ai": "upstream",
         "simulation_in_backend": False,
         "auth": "none",

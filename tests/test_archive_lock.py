@@ -259,5 +259,13 @@ class ArchiveLock(unittest.TestCase):
         self.assertIn(c_topic, texts, "kilitsiz (classic) oturum hâlâ damıtılmalı")
 
 
+    def test_health_reports_version_markers(self):
+        """/api/health canlı sürümü tek curl ile doğrulanabilir kılar (commit + özellik işaretleri)."""
+        j = client.get("/api/health").json()
+        self.assertTrue(j.get("commit"), "commit alanı boş olamaz")
+        for marker in ("owner_lock", "archive_opt_out", "custom_seats", "commit_report"):
+            self.assertIn(marker, j.get("features", []), f"özellik işareti eksik: {marker}")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
