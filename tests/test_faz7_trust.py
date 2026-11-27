@@ -73,9 +73,10 @@ class Faz7Trust(unittest.TestCase):
         self.assertTrue(data["ok"])
         self.assertEqual(data["sessions"], 1)
         self.assertEqual(data["messages"], 1)
-        # Token'sız istek yalnızca kilitsiz kayıtları görür
+        # Token'sız istek erişemez (Faz 7 güvenlik yaması)
         r2 = self.client.get("/api/data/overview")
-        self.assertEqual(r2.json()["sessions"], 0)
+        self.assertEqual(r2.status_code, 403)
+        self.assertFalse(r2.json()["ok"])
 
     def test_delete_my_data_spares_others(self):
         """FAZ7-4: silme yalnızca benimkini siler, başkasının kaydı sağ kalır."""
@@ -96,16 +97,19 @@ class Faz7Trust(unittest.TestCase):
         self.assertIn("sağ kalan söz", msgs)
         self.assertNotIn("silinecek söz", msgs)
 
-    def test_delete_without_owner_touches_nothing_locked(self):
-        """FAZ7-5: token'sız silme kilitli kayıtlara dokunmaz."""
+    def test_delete_without_owner_is_403_and_touches_nothing(self):
+        """FAZ7-5 (+güvenlik yaması): token'sız silme 403; kilitli VE kilitsiz
+        hiçbir kayda dokunulmaz — anahtarsız toplu silme açık kapatıldı."""
         engine.create_session("ses_lock", "Kilitli", owner_token=OWNER)
         engine.record_message("ses_lock", "A", "x", "seat", "kilitli söz", "", "")
+        engine.create_session("ses_legacy", "Eski kilitsiz kayıt")  # owner_token yok
+        engine.record_message("ses_legacy", "A", "x", "seat", "eski söz", "", "")
         r = self.client.request("DELETE", "/api/data/my")
-        data = r.json()
-        self.assertTrue(data["ok"])
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(r.json()["ok"])
         with engine.get_db() as conn:
-            n = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
-        self.assertEqual(n, 1)
+            left = sorted(row[0] for row in conn.execute("SELECT id FROM sessions").fetchall())
+        self.assertEqual(left, ["ses_legacy", "ses_lock"])
 
 
 if __name__ == "__main__":

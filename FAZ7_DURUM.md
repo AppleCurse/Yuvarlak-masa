@@ -47,7 +47,19 @@ açıklama şeridi; `/api/quality/report` sayıları; Geçmiş → "Neler var?" 
 - **Açık:** düzenli (zamanlanmış) kalite raporu e-postası — şu an istekle alınıyor;
   veri dışa aktarma (export JSON) — silme var, export yok.
 
-## 6. Plan durumu
+## 6. Güvenlik yaması (canlı kod incelemesi bulgusu)
+
+Canlı denetimde tek açık bulundu: **anahtarsız `DELETE /api/data/my`** isteği,
+sahiplik kanıtı istemediği için *kilitsiz (eski/classic) tüm kayıtları* toplu
+silebiliyordu (kilitli kayıtlara dokunulamıyordu ama eski kayıtlar savunmasızdı).
+
+**Kapatıldı:** hem `DELETE /api/data/my` hem `GET /api/data/overview` artık **sahiplik
+anahtarı olmadan 403** döndürür; anahtarsız istek hiçbir kayda dokunmaz (kilitli de
+kilitsiz de). Yeni arayüz zaten her istekte anahtar gönderdiği için kullanıcı tarafında
+değişiklik yok. Test `test_delete_without_owner_is_403_and_touches_nothing` bu açık için
+regresyon kilidi (kilitli + kilitsiz kayıt sağ kalır).
+
+## 7. Plan durumu
 
 Faz 0–7'nin kod tarafı tamamlandı (bu raporla birlikte 8/8). Canlı teyit turu:
 FAZ1/FAZ2 zaten canlı doğrulandı; Faz 3–7 için canlı tur maddeleri ilgili
